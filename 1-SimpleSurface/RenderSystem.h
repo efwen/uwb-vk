@@ -52,7 +52,7 @@ static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
 	return VK_FALSE;
 }
 
-#ifndef DEBUG
+#ifdef _DEBUG
 	const bool enableValidationLayers = true;
 #else
 	const bool enableValidationLayers = false;
@@ -67,7 +67,7 @@ struct QueueFamilyIndices {
 	}
 };
 
-std::vector<char> readShaderFile(const std::string& filename) {
+static std::vector<char> readShaderFile(const std::string& filename) {
 	std::ifstream file(filename, std::ios::ate | std::ios::binary);
 
 	if (!file.is_open()) {
@@ -102,13 +102,21 @@ private:
 	std::vector<VkImageView> mSwapchainImageViews;
 	VkFormat mSwapchainImageFormat;
 	VkExtent2D mSwapchainExtent;
+	std::vector<VkFramebuffer> mSwapchainFramebuffers;
 	
 	VkCommandPool mCommandPool;
-	VkCommandBuffer mBuffer;
+	std::vector<VkCommandBuffer> mCommandBuffers;
+	
+	VkRenderPass mRenderPass;
+	VkPipelineLayout mPipelineLayout;
+	VkPipeline mPipeline;
+
+	VkSemaphore imageAvailableSemaphore;
+	VkSemaphore renderFinishedSemaphore;
 
 public:
 	void init(GLFWwindow *window);
-	void update();
+	void drawFrame();
 	void shutdown();
 private:
 	void createInstance();
@@ -125,7 +133,14 @@ private:
 
 	//Pipeline
 	void createGraphicsPipeline();
+	VkShaderModule createShaderModule(const std::vector<char>& code);
+	void createRenderPass();
 
+	void createFramebuffers();
+	void createCommandPool();
+	void createCommandBuffers();
+
+	void createSemaphores();
 
 	std::vector<const char*> getRequiredExtensions();
 
