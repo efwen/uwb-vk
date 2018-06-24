@@ -58,6 +58,8 @@ static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
 	const bool enableValidationLayers = false;
 #endif
 
+	const int MAX_CONCURRENT_FRAMES = 2;
+
 struct QueueFamilyIndices {
 	int graphicsFamily = -1;
 	int presentFamily = -1;
@@ -89,14 +91,18 @@ class RenderSystem
 private:
 	VkInstance mInstance;
 	VkDebugReportCallbackEXT callback;
+
+	//Devices and Queues
 	VkPhysicalDevice mPhysicalDevice;
 	QueueFamilyIndices mSelectedIndices;
 	VkDevice mDevice;
-	VkSurfaceKHR mSurface;
-
 	VkQueue mGraphicsQueue;
 	VkQueue mPresentQueue;
 
+	//Presentation Surface
+	VkSurfaceKHR mSurface;
+
+	//Swapchain Setup
 	VkSwapchainKHR mSwapchain;
 	std::vector<VkImage> mSwapchainImages;
 	std::vector<VkImageView> mSwapchainImageViews;
@@ -104,24 +110,29 @@ private:
 	VkExtent2D mSwapchainExtent;
 	std::vector<VkFramebuffer> mSwapchainFramebuffers;
 	
-	VkCommandPool mCommandPool;
-	std::vector<VkCommandBuffer> mCommandBuffers;
-	
+	//Pipeline
 	VkRenderPass mRenderPass;
 	VkPipelineLayout mPipelineLayout;
 	VkPipeline mPipeline;
 
+	//Command Buffers
+	VkCommandPool mCommandPool;
+	std::vector<VkCommandBuffer> mCommandBuffers;
+
+	//Rendering SynchronizationS
 	VkSemaphore imageAvailableSemaphore;
 	VkSemaphore renderFinishedSemaphore;
+
+	VkClearValue mClearColor = { 0.0f, 0.5f, 0.5f, 1.0f };
 
 public:
 	void init(GLFWwindow *window);
 	void drawFrame();
 	void shutdown();
+
 private:
 	void createInstance();
 	void createDevice();
-	QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device);
 	void createSurface(GLFWwindow* window);
 	
 	//SWAPCHAIN
@@ -136,12 +147,14 @@ private:
 	VkShaderModule createShaderModule(const std::vector<char>& code);
 	void createRenderPass();
 
+	//Command Buffers
 	void createFramebuffers();
 	void createCommandPool();
 	void createCommandBuffers();
 
-	void createSemaphores();
+	void createSyncObjects();
 
+	QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device);
 	std::vector<const char*> getRequiredExtensions();
 
 	//validation layers

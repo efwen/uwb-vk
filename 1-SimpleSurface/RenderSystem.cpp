@@ -19,7 +19,7 @@ void RenderSystem::init(GLFWwindow * window)
 	createFramebuffers();
 	createCommandPool();
 	createCommandBuffers();
-	createSemaphores();
+	createSyncObjects();
 }
 
 void RenderSystem::drawFrame()
@@ -740,9 +740,9 @@ void RenderSystem::createCommandBuffers()
 		renderPassInfo.renderArea.offset = { 0, 0 };
 		renderPassInfo.renderArea.extent = mSwapchainExtent;
 
-		VkClearValue clearColor = { 0.0f, 0.5f, 0.5f, 1.0f };
+		
 		renderPassInfo.clearValueCount = 1;
-		renderPassInfo.pClearValues = &clearColor;
+		renderPassInfo.pClearValues = &mClearColor;
 
 		vkCmdBeginRenderPass(mCommandBuffers[i], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 
@@ -758,8 +758,9 @@ void RenderSystem::createCommandBuffers()
 	}
 }
 
-void RenderSystem::createSemaphores()
+void RenderSystem::createSyncObjects()
 {
+
 	std::cout << "Creating semaphores" << std::endl;
 
 	VkSemaphoreCreateInfo semaphoreInfo = {};
