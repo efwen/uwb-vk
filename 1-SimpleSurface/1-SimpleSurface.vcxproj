@@ -130,11 +130,13 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="InputSystem.cpp" />
     <ClCompile Include="RenderSystem.cpp" />
     <ClCompile Include="VkApp.cpp" />
     <ClCompile Include="main.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="InputSystem.h" />
     <ClInclude Include="RenderSystem.h" />
     <ClInclude Include="VkApp.h" />
   </ItemGroup>

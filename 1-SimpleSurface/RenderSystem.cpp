@@ -331,6 +331,8 @@ void RenderSystem::createSwapchain()
 
 }
 
+
+
 VkSurfaceFormatKHR RenderSystem::chooseSwapchainSurfaceFormat()
 {
 	std::cout << "choosing swapchain format" << std::endl;
@@ -825,6 +827,13 @@ void RenderSystem::destroyDebugCallback()
 		(vkGetInstanceProcAddr(mInstance, "vkDestroyDebugReportCallbackEXT"));
 
 	vkDestroyDebugReportCallbackEXT(mInstance, callback, nullptr);
+}
+
+void RenderSystem::setClearColor(VkClearValue clearColor)
+{
+	mClearColor = clearColor;
+	vkDeviceWaitIdle(mDevice);
+	createCommandBuffers();
 }
 
 void RenderSystem::printExtensions()

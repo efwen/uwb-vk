@@ -14,11 +14,23 @@ void VkApp::run()
 	//update loop
 	while (!glfwWindowShouldClose(mWindow)) {
 		glfwPollEvents();
+		input.update();
+
+		//change the clear color
+		if (input.isKeyPressed(GLFW_KEY_B)) {
+			renderer.setClearColor(clearColors[clearColorIndex]);
+			clearColorIndex++;
+			if (clearColorIndex >= clearColors.size()) clearColorIndex = 0;
+		}
+
+		//close the window
+		if (input.isKeyPressed(GLFW_KEY_ESCAPE)) 
+			glfwSetWindowShouldClose(mWindow, GLFW_TRUE);
+
 		renderer.drawFrame();
 	}
 
 	std::cout << "---------------------------------------" << std::endl;
-
 	shutdown();
 }
 
@@ -26,14 +38,13 @@ void VkApp::init()
 {
 	glfwInit();
 	createWindow();
+	input.initialize(mWindow);
 	renderer.init(mWindow);
-
 }
 
 void VkApp::shutdown()
 {
 	renderer.shutdown();
-
 	glfwDestroyWindow(mWindow);
 	glfwTerminate();
 }
@@ -46,5 +57,4 @@ void VkApp::createWindow()
 	if (mWindow == nullptr) {
 		throw std::runtime_error("Window creation failed!");
 	}
-
 }

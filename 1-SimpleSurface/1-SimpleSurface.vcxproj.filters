@@ -24,12 +24,18 @@
     <ClCompile Include="RenderSystem.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="InputSystem.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="VkApp.h">
       <Filter>graphics.h</Filter>
     </ClInclude>
     <ClInclude Include="RenderSystem.h">
+      <Filter>graphics.h</Filter>
+    </ClInclude>
+    <ClInclude Include="InputSystem.h">
       <Filter>graphics.h</Filter>
     </ClInclude>
   </ItemGroup>

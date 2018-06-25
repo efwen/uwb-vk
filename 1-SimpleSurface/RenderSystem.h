@@ -130,6 +130,7 @@ public:
 	void drawFrame();
 	void shutdown();
 
+	void setClearColor(VkClearValue clearColor);
 private:
 	void createInstance();
 	void createDevice();
@@ -160,6 +161,8 @@ private:
 	//validation layers
 	void createDebugCallback();
 	void destroyDebugCallback();
+
+	
 
 	VkResult CreateDebugReportCallbackEXT(VkInstance instance, const VkDebugReportCallbackCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDebugReportCallbackEXT* pCallback) {
 		auto func = (PFN_vkCreateDebugReportCallbackEXT)vkGetInstanceProcAddr(instance, "vkCreateDebugReportCallbackEXT");
