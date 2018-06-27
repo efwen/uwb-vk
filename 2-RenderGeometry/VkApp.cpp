@@ -18,7 +18,6 @@ void VkApp::run()
 		glfwPollEvents();
 		input.update();
 
-		
 		//change the clear color
 		if (input.isKeyPressed(GLFW_KEY_B)) {
 			renderer.setClearColor(clearColors[clearColorIndex]);

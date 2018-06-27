@@ -89,7 +89,6 @@ static std::vector<char> readShaderFile(const std::string& filename) {
 class RenderSystem
 {
 private:
-	GLFWwindow * mWindow = nullptr;
 	VkInstance mInstance;
 	VkDebugReportCallbackEXT callback;
 
@@ -120,11 +119,9 @@ private:
 	VkCommandPool mCommandPool;
 	std::vector<VkCommandBuffer> mCommandBuffers;
 
-	//Rendering Synchronization primitives
-	std::vector<VkSemaphore> mImageAvailableSemaphores;
-	std::vector<VkSemaphore> mRenderFinishedSemaphores;
-	std::vector<VkFence> mFrameFences;
-	size_t currentFrame = 0;
+	//Rendering SynchronizationS
+	VkSemaphore imageAvailableSemaphore;
+	VkSemaphore renderFinishedSemaphore;
 
 	VkClearValue mClearColor = { 0.0f, 0.5f, 0.5f, 1.0f };
 
@@ -145,8 +142,6 @@ private:
 	VkPresentModeKHR chooseSwapchainPresentMode();
 	VkExtent2D chooseSwapchainExtent(const VkSurfaceCapabilitiesKHR& capabilities);
 	void createSwapchainImageViews();
-	void recreateSwapchain();
-	void cleanupSwapchain();
 
 	//Pipeline
 	void createGraphicsPipeline();

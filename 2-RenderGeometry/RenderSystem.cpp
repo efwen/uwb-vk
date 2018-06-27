@@ -9,8 +9,6 @@ void RenderSystem::init(GLFWwindow * window)
 	if (enableValidationLayers) {
 		createDebugCallback();
 	}
-
-	mWindow = window;
 	createSurface(window);
 	createDevice();
 	createSwapchain();
@@ -26,19 +24,16 @@ void RenderSystem::init(GLFWwindow * window)
 
 void RenderSystem::drawFrame()
 {
-	vkWaitForFences(mDevice, 1, &mFrameFences[currentFrame], VK_TRUE, std::numeric_limits<uint64_t>::max());
-	vkResetFences(mDevice, 1, &mFrameFences[currentFrame]);
-
 	//Get the next available image
 	uint32_t imageIndex;
-	vkAcquireNextImageKHR(mDevice, mSwapchain, std::numeric_limits<uint64_t>::max(), mImageAvailableSemaphores[currentFrame], VK_NULL_HANDLE, &imageIndex);
+	vkAcquireNextImageKHR(mDevice, mSwapchain, std::numeric_limits<uint64_t>::max(), imageAvailableSemaphore, VK_NULL_HANDLE, &imageIndex);
 
 
 	VkSubmitInfo submitInfo = {};
 	submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 
 	//Semaphores for waiting to submit
-	VkSemaphore waitSemaphores[] = { mImageAvailableSemaphores[currentFrame] };
+	VkSemaphore waitSemaphores[] = { imageAvailableSemaphore };
 	VkPipelineStageFlags waitStages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
 	submitInfo.waitSemaphoreCount = 1;
 	submitInfo.pWaitSemaphores = waitSemaphores;
@@ -48,11 +43,11 @@ void RenderSystem::drawFrame()
 	submitInfo.pCommandBuffers = &mCommandBuffers[imageIndex];
 
 	//Semaphore for when the submission is done
-	VkSemaphore signalSemaphores[] = { mRenderFinishedSemaphores[currentFrame] };
+	VkSemaphore signalSemaphores[] = { renderFinishedSemaphore };
 	submitInfo.signalSemaphoreCount = 1;
 	submitInfo.pSignalSemaphores = signalSemaphores;
 
-	if (vkQueueSubmit(mGraphicsQueue, 1, &submitInfo, mFrameFences[currentFrame]) != VK_SUCCESS) {
+	if (vkQueueSubmit(mGraphicsQueue, 1, &submitInfo, VK_NULL_HANDLE) != VK_SUCCESS) {
 		throw std::runtime_error("failed to submit draw command buffer!");
 	}
 
@@ -69,37 +64,35 @@ void RenderSystem::drawFrame()
 
 	presentInfo.pImageIndices = &imageIndex;
 
-	VkResult result = vkQueuePresentKHR(mPresentQueue, &presentInfo);
-
-	if (result == VK_ERROR_OUT_OF_DATE_KHR) {
-		recreateSwapchain();
-		return;
-	}
-	else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR) {
-		throw std::runtime_error("Failed to acquire swapchain image!");
-	}
-
-	currentFrame = (currentFrame + 1) % MAX_CONCURRENT_FRAMES;
+	vkQueuePresentKHR(mPresentQueue, &presentInfo);
 }
 
 void RenderSystem::shutdown()
 {
 	std::cout << "Shutting down render system" << std::endl;
 	
-	//make sure the queue is idle before destroying its sync objects
 	vkQueueWaitIdle(mPresentQueue);
 
-	cleanupSwapchain();
-
-	for (size_t i = 0; i < MAX_CONCURRENT_FRAMES; i++) {
-		vkDestroySemaphore(mDevice, mRenderFinishedSemaphores[i], nullptr);
-		vkDestroySemaphore(mDevice, mImageAvailableSemaphores[i], nullptr);
-		vkDestroyFence(mDevice, mFrameFences[i], nullptr);
-	}
-
+	vkDestroySemaphore(mDevice, renderFinishedSemaphore, nullptr);
+	vkDestroySemaphore(mDevice, imageAvailableSemaphore, nullptr);
+	
 	vkDestroyCommandPool(mDevice, mCommandPool, nullptr);
 
+	for (auto framebuffer : mSwapchainFramebuffers) {
+		vkDestroyFramebuffer(mDevice, framebuffer, nullptr);
+	}
+
+	vkDestroyPipeline(mDevice, mPipeline, nullptr);
+	vkDestroyPipelineLayout(mDevice, mPipelineLayout, nullptr);
+	vkDestroyRenderPass(mDevice, mRenderPass, nullptr);
+
+	for (auto imageView : mSwapchainImageViews){
+		vkDestroyImageView(mDevice, imageView, nullptr);
+	}
+
+	vkDestroySwapchainKHR(mDevice, mSwapchain, nullptr);
 	vkDestroyDevice(mDevice, nullptr);
+
 	if (enableValidationLayers) {
 		destroyDebugCallback();
 	}
@@ -406,12 +399,7 @@ VkExtent2D RenderSystem::chooseSwapchainExtent(const VkSurfaceCapabilitiesKHR& c
 		return capabilities.currentExtent;
 	}
 	else {
-		int width, height;
-		glfwGetFramebufferSize(mWindow, &width, &height);
-		std::cout << "window size: (" << width << ", " << height << ")" << std::endl;
-
-		VkExtent2D actualExtent = { static_cast<uint32_t>(width), static_cast<uint32_t>(height) };
-
+		VkExtent2D actualExtent = { 800, 600 };
 		actualExtent.width = std::max(capabilities.minImageExtent.width, std::min(capabilities.maxImageExtent.width, actualExtent.width));
 		actualExtent.height = std::max(capabilities.minImageExtent.height, std::min(capabilities.maxImageExtent.height, actualExtent.height));
 
@@ -446,41 +434,6 @@ void RenderSystem::createSwapchainImageViews()
 		}
 
 	}
-}
-
-void RenderSystem::recreateSwapchain()
-{
-	vkDeviceWaitIdle(mDevice);
-
-	cleanupSwapchain();
-
-	createSwapchain();
-	createSwapchainImageViews();
-	createRenderPass();
-	createGraphicsPipeline();
-	createFramebuffers();
-	createCommandBuffers();
-
-}
-
-void RenderSystem::cleanupSwapchain()
-{
-
-	for (auto framebuffer : mSwapchainFramebuffers) {
-		vkDestroyFramebuffer(mDevice, framebuffer, nullptr);
-	}
-
-	vkFreeCommandBuffers(mDevice, mCommandPool, static_cast<uint32_t>(mCommandBuffers.size()), mCommandBuffers.data());
-
-	vkDestroyPipeline(mDevice, mPipeline, nullptr);
-	vkDestroyPipelineLayout(mDevice, mPipelineLayout, nullptr);
-	vkDestroyRenderPass(mDevice, mRenderPass, nullptr);
-
-	for (auto imageView : mSwapchainImageViews) {
-		vkDestroyImageView(mDevice, imageView, nullptr);
-	}
-
-	vkDestroySwapchainKHR(mDevice, mSwapchain, nullptr);
 }
 
 void RenderSystem::createGraphicsPipeline()
@@ -809,26 +762,16 @@ void RenderSystem::createCommandBuffers()
 
 void RenderSystem::createSyncObjects()
 {
+
 	std::cout << "Creating semaphores" << std::endl;
-	mImageAvailableSemaphores.resize(MAX_CONCURRENT_FRAMES);
-	mRenderFinishedSemaphores.resize(MAX_CONCURRENT_FRAMES);
-	mFrameFences.resize(MAX_CONCURRENT_FRAMES);
-	
+
 	VkSemaphoreCreateInfo semaphoreInfo = {};
 	semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
 
-	VkFenceCreateInfo fenceInfo = {};
-	fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
-	fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
+	if (vkCreateSemaphore(mDevice, &semaphoreInfo, nullptr, &imageAvailableSemaphore) != VK_SUCCESS ||
+		vkCreateSemaphore(mDevice, &semaphoreInfo, nullptr, &renderFinishedSemaphore) != VK_SUCCESS) {
 
-	for (size_t i = 0; i < MAX_CONCURRENT_FRAMES; i++)
-	{
-		if(vkCreateSemaphore(mDevice, &semaphoreInfo, nullptr, &mImageAvailableSemaphores[i]) != VK_SUCCESS ||
-		   vkCreateSemaphore(mDevice, &semaphoreInfo, nullptr, &mRenderFinishedSemaphores[i]) != VK_SUCCESS ||
-			vkCreateFence(mDevice, &fenceInfo, nullptr, &mFrameFences[i]) != VK_SUCCESS) 
-		{
-			throw std::runtime_error("Failed to create frame sync objects!");
-		}
+		throw std::runtime_error("failed to create semaphores!");
 	}
 }
 
@@ -888,8 +831,8 @@ void RenderSystem::destroyDebugCallback()
 
 void RenderSystem::setClearColor(VkClearValue clearColor)
 {
-	vkDeviceWaitIdle(mDevice);
 	mClearColor = clearColor;
+	vkDeviceWaitIdle(mDevice);
 	createCommandBuffers();
 }
 

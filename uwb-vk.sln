@@ -5,6 +5,8 @@ VisualStudioVersion = 15.0.27703.2026
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "1-SimpleSurface", "1-SimpleSurface\1-SimpleSurface.vcxproj", "{EA1FC855-8971-4236-BC96-D50948E810CA}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "2-RenderGeometry", "2-RenderGeometry\2-RenderGeometry.vcxproj", "{00BF2FC1-0971-4F65-9447-022743E8EFD4}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -21,6 +23,14 @@ Global
 		{EA1FC855-8971-4236-BC96-D50948E810CA}.Release|x64.Build.0 = Release|x64
 		{EA1FC855-8971-4236-BC96-D50948E810CA}.Release|x86.ActiveCfg = Release|Win32
 		{EA1FC855-8971-4236-BC96-D50948E810CA}.Release|x86.Build.0 = Release|Win32
+		{00BF2FC1-0971-4F65-9447-022743E8EFD4}.Debug|x64.ActiveCfg = Debug|x64
+		{00BF2FC1-0971-4F65-9447-022743E8EFD4}.Debug|x64.Build.0 = Debug|x64
+		{00BF2FC1-0971-4F65-9447-022743E8EFD4}.Debug|x86.ActiveCfg = Debug|Win32
+		{00BF2FC1-0971-4F65-9447-022743E8EFD4}.Debug|x86.Build.0 = Debug|Win32
+		{00BF2FC1-0971-4F65-9447-022743E8EFD4}.Release|x64.ActiveCfg = Release|x64
+		{00BF2FC1-0971-4F65-9447-022743E8EFD4}.Release|x64.Build.0 = Release|x64
+		{00BF2FC1-0971-4F65-9447-022743E8EFD4}.Release|x86.ActiveCfg = Release|Win32
+		{00BF2FC1-0971-4F65-9447-022743E8EFD4}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
