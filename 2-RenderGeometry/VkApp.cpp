@@ -8,34 +8,20 @@ VkApp::VkApp()
 
 void VkApp::run()
 {
-	init();
+	initialize();
 	
 	glfwSetTime(0.0);
-	double frameTime = 0.0;
 	std::cout << "Starting loop..." << std::endl;
 	//update loop
 	while (!glfwWindowShouldClose(mWindow)) {
 		glfwPollEvents();
-		input.update();
-
-		//change the clear color
-		if (input.isKeyPressed(GLFW_KEY_B)) {
-			renderer.setClearColor(clearColors[clearColorIndex]);
-			clearColorIndex++;
-			if (clearColorIndex >= clearColors.size()) clearColorIndex = 0;
-		}
-
-		//close the window
-		if (input.isKeyPressed(GLFW_KEY_ESCAPE)) 
-			glfwSetWindowShouldClose(mWindow, GLFW_TRUE);
+		handleInput();
 
 		renderer.drawFrame();
 
+		//update the frame timer
 		mTime = glfwGetTime();
-		frameTime = mTime - mPrevTime;
-		if(input.isKeyPressed(GLFW_KEY_F))
-			std::cout << "frameTime: " <<  frameTime * 1000.0 << " ms ( " << (1.0 / frameTime) << " fps)" << std::endl;
-		
+		mFrameTime = mTime - mPrevTime;		
 		mPrevTime = mTime;
 	}
 
@@ -43,7 +29,7 @@ void VkApp::run()
 	shutdown();
 }
 
-void VkApp::init()
+void VkApp::initialize()
 {
 	glfwInit();
 	createWindow();
@@ -66,4 +52,23 @@ void VkApp::createWindow()
 	if (mWindow == nullptr) {
 		throw std::runtime_error("Window creation failed!");
 	}
+}
+
+void VkApp::handleInput()
+{
+	input.update();
+
+	//change the clear color
+	if (input.isKeyPressed(GLFW_KEY_B)) {
+		renderer.setClearColor(clearColors[clearColorIndex]);
+		clearColorIndex++;
+		if (clearColorIndex >= clearColors.size()) clearColorIndex = 0;
+	}
+
+	//close the window
+	if (input.isKeyPressed(GLFW_KEY_ESCAPE))
+		glfwSetWindowShouldClose(mWindow, GLFW_TRUE);
+
+	if (input.isKeyPressed(GLFW_KEY_F))
+		std::cout << "frameTime: " << mFrameTime * 1000.0 << " ms ( " << (1.0 / mFrameTime) << " fps)" << std::endl;
 }

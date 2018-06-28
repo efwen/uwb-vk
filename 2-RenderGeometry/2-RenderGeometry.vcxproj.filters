@@ -38,5 +38,12 @@
     <ClInclude Include="VkApp.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="Vertex.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="shaders\shader.frag" />
+    <None Include="shaders\shader.vert" />
   </ItemGroup>
 </Project>

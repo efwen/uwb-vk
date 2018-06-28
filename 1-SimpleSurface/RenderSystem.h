@@ -124,7 +124,7 @@ private:
 	std::vector<VkSemaphore> mImageAvailableSemaphores;
 	std::vector<VkSemaphore> mRenderFinishedSemaphores;
 	std::vector<VkFence> mFrameFences;
-	size_t currentFrame = 0;
+	size_t mCurrentFrame = 0;
 
 	VkClearValue mClearColor = { 0.0f, 0.5f, 0.5f, 1.0f };
 

@@ -3,10 +3,22 @@
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 
+#include <glm/vec2.hpp>
+#include <glm/vec3.hpp>
+
 #include <iostream>
 #include <fstream>
 #include <vector>
+#include <array>
 
+
+#include "Vertex.h"
+
+const std::vector<Vertex> triangleVertices = {
+	{ { 0.0f, -0.5f },{ 0.0f, 0.0f, 0.0f } },
+	{ { 0.5f, 0.5f },{ 0.0f, 1.0f, 0.0f } },
+	{ { -0.5f, 0.5f },{ 0.0f, 0.0f, 1.0f } }
+};
 
 //Validation Layers
 const std::vector<const char*> validationLayers = {
@@ -25,6 +37,12 @@ const std::vector<const char*> instanceExtensions = {
 const std::vector<const char*> deviceExtensions = {
 	VK_KHR_SWAPCHAIN_EXTENSION_NAME
 };
+
+#ifdef _DEBUG
+const bool enableValidationLayers = true;
+#else
+const bool enableValidationLayers = false;
+#endif
 
 /**	\brief A debug callback for the reporting validation layer messages
 *
@@ -52,13 +70,7 @@ static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
 	return VK_FALSE;
 }
 
-#ifdef _DEBUG
-	const bool enableValidationLayers = true;
-#else
-	const bool enableValidationLayers = false;
-#endif
-
-	const int MAX_CONCURRENT_FRAMES = 2;
+const int MAX_CONCURRENT_FRAMES = 2;
 
 struct QueueFamilyIndices {
 	int graphicsFamily = -1;
@@ -89,6 +101,7 @@ static std::vector<char> readShaderFile(const std::string& filename) {
 class RenderSystem
 {
 private:
+	GLFWwindow * mWindow = nullptr;
 	VkInstance mInstance;
 	VkDebugReportCallbackEXT callback;
 
@@ -119,11 +132,16 @@ private:
 	VkCommandPool mCommandPool;
 	std::vector<VkCommandBuffer> mCommandBuffers;
 
-	//Rendering SynchronizationS
-	VkSemaphore imageAvailableSemaphore;
-	VkSemaphore renderFinishedSemaphore;
+	//Rendering Synchronization primitives
+	std::vector<VkSemaphore> mImageAvailableSemaphores;
+	std::vector<VkSemaphore> mRenderFinishedSemaphores;
+	std::vector<VkFence> mFrameFences;
+	size_t mCurrentFrame = 0;
 
 	VkClearValue mClearColor = { 0.0f, 0.5f, 0.5f, 1.0f };
+
+	VkBuffer mVertexBuffer;
+	VkDeviceMemory mVertexBufferMemory;
 
 public:
 	void init(GLFWwindow *window);
@@ -142,6 +160,8 @@ private:
 	VkPresentModeKHR chooseSwapchainPresentMode();
 	VkExtent2D chooseSwapchainExtent(const VkSurfaceCapabilitiesKHR& capabilities);
 	void createSwapchainImageViews();
+	void recreateSwapchain();
+	void cleanupSwapchain();
 
 	//Pipeline
 	void createGraphicsPipeline();
@@ -157,12 +177,23 @@ private:
 
 	QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device);
 	std::vector<const char*> getRequiredExtensions();
+	uint32_t findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties);
 
-	//validation layers
+
+	/*Buffer Management*/
+	void createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer& buffer, VkDeviceMemory& bufferMemory);
+	void copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size);
+	/*
+	* VBOs
+	*/
+	void createVertexBuffer();
+	
+	/*
+	* Validation Layers
+	*/
+
 	void createDebugCallback();
 	void destroyDebugCallback();
-
-	
 
 	VkResult CreateDebugReportCallbackEXT(VkInstance instance, const VkDebugReportCallbackCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDebugReportCallbackEXT* pCallback) {
 		auto func = (PFN_vkCreateDebugReportCallbackEXT)vkGetInstanceProcAddr(instance, "vkCreateDebugReportCallbackEXT");
@@ -174,7 +205,6 @@ private:
 		}
 	}
 
-	//utility
 	void printExtensions();
 	void printPhysicalDeviceDetails(VkPhysicalDevice physicalDevice);
 };

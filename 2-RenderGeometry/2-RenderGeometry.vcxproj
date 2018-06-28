@@ -27,7 +27,12 @@
   <ItemGroup>
     <ClInclude Include="InputSystem.h" />
     <ClInclude Include="RenderSystem.h" />
+    <ClInclude Include="Vertex.h" />
     <ClInclude Include="VkApp.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="shaders\shader.frag" />
+    <None Include="shaders\shader.vert" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>15.0</VCProjectVersion>
@@ -87,7 +92,7 @@
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(SolutionDir)Dependencies\GLFW\include;$(SolutionDir)Dependencies\Vulkan\Include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)Dependencies\GLFW\include;$(SolutionDir)Dependencies\Vulkan\Include;$(SolutionDir)Dependencies\glm;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <AdditionalLibraryDirectories>$(SolutionDir)Dependencies\GLFW\lib;$(SolutionDir)Dependencies\Vulkan\Lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
@@ -124,7 +129,7 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(SolutionDir)Dependencies\GLFW\include;$(SolutionDir)Dependencies\Vulkan\Include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)Dependencies\GLFW\include;$(SolutionDir)Dependencies\Vulkan\Include;$(SolutionDir)Dependencies\glm;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>

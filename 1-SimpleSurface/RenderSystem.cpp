@@ -26,19 +26,19 @@ void RenderSystem::init(GLFWwindow * window)
 
 void RenderSystem::drawFrame()
 {
-	vkWaitForFences(mDevice, 1, &mFrameFences[currentFrame], VK_TRUE, std::numeric_limits<uint64_t>::max());
-	vkResetFences(mDevice, 1, &mFrameFences[currentFrame]);
+	vkWaitForFences(mDevice, 1, &mFrameFences[mCurrentFrame], VK_TRUE, std::numeric_limits<uint64_t>::max());
+	vkResetFences(mDevice, 1, &mFrameFences[mCurrentFrame]);
 
 	//Get the next available image
 	uint32_t imageIndex;
-	vkAcquireNextImageKHR(mDevice, mSwapchain, std::numeric_limits<uint64_t>::max(), mImageAvailableSemaphores[currentFrame], VK_NULL_HANDLE, &imageIndex);
+	vkAcquireNextImageKHR(mDevice, mSwapchain, std::numeric_limits<uint64_t>::max(), mImageAvailableSemaphores[mCurrentFrame], VK_NULL_HANDLE, &imageIndex);
 
 
 	VkSubmitInfo submitInfo = {};
 	submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 
 	//Semaphores for waiting to submit
-	VkSemaphore waitSemaphores[] = { mImageAvailableSemaphores[currentFrame] };
+	VkSemaphore waitSemaphores[] = { mImageAvailableSemaphores[mCurrentFrame] };
 	VkPipelineStageFlags waitStages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
 	submitInfo.waitSemaphoreCount = 1;
 	submitInfo.pWaitSemaphores = waitSemaphores;
@@ -48,11 +48,11 @@ void RenderSystem::drawFrame()
 	submitInfo.pCommandBuffers = &mCommandBuffers[imageIndex];
 
 	//Semaphore for when the submission is done
-	VkSemaphore signalSemaphores[] = { mRenderFinishedSemaphores[currentFrame] };
+	VkSemaphore signalSemaphores[] = { mRenderFinishedSemaphores[mCurrentFrame] };
 	submitInfo.signalSemaphoreCount = 1;
 	submitInfo.pSignalSemaphores = signalSemaphores;
 
-	if (vkQueueSubmit(mGraphicsQueue, 1, &submitInfo, mFrameFences[currentFrame]) != VK_SUCCESS) {
+	if (vkQueueSubmit(mGraphicsQueue, 1, &submitInfo, mFrameFences[mCurrentFrame]) != VK_SUCCESS) {
 		throw std::runtime_error("failed to submit draw command buffer!");
 	}
 
@@ -79,7 +79,7 @@ void RenderSystem::drawFrame()
 		throw std::runtime_error("Failed to acquire swapchain image!");
 	}
 
-	currentFrame = (currentFrame + 1) % MAX_CONCURRENT_FRAMES;
+	mCurrentFrame = (mCurrentFrame + 1) % MAX_CONCURRENT_FRAMES;
 }
 
 void RenderSystem::shutdown()
