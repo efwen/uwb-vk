@@ -16,18 +16,12 @@ void RenderSystem::init(GLFWwindow * window)
 	createSwapchain();
 	createSwapchainImageViews();
 	createRenderPass();
-	createDescriptorSetLayout();
 	createGraphicsPipeline();
 
 	createFramebuffers();
 	createCommandPool();
-
 	createVertexBuffer();
 	createIndexBuffer();
-	createUniformBuffer();
-	createDescriptorPool();
-	createDescriptorSet();
-
 	createCommandBuffers();
 	createSyncObjects();
 }
@@ -73,11 +67,6 @@ void RenderSystem::shutdown()
 	vkQueueWaitIdle(mPresentQueue);
 
 	cleanupSwapchain();
-
-	vkDestroyDescriptorPool(mDevice, mDescriptorPool, nullptr);
-	vkDestroyDescriptorSetLayout(mDevice, mDescriptorSetLayout, nullptr);
-	vkDestroyBuffer(mDevice, mUniformBuffer, nullptr);
-	vkFreeMemory(mDevice, mUniformBufferMemory, nullptr);
 
 	vkDestroyBuffer(mDevice, mIndexBuffer, nullptr);
 	vkFreeMemory(mDevice, mIndexBufferMemory, nullptr);
@@ -649,8 +638,8 @@ void RenderSystem::createGraphicsPipeline()
 	//This is where you pass in uniform values
 	VkPipelineLayoutCreateInfo pipelineLayoutInfo = {};
 	pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-	pipelineLayoutInfo.setLayoutCount = 1; 
-	pipelineLayoutInfo.pSetLayouts = &mDescriptorSetLayout; // Optional
+	pipelineLayoutInfo.setLayoutCount = 0; // Optional
+	pipelineLayoutInfo.pSetLayouts = nullptr; // Optional
 	pipelineLayoutInfo.pushConstantRangeCount = 0; // Optional
 	pipelineLayoutInfo.pPushConstantRanges = nullptr; // Optional
 
@@ -740,63 +729,6 @@ void RenderSystem::createRenderPass()
 	}
 }
 
-void RenderSystem::createDescriptorSetLayout()
-{
-	VkDescriptorSetLayoutBinding uboLayoutBinding = {};
-	uboLayoutBinding.binding = 0;
-	uboLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-	uboLayoutBinding.descriptorCount = 1;
-	uboLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
-	uboLayoutBinding.pImmutableSamplers = nullptr;		//only relevant for image sampling descriptors
-
-	VkDescriptorSetLayoutCreateInfo layoutInfo = {};
-	layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-	layoutInfo.bindingCount = 1;
-	layoutInfo.pBindings = &uboLayoutBinding;
-
-	if (vkCreateDescriptorSetLayout(mDevice, &layoutInfo, nullptr, &mDescriptorSetLayout) != VK_SUCCESS) {
-		throw std::runtime_error("Failed to create descriptor set layout!");
-	}
-}
-
-void RenderSystem::createDescriptorPool()
-{
-	VkDescriptorPoolSize poolSize = {};
-	poolSize.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-	poolSize.descriptorCount = 1;
-
-	VkDescriptorPoolCreateInfo poolInfo = {};
-	poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-	poolInfo.poolSizeCount = 1;
-	poolInfo.pPoolSizes = &poolSize;
-	poolInfo.maxSets = 1;
-
-	if (vkCreateDescriptorPool(mDevice, &poolInfo, nullptr, &mDescriptorPool) != VK_SUCCESS) {
-		throw std::runtime_error("Failed to create descriptor pool!");
-	}
-}
-
-void RenderSystem::createDescriptorSet()
-{
-	VkDescriptorSetLayout layouts[] = { mDescriptorSetLayout };
-	VkDescriptorSetAllocateInfo allocInfo = {};
-	allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-	allocInfo.descriptorPool = mDescriptorPool;
-	allocInfo.descriptorSetCount = 1;
-	allocInfo.pSetLayouts = layouts;
-
-	if (vkAllocateDescriptorSets(mDevice, &allocInfo, &mDescriptorSet) != VK_SUCCESS) {
-		throw std::runtime_error("Failed to allocate descriptor set!");
-	}
-
-	VkDescriptorBufferInfo bufferInfo = {};
-	bufferInfo.buffer = uniformBuffer;
-	bufferInfo.offset = 0;
-	bufferInfo.range = sizeof(UniformBufferObject);
-
-	VkWrite
-}
-
 void RenderSystem::createFramebuffers()
 {
 	std::cout << "Creating Framebuffers" << std::endl;
@@ -876,8 +808,6 @@ void RenderSystem::createCommandBuffers()
 		vkCmdBeginRenderPass(mCommandBuffers[i], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 
 		vkCmdBindPipeline(mCommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, mPipeline);
-
-		vkCmdPushConstants(mCommandBuffers[i], mPipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(model), &model);
 
 		VkBuffer vertexBuffers = { mVertexBuffer };
 		VkDeviceSize offsets[] = { 0 };
@@ -1082,37 +1012,6 @@ void RenderSystem::createIndexBuffer()
 
 	vkDestroyBuffer(mDevice, stagingBuffer, nullptr);
 	vkFreeMemory(mDevice, stagingBufferMemory, nullptr);
-}
-
-void RenderSystem::createUniformBuffer()
-{
-	VkDeviceSize bufferSize = sizeof(UniformBufferObject);
-	createBuffer(bufferSize,
-		VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-		VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-		mUniformBuffer,
-		mUniformBufferMemory);
-
-	//no need for a stahging buffer
-}
-
-void RenderSystem::updateUniformBuffer()
-{
-	static auto startTime = std::chrono::high_resolution_clock::now();
-
-	auto currentTime = std::chrono::high_resolution_clock::now();
-	float time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
-
-	UniformBufferObject ubo = {};
-	ubo.model = glm::rotate(glm::mat4(1.0f), time * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-	ubo.view = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-	ubo.proj = glm::perspective(glm::radians(45.0f), mSwapchainExtent.width / (float)mSwapchainExtent.height, 0.1f, 10.0f);
-	ubo.proj[1][1] *= -1;
-
-	void* data;
-	vkMapMemory(mDevice, mUniformBufferMemory, 0, sizeof(ubo), 0, &data);
-	memcpy(data, &ubo, sizeof(ubo));
-	vkUnmapMemory(mDevice, mUniformBufferMemory);
 }
 
 void RenderSystem::setClearColor(VkClearValue clearColor)
