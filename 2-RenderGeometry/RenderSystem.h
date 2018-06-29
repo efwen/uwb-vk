@@ -1,23 +1,17 @@
 #pragma once
 
-//vulkan, glfw
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 
-//glm
 #include <glm/vec2.hpp>
 #include <glm/vec3.hpp>
-#include <glm/mat4x4.hpp>
-#include <glm/gtc/matrix_transform.hpp>
 
-//STL
 #include <iostream>
 #include <fstream>
 #include <vector>
 #include <array>
-#include <chrono>
 
-//ubm-vk
+
 #include "Vertex.h"
 
 const std::vector<Vertex> squareVertices = {
@@ -28,12 +22,6 @@ const std::vector<Vertex> squareVertices = {
 };
 
 const std::vector<uint16_t> squareIndices = { 0, 1, 2, 2, 3, 0 };
-
-struct UniformBufferObject {
-	glm::mat4 model;
-	glm::mat4 view;
-	glm::mat4 proj;
-};
 
 //Validation Layers
 const std::vector<const char*> validationLayers = {
@@ -140,9 +128,6 @@ private:
 	
 	//Pipeline
 	VkRenderPass mRenderPass;
-	VkDescriptorSetLayout mDescriptorSetLayout;
-	VkDescriptorPool mDescriptorPool;
-	VkDescriptorSet mDescriptorSet;
 	VkPipelineLayout mPipelineLayout;
 	VkPipeline mPipeline;
 
@@ -157,16 +142,11 @@ private:
 	size_t mCurrentFrame = 0;
 
 	VkClearValue mClearColor = { 0.0f, 0.5f, 0.5f, 1.0f };
-	glm::mat4 model = glm::scale(glm::mat4(1.0f), glm::vec3(0.5f));
 
 	VkBuffer mVertexBuffer;
 	VkDeviceMemory mVertexBufferMemory;
-
 	VkBuffer mIndexBuffer;
 	VkDeviceMemory mIndexBufferMemory;
-
-	VkBuffer mUniformBuffer;
-	VkDeviceMemory mUniformBufferMemory;
 
 public:
 	void init(GLFWwindow *window);
@@ -193,10 +173,6 @@ private:
 	VkShaderModule createShaderModule(const std::vector<char>& code);
 	void createRenderPass();
 
-	void createDescriptorSetLayout();
-	void createDescriptorPool();
-	void createDescriptorSet();
-
 	//Command Buffers
 	void createFramebuffers();
 	void createCommandPool();
@@ -214,9 +190,6 @@ private:
 	void copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size);
 	void createVertexBuffer();
 	void createIndexBuffer();
-	void createUniformBuffer();
-
-	void updateUniformBuffer();
 	
 	/*
 	* Validation Layers
