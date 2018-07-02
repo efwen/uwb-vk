@@ -170,7 +170,7 @@ void RenderSystem::createInstance()
 
 	VkApplicationInfo appInfo = {};
 	appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
-	appInfo.pApplicationName = "1-SimpleSurface";
+	appInfo.pApplicationName = "3-MVP";
 	appInfo.applicationVersion = 1;
 	appInfo.pEngineName = "uwb-vk";
 	appInfo.engineVersion = 1;
