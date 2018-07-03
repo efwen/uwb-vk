@@ -43,9 +43,9 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <None Include="shaders\shader.frag" />
-    <None Include="shaders\shader.vert" />
     <None Include="shaders\vert.spv" />
     <None Include="shaders\frag.spv" />
+    <None Include="shaders\square.frag" />
+    <None Include="shaders\square.vert" />
   </ItemGroup>
 </Project>
