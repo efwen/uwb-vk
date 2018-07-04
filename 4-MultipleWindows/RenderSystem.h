@@ -15,11 +15,15 @@
 #include <fstream>
 #include <vector>
 #include <array>
+#include <algorithm>
 #include <chrono>
 #include <memory>
 
-//ubm-vk
+//uwb-vk
+#include "Validation.h"
 #include "Vertex.h"
+#include "QueueFamilies.h"
+#include "Swapchain.h"
 
 const std::vector<Vertex> squareVertices = {
 	{ { -0.5f, -0.5f },{ 1.0f, 0.0f, 0.0f } },
@@ -88,14 +92,7 @@ static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
 
 const int MAX_CONCURRENT_FRAMES = 2;
 
-struct QueueFamilyIndices {
-	int graphicsFamily = -1;
-	int presentFamily = -1;
 
-	bool isComplete() {
-		return graphicsFamily >= 0 && presentFamily >= 0;
-	}
-};
 
 static std::vector<char> readShaderFile(const std::string& filename) {
 	std::ifstream file(filename, std::ios::ate | std::ios::binary);
@@ -114,14 +111,6 @@ static std::vector<char> readShaderFile(const std::string& filename) {
 	return buffer;
 }
 
-struct SwapchainData {
-	std::vector<VkImage> images;
-	std::vector<VkImageView> imageViews;
-	std::vector<VkFramebuffer> framebuffers;
-	VkFormat imageFormat;
-	VkExtent2D extent;
-};
-
 class RenderSystem
 {
 private:
@@ -139,18 +128,12 @@ private:
 
 	//Presentation Surfaces (one for each window)
 	std::vector<VkSurfaceKHR> mSurfaces;
-	//VkSurfaceKHR mSurface;
 
 	//Swapchain Setup
-	std::vector<VkSwapchainKHR> mSwapchains;
-	std::vector<SwapchainData> mSwapchainData;
+	std::vector<Swapchain> mSwapchains;
 
-	//std::vector<VkImage> mSwapchainImages;
-	//std::vector<VkImageView> mSwapchainImageViews;
-	//VkFormat mSwapchainImageFormat;
-	//VkExtent2D mSwapchainExtent;
-	//std::vector<VkFramebuffer> mSwapchainFramebuffers;
-	
+	std::vector<VkFramebuffer> mFramebuffers;
+
 	//Pipeline
 	VkRenderPass mRenderPass;
 	VkDescriptorSetLayout mDescriptorSetLayout;
@@ -194,12 +177,9 @@ private:
 	
 	//SWAPCHAIN
 	void createSwapchains();
-	VkSurfaceFormatKHR chooseSwapchainSurfaceFormat(VkSurfaceKHR surface);
-	VkPresentModeKHR chooseSwapchainPresentMode(VkSurfaceKHR surface);
-	VkExtent2D chooseSwapchainExtent(const VkSurfaceCapabilitiesKHR& capabilities);
-	void createSwapchainImageViews(SwapchainData swapchainData);
 	void recreateSwapchain();
 	void cleanupSwapchain();
+	void createFramebuffers();
 
 	//Pipeline
 	void createGraphicsPipeline();
@@ -211,13 +191,11 @@ private:
 	void createDescriptorSet();
 
 	//Command Buffers
-	void createFramebuffers();
 	void createCommandPool();
 	void createCommandBuffers();
 
 	void createSyncObjects();
 
-	QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device);
 	std::vector<const char*> getRequiredExtensions();
 	uint32_t findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties);
 

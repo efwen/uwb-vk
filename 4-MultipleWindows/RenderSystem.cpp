@@ -1,5 +1,5 @@
 #include "RenderSystem.h"
-#include <algorithm>
+
 
 
 void RenderSystem::init(std::shared_ptr<std::vector<GLFWwindow *>> windows)
@@ -54,7 +54,9 @@ void RenderSystem::recreateSwapchain()
 
 void RenderSystem::cleanupSwapchain()
 {
-	for (auto framebuffer : mSwapchainFramebuffers) {
+
+
+	for (auto framebuffer : mFramebuffers) {
 		vkDestroyFramebuffer(mDevice, framebuffer, nullptr);
 	}
 
@@ -64,11 +66,9 @@ void RenderSystem::cleanupSwapchain()
 	vkDestroyPipelineLayout(mDevice, mPipelineLayout, nullptr);
 	vkDestroyRenderPass(mDevice, mRenderPass, nullptr);
 
-	for (auto imageView : mSwapchainImageViews) {
-		vkDestroyImageView(mDevice, imageView, nullptr);
+	for (auto swapchain : mSwapchains) {
+		swapchain.cleanup(mDevice);
 	}
-
-	vkDestroySwapchainKHR(mDevice, mSwapchain, nullptr);
 }
 
 void RenderSystem::shutdown()
@@ -227,7 +227,7 @@ void RenderSystem::createDevice()
 	//we'll need to do device suitability checks later
 	mPhysicalDevice = availableDevices[0];
 
-	mSelectedIndices = findQueueFamilies(mPhysicalDevice);
+	mSelectedIndices = findQueueFamilies(mPhysicalDevice, mSurfaces[0]);
 
 	//create a queue for both graphics and presentation
 	std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
@@ -261,7 +261,7 @@ void RenderSystem::createDevice()
 	deviceCreateInfo.queueCreateInfoCount = static_cast<uint32_t>(queueCreateInfos.size());
 	deviceCreateInfo.pQueueCreateInfos = queueCreateInfos.data();
 	deviceCreateInfo.pEnabledFeatures = &deviceFeatures;
-	
+
 	//extensions we want this device to use
 	deviceCreateInfo.enabledExtensionCount = static_cast<uint32_t>(deviceExtensions.size());
 	deviceCreateInfo.ppEnabledExtensionNames = deviceExtensions.data();
@@ -276,59 +276,6 @@ void RenderSystem::createDevice()
 	vkGetDeviceQueue(mDevice, mSelectedIndices.presentFamily, 0, &mPresentQueue);
 }
 
-QueueFamilyIndices RenderSystem::findQueueFamilies(VkPhysicalDevice physicalDevice)
-{
-	QueueFamilyIndices indices;
-
-	//get the queue families for this device
-	uint32_t queueFamilyCount = 0;
-	vkGetPhysicalDeviceQueueFamilyProperties(physicalDevice, &queueFamilyCount, nullptr);
-
-	std::vector<VkQueueFamilyProperties> queueFamilies(queueFamilyCount);
-	vkGetPhysicalDeviceQueueFamilyProperties(physicalDevice, &queueFamilyCount, queueFamilies.data());
-
-	std::cout << "--------------------------------" << std::endl;
-	std::cout << queueFamilyCount << " queue families found" << std::endl;
-
-	int i = 0;
-	for (const auto& queueFamily : queueFamilies) {
-		std::cout << "Family " << i << ":" << std::endl;
-		std::cout << queueFamily.queueCount << " queues" << std::endl;
-		std::cout << "flags:" << std::endl;
-		if (queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT) {
-			std::cout << "-graphics" << std::endl;
-			indices.graphicsFamily = i;
-		}
-		if (queueFamily.queueFlags & VK_QUEUE_COMPUTE_BIT) {
-			std::cout << "-compute" << std::endl;
-		}
-		if (queueFamily.queueFlags & VK_QUEUE_TRANSFER_BIT) {
-			std::cout << "-transfer" << std::endl;
-		}
-		if (queueFamily.queueFlags & VK_QUEUE_SPARSE_BINDING_BIT) {
-			std::cout << "-sparse-binding" << std::endl;
-		}
-		if (queueFamily.queueFlags & VK_QUEUE_PROTECTED_BIT) {
-			std::cout << "-protected" << std::endl;
-		}
-
-		//figure out if this queue family supports presentation
-		VkBool32 presentSupport = false;
-		vkGetPhysicalDeviceSurfaceSupportKHR(mPhysicalDevice, i, mSurface, &presentSupport);
-		if (queueFamily.queueCount > 0 && presentSupport) {
-			indices.presentFamily = i;
-		}
-
-		//if we have a present queue for both graphics and presentation we're done
-		if (indices.isComplete())
-			break;
-
-		i++;
-	}
-	std::cout << "--------------------------------" << std::endl;
-	return indices;
-}
-
 void RenderSystem::createSurfaces()
 {
 	std::cout << "Creating Surface" << std::endl;
@@ -341,135 +288,9 @@ void RenderSystem::createSurfaces()
 
 void RenderSystem::createSwapchains()
 {
-	mSwapchainData.reserve(mSurfaces.size());
-
-	for (size_t i = 0; i < mSurfaces.size(); i++) {
-		std::cout << "Creating Swapchain" << std::endl;
-		SwapchainData swapchainData;
-
-
-		VkSurfaceCapabilitiesKHR capabilities;
-		vkGetPhysicalDeviceSurfaceCapabilitiesKHR(mPhysicalDevice, mSurfaces[i], &capabilities);
-
-		VkSurfaceFormatKHR surfaceFormat = chooseSwapchainSurfaceFormat(mSurfaces[i]);
-		VkPresentModeKHR presentMode = chooseSwapchainPresentMode(mSurfaces[i]);
-		VkExtent2D extent = chooseSwapchainExtent(capabilities);
-		uint32_t imageCount = 2;
-
-		VkSwapchainCreateInfoKHR swapchainCreateInfo = {};
-		swapchainCreateInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
-		swapchainCreateInfo.pNext = nullptr;
-		swapchainCreateInfo.flags = 0;
-		swapchainCreateInfo.surface = mSurfaces[i];
-		swapchainCreateInfo.minImageCount = imageCount;		//Double buffered
-		swapchainCreateInfo.imageFormat = surfaceFormat.format;
-		swapchainCreateInfo.imageColorSpace = surfaceFormat.colorSpace;
-		swapchainCreateInfo.imageExtent = extent;
-		swapchainCreateInfo.imageArrayLayers = 1;
-		swapchainCreateInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;	//rendering directly to these images
-
-		//if the queue families are different, they need to be able to share the images
-		//otherwise use exclusive mode
-		if (mSelectedIndices.graphicsFamily != mSelectedIndices.presentFamily)
-		{
-			uint32_t queueFamilyIndices[] = { (uint32_t)mSelectedIndices.graphicsFamily,
-											 (uint32_t)mSelectedIndices.presentFamily };
-			swapchainCreateInfo.imageSharingMode = VK_SHARING_MODE_CONCURRENT;
-			swapchainCreateInfo.queueFamilyIndexCount = 2;
-			swapchainCreateInfo.pQueueFamilyIndices = queueFamilyIndices;
-		}
-		else
-		{
-			swapchainCreateInfo.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
-			swapchainCreateInfo.queueFamilyIndexCount = 0;
-			swapchainCreateInfo.pQueueFamilyIndices = nullptr;
-		}
-
-		swapchainCreateInfo.preTransform = capabilities.currentTransform;
-		swapchainCreateInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
-		swapchainCreateInfo.presentMode = presentMode;
-		swapchainCreateInfo.clipped = VK_TRUE;	//we don't care about the colors of obscured pixels (i.e. hidden by another window)
-		swapchainCreateInfo.oldSwapchain = VK_NULL_HANDLE;	//used for recreating the swapchain
-
-		if (vkCreateSwapchainKHR(mDevice, &swapchainCreateInfo, nullptr, &mSwapchains[i]) != VK_SUCCESS) {
-			throw std::runtime_error("Failed to create swapchain!");
-		}
-
-		//get the swapchain images
-		vkGetSwapchainImagesKHR(mDevice, mSwapchains[i], &imageCount, nullptr);
-		swapchainData.images.resize(imageCount);
-		vkGetSwapchainImagesKHR(mDevice, mSwapchains[i], &imageCount, swapchainData.images.data());
-
-		//for use later
-		swapchainData.imageFormat = surfaceFormat.format;
-		swapchainData.extent = extent;
-
-		mSwapchainData.push_back(swapchainData);
-	}
 
 }
 
-
-
-VkSurfaceFormatKHR RenderSystem::chooseSwapchainSurfaceFormat(VkSurfaceKHR surface)
-{
-	std::cout << "choosing swapchain format" << std::endl;
-	//Choose a swapchain format
-	uint32_t formatCount;
-	std::vector<VkSurfaceFormatKHR> availableFormats;
-	vkGetPhysicalDeviceSurfaceFormatsKHR(mPhysicalDevice, surface, &formatCount, nullptr);
-
-	if (formatCount != 0) {
-		availableFormats.resize(formatCount);
-		vkGetPhysicalDeviceSurfaceFormatsKHR(mPhysicalDevice, surface, &formatCount, availableFormats.data());
-	} else {
-		throw std::runtime_error("no available formats for swapchain!");
-	}
-
-	if (availableFormats.size() == 1 && availableFormats[0].format == VK_FORMAT_UNDEFINED) {
-		
-		return { VK_FORMAT_B8G8R8A8_UNORM, VK_COLOR_SPACE_SRGB_NONLINEAR_KHR };
-	}
-
-	for (const auto& availableFormat : availableFormats) {
-		if (availableFormat.format == VK_FORMAT_B8G8R8A8_UNORM &&
-			availableFormat.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR) {
-			return availableFormat;
-		}
-	}
-
-	//otherwise just use the first
-	return availableFormats[0];
-}
-
-VkPresentModeKHR RenderSystem::chooseSwapchainPresentMode(VkSurfaceKHR surface)
-{
-	//get all of the available modes
-	uint32_t presentModeCount = 0;
-	std::vector<VkPresentModeKHR> availablePresentModes;
-	vkGetPhysicalDeviceSurfacePresentModesKHR(mPhysicalDevice, surface, &presentModeCount, nullptr);
-
-	if (presentModeCount != 0) {
-		availablePresentModes.resize(presentModeCount);
-		vkGetPhysicalDeviceSurfacePresentModesKHR(mPhysicalDevice, surface, &presentModeCount, availablePresentModes.data());
-	}
-	else {
-		throw std::runtime_error("No available swapchain present modes!");
-	}
-
-	//select the best one
-	VkPresentModeKHR bestMode = VK_PRESENT_MODE_FIFO_KHR;
-	for (const auto& availablePresentMode : availablePresentModes) {
-		if (availablePresentMode == VK_PRESENT_MODE_MAILBOX_KHR) {
-			return availablePresentMode;
-		}
-		else if (availablePresentMode == VK_PRESENT_MODE_IMMEDIATE_KHR) {
-			bestMode = availablePresentMode;
-		}
-	}
-	
-	return bestMode;
-}
 
 VkExtent2D RenderSystem::chooseSwapchainExtent(const VkSurfaceCapabilitiesKHR& capabilities)
 {
@@ -489,37 +310,6 @@ VkExtent2D RenderSystem::chooseSwapchainExtent(const VkSurfaceCapabilitiesKHR& c
 		return actualExtent;
 	}
 }
-
-void RenderSystem::createSwapchainImageViews(SwapchainData swapchainData)
-{
-	std::cout << "Creating swapchain image views" << std::endl;
-
-	swapchainData.imageViews.resize(swapchainData.images.size());
-
-	for (size_t i = 0; i < swapchainData.images.size(); i++) {
-		VkImageViewCreateInfo imageViewCreateInfo = {};
-		imageViewCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-		imageViewCreateInfo.image = swapchainData.images[i];
-		imageViewCreateInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
-		imageViewCreateInfo.format = swapchainData.imageFormat;
-		imageViewCreateInfo.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
-		imageViewCreateInfo.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
-		imageViewCreateInfo.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
-		imageViewCreateInfo.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
-		imageViewCreateInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-		imageViewCreateInfo.subresourceRange.baseMipLevel = 0;
-		imageViewCreateInfo.subresourceRange.levelCount = 1;
-		imageViewCreateInfo.subresourceRange.baseArrayLayer = 0;
-		imageViewCreateInfo.subresourceRange.layerCount = 1;
-
-		if (vkCreateImageView(mDevice, &imageViewCreateInfo, nullptr, &swapchainData.imageViews[i]) != VK_SUCCESS) {
-			throw std::runtime_error("Failed to create swapchain image views!");
-		}
-
-	}
-}
-
-
 
 void RenderSystem::createGraphicsPipeline()
 {
@@ -578,8 +368,8 @@ void RenderSystem::createGraphicsPipeline()
 	VkViewport viewport = {};
 	viewport.x = 0.0f;
 	viewport.y = 0.0f;
-	viewport.width = (float)mSwapchainExtent.width;
-	viewport.height = (float)mSwapchainExtent.height;
+	viewport.width = (float)mSwapchain.getExtents().width;
+	viewport.height = (float)mSwapchain.getExtents().height;
 	viewport.minDepth = 0.0f;
 	viewport.maxDepth = 1.0f;
 
@@ -722,7 +512,7 @@ VkShaderModule RenderSystem::createShaderModule(const std::vector<char>& code)
 	return shaderModule;
 }
 
-void RenderSystem::createRenderPass()
+void RenderSystem::createRenderPass(Swapchain swapchain)
 {
 	std::cout << "Creating render pass" << std::endl;
 
@@ -825,7 +615,7 @@ void RenderSystem::createDescriptorSet()
 	vkUpdateDescriptorSets(mDevice, 1, &descriptorWrite, 0, nullptr);
 }
 
-void RenderSystem::createFramebuffers()
+void RenderSystem::createFramebuffers(Swapchain swapchain, VkRenderPass renderPass)
 {
 	std::cout << "Creating Framebuffers" << std::endl;
 
@@ -838,7 +628,7 @@ void RenderSystem::createFramebuffers()
 
 		VkFramebufferCreateInfo framebufferInfo = {};
 		framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-		framebufferInfo.renderPass = mRenderPass;
+		framebufferInfo.renderPass = renderPass;
 		framebufferInfo.attachmentCount = 1;
 		framebufferInfo.pAttachments = attachments;
 		framebufferInfo.width = mSwapchainExtent.width;

@@ -123,11 +123,15 @@
     <ClCompile Include="InputSystem.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="RenderSystem.cpp" />
+    <ClCompile Include="Swapchain.cpp" />
     <ClCompile Include="VkApp.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="InputSystem.h" />
+    <ClInclude Include="QueueFamilies.h" />
     <ClInclude Include="RenderSystem.h" />
+    <ClInclude Include="Swapchain.h" />
+    <ClInclude Include="Validation.h" />
     <ClInclude Include="Vertex.h" />
     <ClInclude Include="VkApp.h" />
   </ItemGroup>

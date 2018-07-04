@@ -158,7 +158,7 @@ private:
 	void createInstance();
 	void createDevice();
 	void createSurface(GLFWwindow* window);
-	
+
 	//SWAPCHAIN
 	void createSwapchain();
 	VkSurfaceFormatKHR chooseSwapchainSurfaceFormat();
