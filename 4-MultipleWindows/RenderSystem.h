@@ -114,8 +114,7 @@ static std::vector<char> readShaderFile(const std::string& filename) {
 class RenderSystem
 {
 private:
-	std::shared_ptr<std::vector<GLFWwindow*>> mWindows;
-	GLFWwindow * mWindow = nullptr;
+	std::vector<GLFWwindow*> mWindows;
 	VkInstance mInstance;
 	VkDebugReportCallbackEXT callback;
 
@@ -165,7 +164,7 @@ private:
 	VkDeviceMemory mUniformBufferMemory;
 
 public:
-	void init(std::shared_ptr<std::vector<GLFWwindow *>> windows);
+	void init(std::vector<GLFWwindow *> windows);
 	void drawFrame();
 	void shutdown();
 
@@ -179,16 +178,18 @@ private:
 	void createSwapchains();
 	void recreateSwapchain();
 	void cleanupSwapchain();
-	void createFramebuffers();
+	void createFramebuffers(Swapchain swapchain, VkRenderPass renderPass);
 
 	//Pipeline
-	void createGraphicsPipeline();
+	void createGraphicsPipeline(VkDescriptorSetLayout descriptorSetLayout, VkExtent2D extents);
 	VkShaderModule createShaderModule(const std::vector<char>& code);
-	void createRenderPass();
+	void createRenderPass(const Swapchain &swapchain);
 
 	void createDescriptorSetLayout();
 	void createDescriptorPool();
 	void createDescriptorSet();
+
+	VkExtent2D chooseSwapchainExtent(GLFWwindow* window, VkSurfaceKHR surface);
 
 	//Command Buffers
 	void createCommandPool();

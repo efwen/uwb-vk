@@ -1,8 +1,7 @@
 #include "Swapchain.h"
 
-Swapchain::Swapchain()
-{
-}
+Swapchain::Swapchain() : mSwapchain(VK_NULL_HANDLE)
+{}
 
 Swapchain::~Swapchain()
 {
@@ -70,14 +69,6 @@ void Swapchain::initialize(VkPhysicalDevice physicalDevice, VkDevice device, VkS
 
 void Swapchain::cleanup(VkDevice device)
 {
-
-	//vkFreeCommandBuffers(mDevice, mCommandPool, static_cast<uint32_t>(mCommandBuffers.size()), mCommandBuffers.data());
-
-	//vkDestroyPipeline(mDevice, mPipeline, nullptr);
-	//vkDestroyPipelineLayout(mDevice, mPipelineLayout, nullptr);
-	//vkDestroyRenderPass(mDevice, mRenderPass, nullptr);
-
-
 	for (auto imageView : mImageViews) {
 		vkDestroyImageView(device, imageView, nullptr);
 	}
@@ -203,7 +194,17 @@ std::vector<VkFramebuffer> Swapchain::createFramebuffers(VkDevice device, VkRend
 	return std::vector<VkFramebuffer>();
 }
 
-VkFormat Swapchain::getImageFormat()
+VkSwapchainKHR Swapchain::getVkSwapchain() const
+{
+	return mSwapchain;
+}
+
+std::vector<VkImageView> Swapchain::getImageViews()
+{
+	return mImageViews;
+}
+
+VkFormat Swapchain::getImageFormat() const
 {
 	return mImageFormat;
 }

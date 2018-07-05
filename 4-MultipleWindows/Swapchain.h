@@ -23,7 +23,9 @@ public:
 
 	std::vector<VkFramebuffer> createFramebuffers(VkDevice device, VkRenderPass renderPass);
 
-	VkFormat getImageFormat();
+	VkSwapchainKHR getVkSwapchain() const;
+	std::vector<VkImageView> getImageViews();
+	VkFormat getImageFormat() const;
 	VkExtent2D getExtent();
 private:
 	VkSurfaceFormatKHR chooseSurfaceFormat(VkPhysicalDevice physicalDevice, VkSurfaceKHR surface);

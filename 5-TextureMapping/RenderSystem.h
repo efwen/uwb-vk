@@ -18,6 +18,9 @@
 #include <chrono>
 
 //ubm-vk
+#include "FileIO.h"
+#include "Validation.h"
+#include "Texture.h"
 #include "Vertex.h"
 #include "QueueFamilies.h"
 
@@ -31,15 +34,9 @@ const std::vector<Vertex> squareVertices = {
 const std::vector<uint16_t> squareIndices = { 0, 1, 2, 2, 3, 0 };
 
 struct UniformBufferObject {
-	
+	glm::mat4 model;
 	glm::mat4 view;
 	glm::mat4 proj;
-	glm::mat4 model;
-};
-
-//Validation Layers
-const std::vector<const char*> validationLayers = {
-	"VK_LAYER_LUNARG_standard_validation"
 };
 
 //Instance Extensions
@@ -55,63 +52,30 @@ const std::vector<const char*> deviceExtensions = {
 	VK_KHR_SWAPCHAIN_EXTENSION_NAME
 };
 
-#ifdef _DEBUG
-const bool enableValidationLayers = true;
-#else
-const bool enableValidationLayers = false;
-#endif
-
-/**	\brief A debug callback for the reporting validation layer messages
-*
-*	\param flags		[fill]
-*	\param objectType	[fill]
-*	\param object		[fill]
-*	\param location		[fill]
-*	\param messageCode	[fill]
-*	\param pLayerPrefix	A prefix representing The validation Layer the message came from
-*	\param pMessage		The message to display
-*	\param pUserData	User data sent with the debug message
-*/
-static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
-	VkDebugReportFlagsEXT flags,
-	VkDebugReportObjectTypeEXT objType,
-	uint64_t obj,
-	size_t location,
-	int32_t code,
-	const char* layerPrefix,
-	const char* msg,
-	void* userData) {
-
-	std::cerr << "validation layer: " << msg << std::endl;
-
-	return VK_FALSE;
-}
-
 const int MAX_CONCURRENT_FRAMES = 2;
-
-static std::vector<char> readShaderFile(const std::string& filename) {
-	std::ifstream file(filename, std::ios::ate | std::ios::binary);
-
-	if (!file.is_open()) {
-		throw std::runtime_error("Unable to open shader file!");
-	}
-
-	size_t fileSize = (size_t)file.tellg();
-	std::vector<char> buffer(fileSize);
-	
-	file.seekg(0);
-	file.read(buffer.data(), fileSize);
-
-	file.close();
-	return buffer;
-}
 
 class RenderSystem
 {
+public:
+	void init(GLFWwindow *window);
+	void drawFrame();
+	void shutdown();
+
+	void setClearColor(VkClearValue clearColor);
+
+	//Buffer Management
+	void createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer& buffer, VkDeviceMemory& bufferMemory);
+
+	void transitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout);
+	void copyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width, uint32_t height);
+
+	//Utility
+	uint32_t findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties);
+
 private:
 	GLFWwindow * mWindow = nullptr;
 	VkInstance mInstance;
-	VkDebugReportCallbackEXT callback;
+	VkDebugReportCallbackEXT mCallback;
 
 	//Devices and Queues
 	VkPhysicalDevice mPhysicalDevice;
@@ -161,12 +125,10 @@ private:
 	VkBuffer mUniformBuffer;
 	VkDeviceMemory mUniformBufferMemory;
 
-public:
-	void init(GLFWwindow *window);
-	void drawFrame();
-	void shutdown();
+	Texture* mTexture;
 
-	void setClearColor(VkClearValue clearColor);
+
+
 private:
 	void createInstance();
 	void createDevice();
@@ -197,36 +159,22 @@ private:
 
 	void createSyncObjects();
 
-	QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device);
 	std::vector<const char*> getRequiredExtensions();
-	uint32_t findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties);
+	VkCommandBuffer beginSingleCmdBuffer();
+	void endSingleCmdBuffer(VkCommandBuffer commandBuffer);
 
 
 	/*Buffer Management*/
-	void createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer& buffer, VkDeviceMemory& bufferMemory);
 	void copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size);
 	void createVertexBuffer();
 	void createIndexBuffer();
 	void createUniformBuffer();
 
 	void updateUniformBuffer();
-	
-	/*
-	* Validation Layers
-	*/ 
-	void createDebugCallback();
-	void destroyDebugCallback();
-
-	VkResult CreateDebugReportCallbackEXT(VkInstance instance, const VkDebugReportCallbackCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDebugReportCallbackEXT* pCallback) {
-		auto func = (PFN_vkCreateDebugReportCallbackEXT)vkGetInstanceProcAddr(instance, "vkCreateDebugReportCallbackEXT");
-		if (func != nullptr) {
-			return func(instance, pCreateInfo, pAllocator, pCallback);
-		}
-		else {
-			return VK_ERROR_EXTENSION_NOT_PRESENT;
-		}
-	}
+	void createTexture();
 
 	void printExtensions();
 	void printPhysicalDeviceDetails(VkPhysicalDevice physicalDevice);
+
+	void setupDebugCallback();
 };
