@@ -15,6 +15,11 @@ public:
 	Texture(RenderSystem* renderSystem, VkDevice device);
 
 	Texture& load(unsigned char* data, int width, int height, int channels);
+
+	void free();
+
+	VkImageView getImageView() const { return mImageView; };
+	VkSampler getSampler() const { return mSampler; };
 protected:
 	int mWidth;
 	int mHeight;
@@ -24,9 +29,13 @@ protected:
 	//Vulkan handles
 	VkImage mImage;
 	VkDeviceMemory mImageMemory;
+	VkImageView mImageView;
+	VkSampler mSampler;
 
 	RenderSystem* mRenderSystem;
 	VkDevice mDevice;
 
-	void createImage(uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties, VkImage& image, VkDeviceMemory& imageMemory);
+	void createTextureImage(unsigned char* pixelData);
+	void createTextureImageView();
+	void createTextureSampler();
 };

@@ -25,10 +25,10 @@
 #include "QueueFamilies.h"
 
 const std::vector<Vertex> squareVertices = {
-	{ { -0.5f, -0.5f },{ 1.0f, 0.0f, 0.0f } },
-	{ { 0.5f, -0.5f },{ 0.0f, 1.0f, 0.0f } },
-	{ { 0.5f, 0.5f },{ 0.0f, 0.0f, 1.0f } },
-	{ { -0.5f, 0.5f },{ 1.0f, 1.0f, 1.0f } }
+	{ { -0.5f, -0.5f }, { 1.0f, 0.0f, 0.0f }, { 1.0f, 0.0f } },
+	{ { 0.5f, -0.5f }, { 0.0f, 1.0f, 0.0f }, { 0.0f, 0.0f } },
+	{ { 0.5f, 0.5f }, { 0.0f, 0.0f, 1.0f }, { 0.0f, 1.0f } },
+	{ { -0.5f, 0.5f }, { 1.0f, 1.0f, 1.0f }, { 1.0f, 1.0f } }
 };
 
 const std::vector<uint16_t> squareIndices = { 0, 1, 2, 2, 3, 0 };
@@ -65,12 +65,12 @@ public:
 
 	//Buffer Management
 	void createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer& buffer, VkDeviceMemory& bufferMemory);
-
-	void transitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout);
 	void copyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width, uint32_t height);
 
-	//Utility
-	uint32_t findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties);
+	/*Image Management*/
+	void createImage(uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties, VkImage & image, VkDeviceMemory & imageMemory);
+	VkImageView createImageView(VkImage image, VkFormat imageFormat);
+	void transitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout);
 
 private:
 	GLFWwindow * mWindow = nullptr;
@@ -99,7 +99,7 @@ private:
 	VkRenderPass mRenderPass;
 	VkDescriptorSetLayout mDescriptorSetLayout;
 	VkDescriptorPool mDescriptorPool;
-	VkDescriptorSet mDescriptorSet;
+	std::vector<VkDescriptorSet> mDescriptorSets;
 	VkPipelineLayout mPipelineLayout;
 	VkPipeline mPipeline;
 
@@ -122,8 +122,8 @@ private:
 	VkBuffer mIndexBuffer;
 	VkDeviceMemory mIndexBufferMemory;
 
-	VkBuffer mUniformBuffer;
-	VkDeviceMemory mUniformBufferMemory;
+	std::vector<VkBuffer> mUniformBuffers;
+	std::vector<VkDeviceMemory> mUniformBuffersMemory;
 
 	Texture* mTexture;
 
@@ -150,7 +150,7 @@ private:
 
 	void createDescriptorSetLayout();
 	void createDescriptorPool();
-	void createDescriptorSet();
+	void createDescriptorSets();
 
 	//Command Buffers
 	void createFramebuffers();
@@ -164,13 +164,18 @@ private:
 	void endSingleCmdBuffer(VkCommandBuffer commandBuffer);
 
 
+
 	/*Buffer Management*/
 	void copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size);
 	void createVertexBuffer();
 	void createIndexBuffer();
-	void createUniformBuffer();
+	void createUniformBuffers();
+	void updateUniformBuffer(uint32_t currentImage);
 
-	void updateUniformBuffer();
+
+	//Utility
+	uint32_t findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties);
+
 	void createTexture();
 
 	void printExtensions();
