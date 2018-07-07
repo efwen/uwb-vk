@@ -1,10 +1,7 @@
 #include "VkApp.h"
 
 
-VkApp::VkApp()
-{
-	mWindow = nullptr;
-}
+VkApp::VkApp() : mWindow(nullptr) {}
 
 void VkApp::run()
 {
@@ -17,7 +14,7 @@ void VkApp::run()
 		glfwPollEvents();
 		handleInput();
 
-		renderer.drawFrame();
+		mRenderSystem.drawFrame();
 
 		//update the frame timer
 		mTime = glfwGetTime();
@@ -33,13 +30,13 @@ void VkApp::initialize()
 {
 	glfwInit();
 	createWindow();
-	input.initialize(mWindow);
-	renderer.init(mWindow);
+	mInputSystem.initialize(mWindow);
+	mRenderSystem.startUp(mWindow);
 }
 
 void VkApp::shutdown()
 {
-	renderer.shutdown();
+	mRenderSystem.shutDown();
 	glfwDestroyWindow(mWindow);
 	glfwTerminate();
 }
@@ -56,19 +53,19 @@ void VkApp::createWindow()
 
 void VkApp::handleInput()
 {
-	input.update();
+	mInputSystem.update();
 
 	//change the clear color
-	if (input.isKeyPressed(GLFW_KEY_B)) {
-		renderer.setClearColor(clearColors[clearColorIndex]);
+	if (mInputSystem.isKeyPressed(GLFW_KEY_B)) {
+		mRenderSystem.setClearColor(clearColors[clearColorIndex]);
 		clearColorIndex++;
 		if (clearColorIndex >= clearColors.size()) clearColorIndex = 0;
 	}
 
 	//close the window
-	if (input.isKeyPressed(GLFW_KEY_ESCAPE))
+	if (mInputSystem.isKeyPressed(GLFW_KEY_ESCAPE))
 		glfwSetWindowShouldClose(mWindow, GLFW_TRUE);
 
-	if (input.isKeyPressed(GLFW_KEY_F))
+	if (mInputSystem.isKeyPressed(GLFW_KEY_F))
 		std::cout << "frameTime: " << mFrameTime * 1000.0 << " ms ( " << (1.0 / mFrameTime) << " fps)" << std::endl;
 }

@@ -23,6 +23,7 @@
 #include "Texture.h"
 #include "Vertex.h"
 #include "QueueFamilies.h"
+#include "Swapchain.h"
 
 const std::vector<Vertex> squareVertices = {
 	{ { -0.5f, -0.5f }, { 1.0f, 0.0f, 0.0f }, { 1.0f, 0.0f } },
@@ -57,17 +58,20 @@ const int MAX_CONCURRENT_FRAMES = 2;
 class RenderSystem
 {
 public:
-	void init(GLFWwindow *window);
+	RenderSystem() {}
+	~RenderSystem() {}
+
+	void startUp(GLFWwindow *window);
 	void drawFrame();
-	void shutdown();
+	void shutDown();
 
 	void setClearColor(VkClearValue clearColor);
 
-	//Buffer Management
+	/* Buffer Management */
 	void createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer& buffer, VkDeviceMemory& bufferMemory);
 	void copyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width, uint32_t height);
 
-	/*Image Management*/
+	/* Image Management */
 	void createImage(uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties, VkImage & image, VkDeviceMemory & imageMemory);
 	VkImageView createImageView(VkImage image, VkFormat imageFormat);
 	void transitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout);
@@ -88,11 +92,15 @@ private:
 	VkSurfaceKHR mSurface;
 
 	//Swapchain Setup
-	VkSwapchainKHR mSwapchain;
-	std::vector<VkImage> mSwapchainImages;
-	std::vector<VkImageView> mSwapchainImageViews;
-	VkFormat mSwapchainImageFormat;
-	VkExtent2D mSwapchainExtent;
+	std::unique_ptr<Swapchain> mSwapchain;
+
+	//VkSwapchainKHR mSwapchain;
+	//std::vector<VkImage> mSwapchainImages;
+	//std::vector<VkImageView> mSwapchainImageViews;
+	//VkFormat mSwapchainImageFormat;
+	//VkExtent2D mSwapchainExtent;
+
+	//more closely attached to a renderpass than swapchain
 	std::vector<VkFramebuffer> mSwapchainFramebuffers;
 	
 	//Pipeline
@@ -136,10 +144,7 @@ private:
 	
 	//SWAPCHAIN
 	void createSwapchain();
-	VkSurfaceFormatKHR chooseSwapchainSurfaceFormat();
-	VkPresentModeKHR chooseSwapchainPresentMode();
 	VkExtent2D chooseSwapchainExtent(const VkSurfaceCapabilitiesKHR& capabilities);
-	void createSwapchainImageViews();
 	void recreateSwapchain();
 	void cleanupSwapchain();
 

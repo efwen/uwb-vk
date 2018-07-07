@@ -15,28 +15,37 @@
 class Swapchain 
 {
 public:
-	Swapchain();
+	Swapchain(VkPhysicalDevice mPhysicalDevice, VkDevice mDevice);
 	~Swapchain();
 
-	void initialize(VkPhysicalDevice physicalDevice, VkDevice device, VkSurfaceKHR surface, QueueFamilyIndices selectedIndices, VkExtent2D extent);
-	void cleanup(VkDevice device);
+	void initialize(VkSurfaceKHR surface,
+				VkSurfaceCapabilitiesKHR capabilities,
+				QueueFamilyIndices selectedIndices,
+				VkExtent2D extent,
+				uint32_t imageCount);
 
-	std::vector<VkFramebuffer> createFramebuffers(VkDevice device, VkRenderPass renderPass);
+	void cleanup();
+
+	void createImageViews();
+	std::vector<VkFramebuffer> createFramebuffers(VkRenderPass renderPass);
 
 	VkSwapchainKHR getVkSwapchain() const;
-	std::vector<VkImageView> getImageViews();
+	std::vector<VkImageView> getImageViews() const;
 	VkFormat getImageFormat() const;
-	VkExtent2D getExtent();
+	VkExtent2D getExtent() const;
+	uint32_t size() const;
 private:
-	VkSurfaceFormatKHR chooseSurfaceFormat(VkPhysicalDevice physicalDevice, VkSurfaceKHR surface);
-	VkPresentModeKHR choosePresentMode(VkPhysicalDevice physicalDevice, VkSurfaceKHR surface);
-	void createImageViews(VkDevice device);
-
-private:
-	bool initialized = false;
+	VkPhysicalDevice mPhysicalDevice;
+	VkDevice mDevice;
+	
 	VkSwapchainKHR mSwapchain;
 	std::vector<VkImage> mImages;
 	std::vector<VkImageView> mImageViews;
 	VkFormat mImageFormat;
 	VkExtent2D mExtent;
+
+
+	VkSurfaceFormatKHR chooseSurfaceFormat(VkSurfaceKHR surface);
+	VkPresentModeKHR choosePresentMode(VkSurfaceKHR surface);
+	VkExtent2D chooseExtent(const VkSurfaceCapabilitiesKHR& capabilities);
 };

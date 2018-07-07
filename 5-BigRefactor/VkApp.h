@@ -13,8 +13,8 @@ class VkApp
 {
 private:
 	GLFWwindow* mWindow;
-	RenderSystem renderer;
-	InputSystem input;
+	RenderSystem mRenderSystem;
+	InputSystem mInputSystem;
 	double mTime = 0.0;
 	double mPrevTime = 0.0;
 	double mFrameTime = 0.0;
@@ -31,6 +31,5 @@ private:
 	void initialize();
 	void shutdown();
 	void createWindow();
-
 	void handleInput();
 };
