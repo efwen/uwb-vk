@@ -1,13 +1,8 @@
-#pragma once
+#include "QueueFamilies.h"
 
-struct QueueFamilyIndices {
-	int graphicsFamily = -1;
-	int presentFamily = -1;
-
-	bool isComplete() {
-		return graphicsFamily >= 0 && presentFamily >= 0;
-	}
-};
+//STL
+#include <vector>
+#include <iostream>
 
 QueueFamilyIndices findQueueFamilies(VkPhysicalDevice physicalDevice, VkSurfaceKHR surface)
 {
@@ -60,4 +55,4 @@ QueueFamilyIndices findQueueFamilies(VkPhysicalDevice physicalDevice, VkSurfaceK
 	}
 	std::cout << "--------------------------------" << std::endl;
 	return indices;
-}
+};
