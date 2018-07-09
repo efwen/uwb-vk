@@ -121,7 +121,9 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="FileIO.h" />
+    <ClInclude Include="Image.h" />
     <ClInclude Include="InputSystem.h" />
+    <ClInclude Include="BufferManager.h" />
     <ClInclude Include="QueueFamilies.h" />
     <ClInclude Include="RenderSystem.h" />
     <ClInclude Include="Swapchain.h" />
@@ -129,10 +131,13 @@
     <ClInclude Include="Validation.h" />
     <ClInclude Include="Vertex.h" />
     <ClInclude Include="VkApp.h" />
+    <ClInclude Include="DeviceContext.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="Image.cpp" />
     <ClCompile Include="InputSystem.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="BufferManager.cpp" />
     <ClCompile Include="QueueFamilies.cpp" />
     <ClCompile Include="RenderSystem.cpp" />
     <ClCompile Include="Swapchain.cpp" />

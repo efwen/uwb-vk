@@ -8,14 +8,16 @@
 #include <vector>
 #include <algorithm>
 #include <iostream>
+#include <memory>
 
 //uwb-vk
+#include "DeviceContext.h"
 #include "QueueFamilies.h"
 
 class Swapchain 
 {
 public:
-	Swapchain(VkPhysicalDevice mPhysicalDevice, VkDevice mDevice);
+	Swapchain(std::shared_ptr<DeviceContext> context);
 	~Swapchain();
 
 	void initialize(VkSurfaceKHR surface,
@@ -35,8 +37,7 @@ public:
 	VkExtent2D getExtent() const;
 	uint32_t size() const;
 private:
-	VkPhysicalDevice mPhysicalDevice;
-	VkDevice mDevice;
+	std::shared_ptr<DeviceContext> mContext;
 	
 	VkSwapchainKHR mSwapchain;
 	std::vector<VkImage> mImages;

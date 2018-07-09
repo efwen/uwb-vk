@@ -31,12 +31,12 @@ void VkApp::initialize()
 	glfwInit();
 	createWindow();
 	mInputSystem.initialize(mWindow);
-	mRenderSystem.startUp(mWindow);
+	mRenderSystem.initialize(mWindow);
 }
 
 void VkApp::shutdown()
 {
-	mRenderSystem.shutDown();
+	mRenderSystem.cleanup();
 	glfwDestroyWindow(mWindow);
 	glfwTerminate();
 }

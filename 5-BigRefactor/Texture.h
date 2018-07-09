@@ -5,17 +5,18 @@
 
 //STL
 #include <string>
+#include <memory>
 
 //Forward declare to avoid circular dependency
 class RenderSystem;
+#include "BufferManager.h"
 
 class Texture
 {
 public:
-	Texture(RenderSystem* renderSystem, VkDevice device);
+	Texture(RenderSystem* renderSystem, std::shared_ptr<DeviceContext> context, std::shared_ptr<BufferManager> bufferManager);
 
 	Texture& load(unsigned char* data, int width, int height, int channels);
-
 	void free();
 
 	VkImageView getImageView() const { return mImageView; };
@@ -33,7 +34,8 @@ protected:
 	VkSampler mSampler;
 
 	RenderSystem* mRenderSystem;
-	VkDevice mDevice;
+	std::shared_ptr<DeviceContext> mContext;
+	std::shared_ptr<BufferManager> mBufferManager;
 
 	void createTextureImage(unsigned char* pixelData);
 	void createTextureImageView();

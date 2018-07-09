@@ -20,10 +20,14 @@
 //ubm-vk
 #include "FileIO.h"
 #include "Validation.h"
+#include "DeviceContext.h"
+#include "QueueFamilies.h"
+#include "BufferManager.h"
+#include "Swapchain.h"
 #include "Texture.h"
 #include "Vertex.h"
-#include "QueueFamilies.h"
-#include "Swapchain.h"
+
+
 
 const std::vector<Vertex> squareVertices = {
 	{ { -0.5f, -0.5f }, { 1.0f, 0.0f, 0.0f }, { 1.0f, 0.0f } },
@@ -61,15 +65,11 @@ public:
 	RenderSystem() {}
 	~RenderSystem() {}
 
-	void startUp(GLFWwindow *window);
+	void initialize(GLFWwindow *window);
 	void drawFrame();
-	void shutDown();
+	void cleanup();
 
 	void setClearColor(VkClearValue clearColor);
-
-	/* Buffer Management */
-	void createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer& buffer, VkDeviceMemory& bufferMemory);
-	void copyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width, uint32_t height);
 
 	/* Image Management */
 	void createImage(uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties, VkImage & image, VkDeviceMemory & imageMemory);
@@ -81,12 +81,8 @@ private:
 	VkInstance mInstance;
 	VkDebugReportCallbackEXT mCallback;
 
-	//Devices and Queues
-	VkPhysicalDevice mPhysicalDevice;
-	QueueFamilyIndices mSelectedIndices;
-	VkDevice mDevice;
-	VkQueue mGraphicsQueue;
-	VkQueue mPresentQueue;
+	std::shared_ptr<DeviceContext> mContext;
+	std::shared_ptr<BufferManager> mBufferManager;
 
 	//Presentation Surface
 	VkSurfaceKHR mSurface;
@@ -94,12 +90,7 @@ private:
 	//Swapchain Setup
 	std::unique_ptr<Swapchain> mSwapchain;
 
-	//VkSwapchainKHR mSwapchain;
-	//std::vector<VkImage> mSwapchainImages;
-	//std::vector<VkImageView> mSwapchainImageViews;
-	//VkFormat mSwapchainImageFormat;
-	//VkExtent2D mSwapchainExtent;
-
+#pragma region Pipeline
 	//more closely attached to a renderpass than swapchain
 	std::vector<VkFramebuffer> mSwapchainFramebuffers;
 	
@@ -110,6 +101,7 @@ private:
 	std::vector<VkDescriptorSet> mDescriptorSets;
 	VkPipelineLayout mPipelineLayout;
 	VkPipeline mPipeline;
+#pragma endregion
 
 	//Command Buffers
 	VkCommandPool mCommandPool;
@@ -169,22 +161,20 @@ private:
 	void endSingleCmdBuffer(VkCommandBuffer commandBuffer);
 
 
-
 	/*Buffer Management*/
-	void copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size);
 	void createVertexBuffer();
 	void createIndexBuffer();
 	void createUniformBuffers();
 	void updateUniformBuffer(uint32_t currentImage);
-
+	
+	void createTexture();
 
 	//Utility
 	uint32_t findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties);
 
-	void createTexture();
+
 
 	void printExtensions();
 	void printPhysicalDeviceDetails(VkPhysicalDevice physicalDevice);
-
 	void setupDebugCallback();
 };

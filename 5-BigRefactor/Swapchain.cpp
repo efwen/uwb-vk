@@ -1,11 +1,10 @@
 #include "Swapchain.h"
 
-Swapchain::Swapchain(VkPhysicalDevice physicalDevice, VkDevice device) :
+Swapchain::Swapchain(std::shared_ptr<DeviceContext> context) :
 	mSwapchain(VK_NULL_HANDLE),
 	mImageFormat(VK_FORMAT_UNDEFINED),
 	mExtent{ 0, 0 },
-	mPhysicalDevice(physicalDevice),
-	mDevice(device)
+	mContext(context)
 {}
 
 Swapchain::~Swapchain() {}
@@ -55,14 +54,14 @@ void Swapchain::initialize(VkSurfaceKHR surface,
 	swapchainCreateInfo.clipped = VK_TRUE;	//we don't care about the colors of obscured pixels (i.e. hidden by another window)
 	swapchainCreateInfo.oldSwapchain = VK_NULL_HANDLE;	//used for recreating the swapchain
 
-	if (vkCreateSwapchainKHR(mDevice, &swapchainCreateInfo, nullptr, &mSwapchain) != VK_SUCCESS) {
+	if (vkCreateSwapchainKHR(mContext->device, &swapchainCreateInfo, nullptr, &mSwapchain) != VK_SUCCESS) {
 		throw std::runtime_error("Failed to create swapchain!");
 	}
 
 	//get the swapchain images
-	vkGetSwapchainImagesKHR(mDevice, mSwapchain, &imageCount, nullptr);
+	vkGetSwapchainImagesKHR(mContext->device, mSwapchain, &imageCount, nullptr);
 	mImages.resize(imageCount);
-	vkGetSwapchainImagesKHR(mDevice, mSwapchain, &imageCount, mImages.data());
+	vkGetSwapchainImagesKHR(mContext->device, mSwapchain, &imageCount, mImages.data());
 
 	//for use later
 	mImageFormat = surfaceFormat.format;
@@ -72,12 +71,12 @@ void Swapchain::initialize(VkSurfaceKHR surface,
 void Swapchain::cleanup()
 {
 	for (auto imageView : mImageViews) {
-		vkDestroyImageView(mDevice, imageView, nullptr);
+		vkDestroyImageView(mContext->device, imageView, nullptr);
 	}
 
 	//Images automatically cleaned up
 
-	vkDestroySwapchainKHR(mDevice, mSwapchain, nullptr);
+	vkDestroySwapchainKHR(mContext->device, mSwapchain, nullptr);
 }
 
 VkSurfaceFormatKHR Swapchain::chooseSurfaceFormat(VkSurfaceKHR surface)
@@ -86,11 +85,11 @@ VkSurfaceFormatKHR Swapchain::chooseSurfaceFormat(VkSurfaceKHR surface)
 	//Choose a swapchain format
 	uint32_t formatCount;
 	std::vector<VkSurfaceFormatKHR> availableFormats;
-	vkGetPhysicalDeviceSurfaceFormatsKHR(mPhysicalDevice, surface, &formatCount, nullptr);
+	vkGetPhysicalDeviceSurfaceFormatsKHR(mContext->physicalDevice, surface, &formatCount, nullptr);
 
 	if (formatCount != 0) {
 		availableFormats.resize(formatCount);
-		vkGetPhysicalDeviceSurfaceFormatsKHR(mPhysicalDevice, surface, &formatCount, availableFormats.data());
+		vkGetPhysicalDeviceSurfaceFormatsKHR(mContext->physicalDevice, surface, &formatCount, availableFormats.data());
 	}
 	else {
 		throw std::runtime_error("no available formats for swapchain!");
@@ -117,11 +116,11 @@ VkPresentModeKHR Swapchain::choosePresentMode(VkSurfaceKHR surface)
 	//get all of the available modes
 	uint32_t presentModeCount = 0;
 	std::vector<VkPresentModeKHR> availablePresentModes;
-	vkGetPhysicalDeviceSurfacePresentModesKHR(mPhysicalDevice, surface, &presentModeCount, nullptr);
+	vkGetPhysicalDeviceSurfacePresentModesKHR(mContext->physicalDevice, surface, &presentModeCount, nullptr);
 
 	if (presentModeCount != 0) {
 		availablePresentModes.resize(presentModeCount);
-		vkGetPhysicalDeviceSurfacePresentModesKHR(mPhysicalDevice, surface, &presentModeCount, availablePresentModes.data());
+		vkGetPhysicalDeviceSurfacePresentModesKHR(mContext->physicalDevice, surface, &presentModeCount, availablePresentModes.data());
 	}
 	else {
 		throw std::runtime_error("No available swapchain present modes!");
@@ -163,7 +162,7 @@ void Swapchain::createImageViews()
 		imageViewCreateInfo.subresourceRange.baseArrayLayer = 0;
 		imageViewCreateInfo.subresourceRange.layerCount = 1;
 
-		if (vkCreateImageView(mDevice, &imageViewCreateInfo, nullptr, &mImageViews[i]) != VK_SUCCESS) {
+		if (vkCreateImageView(mContext->device, &imageViewCreateInfo, nullptr, &mImageViews[i]) != VK_SUCCESS) {
 			throw std::runtime_error("Failed to create swapchain image views!");
 		}
 
@@ -189,7 +188,7 @@ std::vector<VkFramebuffer> Swapchain::createFramebuffers(VkRenderPass renderPass
 		framebufferInfo.height = mExtent.height;
 		framebufferInfo.layers = 1;
 
-		if (vkCreateFramebuffer(mDevice, &framebufferInfo, nullptr, &framebuffers[i]) != VK_SUCCESS) {
+		if (vkCreateFramebuffer(mContext->device, &framebufferInfo, nullptr, &framebuffers[i]) != VK_SUCCESS) {
 			throw std::runtime_error("failed to create framebuffer!");
 		}
 	}

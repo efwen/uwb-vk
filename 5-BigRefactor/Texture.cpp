@@ -2,7 +2,7 @@
 #include "RenderSystem.h"
 #include <assert.h>
 
-Texture::Texture(RenderSystem* renderSystem, VkDevice device) :
+Texture::Texture(RenderSystem* renderSystem, std::shared_ptr<DeviceContext> context, std::shared_ptr<BufferManager> bufferManager) :
 	mWidth(0),
 	mHeight(0),
 	mChannels(0),
@@ -10,7 +10,8 @@ Texture::Texture(RenderSystem* renderSystem, VkDevice device) :
 	mImage(VK_NULL_HANDLE),
 	mImageMemory(VK_NULL_HANDLE),
 	mRenderSystem(renderSystem),
-	mDevice(device)
+	mContext(context),
+	mBufferManager(bufferManager)
 {
 }
 
@@ -32,10 +33,10 @@ Texture& Texture::load(unsigned char* pixelData, int width, int height, int chan
 void Texture::free()
 {
 	//free up resources
-	vkDestroySampler(mDevice, mSampler, nullptr);
-	vkDestroyImageView(mDevice, mImageView, nullptr);
-	vkDestroyImage(mDevice, mImage, nullptr);
-	vkFreeMemory(mDevice, mImageMemory, nullptr);
+	vkDestroySampler(mContext->device, mSampler, nullptr);
+	vkDestroyImageView(mContext->device, mImageView, nullptr);
+	vkDestroyImage(mContext->device, mImage, nullptr);
+	vkFreeMemory(mContext->device, mImageMemory, nullptr);
 	
 	//reset all values in case we want to reuse this texture object
 	mWidth = 0;
@@ -54,15 +55,15 @@ void Texture::createTextureImage(unsigned char* pixelData)
 	VkBuffer stagingBuffer;
 	VkDeviceMemory stagingBufferMemory;
 
-	mRenderSystem->createBuffer(mImageSize,
+	mBufferManager->createBuffer(mImageSize,
 		VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
 		VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
 		stagingBuffer, stagingBufferMemory);
 
 	void* data;
-	vkMapMemory(mDevice, stagingBufferMemory, 0, mImageSize, 0, &data);
+	vkMapMemory(mContext->device, stagingBufferMemory, 0, mImageSize, 0, &data);
 	memcpy(data, pixelData, static_cast<size_t>(mImageSize));
-	vkUnmapMemory(mDevice, stagingBufferMemory);
+	vkUnmapMemory(mContext->device, stagingBufferMemory);
 
 	mRenderSystem->createImage(mWidth, mHeight, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_TILING_OPTIMAL,
 		VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
@@ -76,7 +77,7 @@ void Texture::createTextureImage(unsigned char* pixelData)
 		VK_IMAGE_LAYOUT_UNDEFINED,
 		VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
 
-	mRenderSystem->copyBufferToImage(stagingBuffer,
+	mBufferManager->copyBufferToImage(stagingBuffer,
 		mImage,
 		static_cast<uint32_t>(mWidth),
 		static_cast<uint32_t>(mHeight));
@@ -87,8 +88,8 @@ void Texture::createTextureImage(unsigned char* pixelData)
 		VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
 		VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
-	vkDestroyBuffer(mDevice, stagingBuffer, nullptr);
-	vkFreeMemory(mDevice, stagingBufferMemory, nullptr);
+	vkDestroyBuffer(mContext->device, stagingBuffer, nullptr);
+	vkFreeMemory(mContext->device, stagingBufferMemory, nullptr);
 }
 
 void Texture::createTextureImageView()
@@ -120,8 +121,7 @@ void Texture::createTextureSampler()
 	samplerInfo.minLod = 0.0f;
 	samplerInfo.maxLod = 0.0f;
 
-	if (vkCreateSampler(mDevice, &samplerInfo, nullptr, &mSampler) != VK_SUCCESS) {
+	if (vkCreateSampler(mContext->device, &samplerInfo, nullptr, &mSampler) != VK_SUCCESS) {
 		throw std::runtime_error("Failed to create texture sampler!");
 	}
-
 }
