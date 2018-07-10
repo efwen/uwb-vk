@@ -4,7 +4,7 @@
 #include <exception>
 #include <vector>
 
-#include "DeviceContext.h"
+#include "VulkanContext.h"
 #include "CommandPool.h"
 #include "Vertex.h"
 
@@ -23,7 +23,7 @@ public:
 		context is valid and complete
 		commandPool is a valid handle to a command pool associated with the context
 	*/
-	BufferManager(std::shared_ptr<DeviceContext> context, std::shared_ptr<CommandPool> commandPool);
+	BufferManager(std::shared_ptr<VulkanContext> context, std::shared_ptr<CommandPool> commandPool);
 	~BufferManager();
 
 	/* Buffer Management */
@@ -36,7 +36,7 @@ public:
 	void copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size);
 
 private:
-	std::shared_ptr<DeviceContext> mContext;
+	std::shared_ptr<VulkanContext> mContext;
 	std::shared_ptr<CommandPool> mCommandPool;
 
 	//Helper functions

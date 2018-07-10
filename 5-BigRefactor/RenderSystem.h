@@ -21,7 +21,8 @@
 //ubm-vk
 #include "FileIO.h"
 #include "Validation.h"
-#include "DeviceContext.h"
+#include "Extensions.h"
+#include "VulkanContext.h"
 #include "QueueFamilies.h"
 #include "CommandPool.h"
 #include "BufferManager.h"
@@ -46,18 +47,7 @@ struct UniformBufferObject {
 	glm::mat4 proj;
 };
 
-//Instance Extensions
-const std::vector<const char*> instanceExtensions = {
-	VK_KHR_SURFACE_EXTENSION_NAME
-#ifdef _DEBUG
-	VK_EXT_DEBUG_REPORT_EXTENSION_NAME
-#endif
-};
 
-//Device Extensions
-const std::vector<const char*> deviceExtensions = {
-	VK_KHR_SWAPCHAIN_EXTENSION_NAME
-};
 
 const int MAX_CONCURRENT_FRAMES = 2;
 
@@ -79,11 +69,10 @@ public:
 	void transitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout);
 
 private:
-	GLFWwindow * mWindow = nullptr;
 	VkInstance mInstance;
 	VkDebugReportCallbackEXT mCallback;
 
-	std::shared_ptr<DeviceContext> mContext;
+	std::shared_ptr<VulkanContext> mContext;
 	std::shared_ptr<BufferManager> mBufferManager;
 
 	//Presentation Surface
@@ -139,7 +128,6 @@ private:
 	
 	//SWAPCHAIN
 	void createSwapchain();
-	VkExtent2D chooseSwapchainExtent(const VkSurfaceCapabilitiesKHR& capabilities);
 	void recreateSwapchain();
 	void cleanupSwapchain();
 
@@ -159,11 +147,6 @@ private:
 
 	void createSyncObjects();
 
-	std::vector<const char*> getRequiredExtensions();
-	//VkCommandBuffer beginSingleCmdBuffer();
-	//void endSingleCmdBuffer(VkCommandBuffer commandBuffer);
-
-
 	/*Buffer Management*/
 	void createBuffers();
 
@@ -175,11 +158,7 @@ private:
 	void createTexture();
 
 	//Utility
-	uint32_t findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties);
-
-
-
+	std::vector<const char*> getRequiredExtensions();
 	void printExtensions();
-	void printPhysicalDeviceDetails(VkPhysicalDevice physicalDevice);
 	void setupDebugCallback();
 };

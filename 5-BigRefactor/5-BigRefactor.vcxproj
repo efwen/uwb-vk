@@ -124,6 +124,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="CommandPool.h" />
+    <ClInclude Include="Extensions.h" />
     <ClInclude Include="FileIO.h" />
     <ClInclude Include="ImageManager.h" />
     <ClInclude Include="InputSystem.h" />
@@ -135,7 +136,7 @@
     <ClInclude Include="Validation.h" />
     <ClInclude Include="Vertex.h" />
     <ClInclude Include="VkApp.h" />
-    <ClInclude Include="DeviceContext.h" />
+    <ClInclude Include="VulkanContext.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="CommandPool.cpp" />

@@ -13,19 +13,15 @@ void RenderSystem::initialize(GLFWwindow * window)
 		setupDebugCallback();
 	}
 
-	mWindow = window;
-	createSurface(window);
+	mContext = std::make_shared<VulkanContext>(VulkanContext());
+	mContext->initialize(mInstance, window);
 
-	mContext = std::make_shared<DeviceContext>(DeviceContext());
-	mContext->initialize(window);
-
-	createDevice();
-
-	createCommandPool();
+	mCommandPool = std::make_shared<CommandPool>(CommandPool(mContext));
+	mCommandPool->initialize();
 	mBufferManager = std::make_shared<BufferManager>(BufferManager(mContext, mCommandPool));
 
 	createSwapchain();
-	createDescriptorPool();	//moved
+	createDescriptorPool();
 
 	createRenderPass();
 	createDescriptorSetLayout();
@@ -35,10 +31,6 @@ void RenderSystem::initialize(GLFWwindow * window)
 
 	createTexture();
 	createBuffers();
-	//createVertexBuffer();
-	//createIndexBuffer();
-	//createUniformBuffers();
-	//createDescriptorSetPool();
 	createDescriptorSets();
 
 	createCommandBuffers();
@@ -108,12 +100,14 @@ void RenderSystem::cleanup()
 	//vkDestroyCommandPool(mContext->device, mCommandPool, nullptr);
 	mCommandPool->cleanup();
 
-	vkDestroyDevice(mContext->device, nullptr);
+	mContext->cleanup(mInstance);
+
+	//vkDestroyDevice(mContext->device, nullptr);
 	if (enableValidationLayers) {
 		DestroyDebugReportCallbackEXT(mInstance, mCallback, nullptr);
 	}
 
-	vkDestroySurfaceKHR(mInstance, mSurface, nullptr);
+	//vkDestroySurfaceKHR(mInstance, mSurface, nullptr);
 	vkDestroyInstance(mInstance, nullptr);
 }
 
@@ -214,118 +208,14 @@ void RenderSystem::createInstance()
 	}
 }
 
-void RenderSystem::createDevice()
-{
-	std::cout << "Creating Device" << std::endl;
-
-	//get a list of physical devices
-	uint32_t physicalDeviceCount;
-	vkEnumeratePhysicalDevices(mInstance, &physicalDeviceCount, nullptr);
-
-	std::vector<VkPhysicalDevice> availableDevices(physicalDeviceCount);
-	vkEnumeratePhysicalDevices(mInstance, &physicalDeviceCount, availableDevices.data());
-
-	//select one of the devices
-	std::cout << "Devices Found:" << physicalDeviceCount << std::endl;
-	for (const auto& physicalDevice : availableDevices) {
-		printPhysicalDeviceDetails(physicalDevice);
-	}
-
-	//just pick the first physical device for now
-	//we'll need to do device suitability checks later
-	mContext->physicalDevice = availableDevices[0];
-
-	mContext->selectedIndices = findQueueFamilies(mContext->physicalDevice, mSurface);
-
-	//create a queue for both graphics and presentation
-	std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
-
-	//create a graphics queue
-	VkDeviceQueueCreateInfo graphicsQueueCreateInfo = {};
-	graphicsQueueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-	graphicsQueueCreateInfo.queueFamilyIndex = mContext->selectedIndices.graphicsFamily;
-	graphicsQueueCreateInfo.queueCount = 1;
-	float queuePriority = 1.0f;
-	graphicsQueueCreateInfo.pQueuePriorities = &queuePriority;
-	queueCreateInfos.push_back(graphicsQueueCreateInfo);
-
-	//create a separate present queue if necessary (different family)
-	if (mContext->selectedIndices.graphicsFamily != mContext->selectedIndices.presentFamily) {
-		VkDeviceQueueCreateInfo presentQueueCreateInfo = {};
-		presentQueueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-		presentQueueCreateInfo.queueFamilyIndex = mContext->selectedIndices.presentFamily;
-		presentQueueCreateInfo.queueCount = 1;
-		float queuePriority = 1.0f;
-		presentQueueCreateInfo.pQueuePriorities = &queuePriority;
-		queueCreateInfos.push_back(presentQueueCreateInfo);
-	}
-
-	//specify the features of the device we'll be using
-	VkPhysicalDeviceFeatures deviceFeatures = {};
-	deviceFeatures.samplerAnisotropy = VK_TRUE;
-
-	//main createInfo struct
-	VkDeviceCreateInfo deviceCreateInfo = {};
-	deviceCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
-	deviceCreateInfo.queueCreateInfoCount = static_cast<uint32_t>(queueCreateInfos.size());
-	deviceCreateInfo.pQueueCreateInfos = queueCreateInfos.data();
-	deviceCreateInfo.pEnabledFeatures = &deviceFeatures;
-	
-	//extensions we want this device to use
-	deviceCreateInfo.enabledExtensionCount = static_cast<uint32_t>(deviceExtensions.size());
-	deviceCreateInfo.ppEnabledExtensionNames = deviceExtensions.data();
-
-	//create the device
-	if (vkCreateDevice(mContext->physicalDevice, &deviceCreateInfo, nullptr, &mContext->device) != VK_SUCCESS) {
-		std::cerr << "Device Creation Failed!" << std::endl;
-	}
-
-	//get the queue handles
-	vkGetDeviceQueue(mContext->device, mContext->selectedIndices.graphicsFamily, 0, &mContext->graphicsQueue);
-	vkGetDeviceQueue(mContext->device, mContext->selectedIndices.presentFamily, 0, &mContext->presentQueue);
-}
-
-void RenderSystem::createSurface(GLFWwindow* window)
-{
-	std::cout << "Creating Surface" << std::endl;
-
-	if(glfwCreateWindowSurface(mInstance, window, nullptr, &mSurface) != VK_SUCCESS){
-		throw std::runtime_error("Failed to create a window surface!");
-	}
-}
-
 void RenderSystem::createSwapchain()
 {
 	std::cout << "Creating Swapchain" << std::endl;
-
 	mSwapchain = std::make_unique<Swapchain>(Swapchain(mContext));
-
-	VkSurfaceCapabilitiesKHR capabilities;
-	vkGetPhysicalDeviceSurfaceCapabilitiesKHR(mContext->physicalDevice, mSurface, &capabilities);
-
-	VkExtent2D extent = chooseSwapchainExtent(capabilities);
-
-	mSwapchain->initialize(mSurface, capabilities, mContext->selectedIndices, extent, MAX_CONCURRENT_FRAMES);
+	mSwapchain->initialize(mContext->surface, MAX_CONCURRENT_FRAMES);
+	
+	std::cout << "Creating swapchain image views" << std::endl;
 	mSwapchain->createImageViews();
-}
-
-VkExtent2D RenderSystem::chooseSwapchainExtent(const VkSurfaceCapabilitiesKHR& capabilities)
-{
-	if (capabilities.currentExtent.width != std::numeric_limits<uint32_t>::max()) {
-		return capabilities.currentExtent;
-	}
-	else {
-		int width, height;
-		glfwGetFramebufferSize(mWindow, &width, &height);
-		std::cout << "window size: (" << width << ", " << height << ")" << std::endl;
-
-		VkExtent2D actualExtent = { static_cast<uint32_t>(width), static_cast<uint32_t>(height) };
-
-		actualExtent.width = std::max(capabilities.minImageExtent.width, std::min(capabilities.maxImageExtent.width, actualExtent.width));
-		actualExtent.height = std::max(capabilities.minImageExtent.height, std::min(capabilities.maxImageExtent.height, actualExtent.height));
-
-		return actualExtent;
-	}
 }
 
 void RenderSystem::createGraphicsPipeline()
@@ -693,9 +583,7 @@ void RenderSystem::createFramebuffers()
 
 void RenderSystem::createCommandPool()
 {
-	std::cout << "Creating command pool" << std::endl;
-	mCommandPool = std::make_shared<CommandPool>(CommandPool(mContext));
-	mCommandPool->initialize();
+
 }
 
 void RenderSystem::createCommandBuffers()
@@ -790,21 +678,6 @@ std::vector<const char*> RenderSystem::getRequiredExtensions()
 	}
 
 	return extensions;
-}
-
-
-uint32_t RenderSystem::findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties)
-{
-	VkPhysicalDeviceMemoryProperties memProperties;
-	vkGetPhysicalDeviceMemoryProperties(mContext->physicalDevice, &memProperties);
-
-	for (uint32_t i = 0; i < memProperties.memoryTypeCount; i++) {
-		if (typeFilter & (1 << i) && (memProperties.memoryTypes[i].propertyFlags & properties) == properties) {
-			return i;
-		}
-	}
-
-	throw std::runtime_error("Failed to find a suitable memory type!");
 }
 
 void RenderSystem::transitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout)
@@ -944,7 +817,7 @@ void RenderSystem::createImage(uint32_t width, uint32_t height, VkFormat format,
 	VkMemoryAllocateInfo allocInfo = {};
 	allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
 	allocInfo.allocationSize = memRequirements.size;
-	allocInfo.memoryTypeIndex = findMemoryType(memRequirements.memoryTypeBits, properties);
+	allocInfo.memoryTypeIndex = mContext->findMemoryType(memRequirements.memoryTypeBits, properties);
 
 	if (vkAllocateMemory(mContext->device, &allocInfo, nullptr, &imageMemory) != VK_SUCCESS) {
 		throw std::runtime_error("failed to allocate image memory!");
@@ -1021,15 +894,6 @@ void RenderSystem::printExtensions()
 		std::cout << properties.extensionName << std::endl;
 	}
 	std::cout << "--------------------------------" << std::endl;
-}
-
-void RenderSystem::printPhysicalDeviceDetails(VkPhysicalDevice physicalDevice)
-{
-	VkPhysicalDeviceProperties properties;
-	vkGetPhysicalDeviceProperties(physicalDevice, &properties);
-
-	std::cout << properties.deviceName << std::endl;
-	std::cout << "API Version: " << properties.apiVersion << std::endl;
 }
 
 void RenderSystem::setupDebugCallback()

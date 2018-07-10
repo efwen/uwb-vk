@@ -1,6 +1,6 @@
 #include "ImageManager.h"
 
-ImageManager::ImageManager(std::shared_ptr<DeviceContext> context, std::shared_ptr<CommandPool> commandPool) :
+ImageManager::ImageManager(std::shared_ptr<VulkanContext> context, std::shared_ptr<CommandPool> commandPool) :
 	mContext(context),
 	mCommandPool(commandPool)
 {

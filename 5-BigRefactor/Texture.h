@@ -14,7 +14,7 @@ class RenderSystem;
 class Texture
 {
 public:
-	Texture(RenderSystem* renderSystem, std::shared_ptr<DeviceContext> context, std::shared_ptr<BufferManager> bufferManager);
+	Texture(RenderSystem* renderSystem, std::shared_ptr<VulkanContext> context, std::shared_ptr<BufferManager> bufferManager);
 
 	Texture& load(unsigned char* data, int width, int height, int channels);
 	void free();
@@ -34,7 +34,7 @@ protected:
 	VkSampler mSampler;
 
 	RenderSystem* mRenderSystem;
-	std::shared_ptr<DeviceContext> mContext;
+	std::shared_ptr<VulkanContext> mContext;
 	std::shared_ptr<BufferManager> mBufferManager;
 
 	void createTextureImage(unsigned char* pixelData);

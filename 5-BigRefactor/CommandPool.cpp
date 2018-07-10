@@ -1,6 +1,6 @@
 #include "CommandPool.h"
 
-CommandPool::CommandPool(std::shared_ptr<DeviceContext> context) :
+CommandPool::CommandPool(std::shared_ptr<VulkanContext> context) :
 	mContext(context),
 	mCommandPool(VK_NULL_HANDLE)
 { }

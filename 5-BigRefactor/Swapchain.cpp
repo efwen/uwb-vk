@@ -1,6 +1,6 @@
 #include "Swapchain.h"
 
-Swapchain::Swapchain(std::shared_ptr<DeviceContext> context) :
+Swapchain::Swapchain(std::shared_ptr<VulkanContext> context) :
 	mSwapchain(VK_NULL_HANDLE),
 	mImageFormat(VK_FORMAT_UNDEFINED),
 	mExtent{ 0, 0 },
@@ -9,15 +9,14 @@ Swapchain::Swapchain(std::shared_ptr<DeviceContext> context) :
 
 Swapchain::~Swapchain() {}
 
-void Swapchain::initialize(VkSurfaceKHR surface, 
-					VkSurfaceCapabilitiesKHR capabilities,
-					QueueFamilyIndices selectedIndices,
-					VkExtent2D extent,
-					uint32_t imageCount) 
+void Swapchain::initialize(VkSurfaceKHR surface, uint32_t imageCount) 
 {
+	VkSurfaceCapabilitiesKHR capabilities;
+	vkGetPhysicalDeviceSurfaceCapabilitiesKHR(mContext->physicalDevice, surface, &capabilities);
 
 	VkSurfaceFormatKHR surfaceFormat = chooseSurfaceFormat(surface);
 	VkPresentModeKHR presentMode = choosePresentMode(surface);
+	VkExtent2D extent = chooseExtent(capabilities);
 
 	VkSwapchainCreateInfoKHR swapchainCreateInfo = {};
 	swapchainCreateInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
@@ -33,10 +32,10 @@ void Swapchain::initialize(VkSurfaceKHR surface,
 
 																			//if the queue families are different, they need to be able to share the images
 																			//otherwise use exclusive mode
-	if (selectedIndices.graphicsFamily != selectedIndices.presentFamily)
+	if (mContext->selectedIndices.graphicsFamily != mContext->selectedIndices.presentFamily)
 	{
-		uint32_t queueFamilyIndices[] = { (uint32_t)selectedIndices.graphicsFamily,
-			(uint32_t)selectedIndices.presentFamily };
+		uint32_t queueFamilyIndices[] = { (uint32_t)mContext->selectedIndices.graphicsFamily,
+			(uint32_t)mContext->selectedIndices.presentFamily };
 		swapchainCreateInfo.imageSharingMode = VK_SHARING_MODE_CONCURRENT;
 		swapchainCreateInfo.queueFamilyIndexCount = 2;
 		swapchainCreateInfo.pQueueFamilyIndices = queueFamilyIndices;
@@ -138,6 +137,25 @@ VkPresentModeKHR Swapchain::choosePresentMode(VkSurfaceKHR surface)
 	}
 
 	return bestMode;
+}
+
+VkExtent2D Swapchain::chooseExtent(const VkSurfaceCapabilitiesKHR & capabilities)
+{
+	if (capabilities.currentExtent.width != std::numeric_limits<uint32_t>::max()) {
+		return capabilities.currentExtent;
+	}
+	else {
+		int width, height;
+		glfwGetFramebufferSize(mContext->window, &width, &height);
+		std::cout << "window size: (" << width << ", " << height << ")" << std::endl;
+
+		VkExtent2D actualExtent = { static_cast<uint32_t>(width), static_cast<uint32_t>(height) };
+
+		actualExtent.width = std::max(capabilities.minImageExtent.width, std::min(capabilities.maxImageExtent.width, actualExtent.width));
+		actualExtent.height = std::max(capabilities.minImageExtent.height, std::min(capabilities.maxImageExtent.height, actualExtent.height));
+
+		return actualExtent;
+	}
 }
 
 void Swapchain::createImageViews()

@@ -1,6 +1,6 @@
 #include "BufferManager.h"
 
-BufferManager::BufferManager(std::shared_ptr<DeviceContext> context, std::shared_ptr<CommandPool> commandPool) :
+BufferManager::BufferManager(std::shared_ptr<VulkanContext> context, std::shared_ptr<CommandPool> commandPool) :
 	mContext(context),
 	mCommandPool(commandPool)
 {}

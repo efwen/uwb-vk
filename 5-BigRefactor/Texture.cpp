@@ -2,7 +2,7 @@
 #include "RenderSystem.h"
 #include <assert.h>
 
-Texture::Texture(RenderSystem* renderSystem, std::shared_ptr<DeviceContext> context, std::shared_ptr<BufferManager> bufferManager) :
+Texture::Texture(RenderSystem* renderSystem, std::shared_ptr<VulkanContext> context, std::shared_ptr<BufferManager> bufferManager) :
 	mWidth(0),
 	mHeight(0),
 	mChannels(0),

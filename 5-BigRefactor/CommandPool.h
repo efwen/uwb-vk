@@ -1,6 +1,6 @@
 #pragma once
 
-#include "DeviceContext.h"
+#include "VulkanContext.h"
 
 #include <memory>
 #include <exception>
@@ -9,7 +9,7 @@
 class CommandPool
 {
 public:
-	CommandPool(std::shared_ptr<DeviceContext> context);
+	CommandPool(std::shared_ptr<VulkanContext> context);
 
 	void initialize();
 
@@ -21,6 +21,6 @@ public:
 	VkCommandBuffer beginSingleCmdBuffer();
 	void endSingleCmdBuffer(VkCommandBuffer commandBuffer);
 private:
-	std::shared_ptr<DeviceContext> mContext;
+	std::shared_ptr<VulkanContext> mContext;
 	VkCommandPool mCommandPool;
 };

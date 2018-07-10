@@ -11,21 +11,16 @@
 #include <memory>
 
 //uwb-vk
-#include "DeviceContext.h"
+#include "VulkanContext.h"
 #include "QueueFamilies.h"
 
 class Swapchain 
 {
 public:
-	Swapchain(std::shared_ptr<DeviceContext> context);
+	Swapchain(std::shared_ptr<VulkanContext> context);
 	~Swapchain();
 
-	void initialize(VkSurfaceKHR surface,
-				VkSurfaceCapabilitiesKHR capabilities,
-				QueueFamilyIndices selectedIndices,
-				VkExtent2D extent,
-				uint32_t imageCount);
-
+	void initialize(VkSurfaceKHR surface, uint32_t imageCount);
 	void cleanup();
 
 	void createImageViews();
@@ -37,7 +32,7 @@ public:
 	VkExtent2D getExtent() const;
 	uint32_t size() const;
 private:
-	std::shared_ptr<DeviceContext> mContext;
+	std::shared_ptr<VulkanContext> mContext;
 	
 	VkSwapchainKHR mSwapchain;
 	std::vector<VkImage> mImages;
