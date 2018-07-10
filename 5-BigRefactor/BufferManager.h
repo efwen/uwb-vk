@@ -5,6 +5,7 @@
 #include <vector>
 
 #include "DeviceContext.h"
+#include "CommandPool.h"
 #include "Vertex.h"
 
 /*
@@ -22,7 +23,7 @@ public:
 		context is valid and complete
 		commandPool is a valid handle to a command pool associated with the context
 	*/
-	BufferManager(std::shared_ptr<DeviceContext> context, VkCommandPool commandPool);
+	BufferManager(std::shared_ptr<DeviceContext> context, std::shared_ptr<CommandPool> commandPool);
 	~BufferManager();
 
 	/* Buffer Management */
@@ -36,10 +37,10 @@ public:
 
 private:
 	std::shared_ptr<DeviceContext> mContext;
-	VkCommandPool mCommandPool;
+	std::shared_ptr<CommandPool> mCommandPool;
 
 	//Helper functions
 	uint32_t findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties);
-	VkCommandBuffer beginSingleCmdBuffer();
-	void endSingleCmdBuffer(VkCommandBuffer commandBuffer);
+	//VkCommandBuffer beginSingleCmdBuffer();
+	//void endSingleCmdBuffer(VkCommandBuffer commandBuffer);
 };

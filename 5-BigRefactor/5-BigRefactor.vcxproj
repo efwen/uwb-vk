@@ -82,6 +82,9 @@
       <AdditionalLibraryDirectories>$(SolutionDir)Dependencies/Vulkan/Lib;$(SolutionDir)Dependencies/GLFW/lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>glfw3.lib;vulkan-1.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
+    <PostBuildEvent>
+      <Command>python $(SolutionDir)BuildTools\compileShaders.py $(ProjectDir)shaders</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -120,8 +123,9 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="CommandPool.h" />
     <ClInclude Include="FileIO.h" />
-    <ClInclude Include="Image.h" />
+    <ClInclude Include="ImageManager.h" />
     <ClInclude Include="InputSystem.h" />
     <ClInclude Include="BufferManager.h" />
     <ClInclude Include="QueueFamilies.h" />
@@ -134,7 +138,8 @@
     <ClInclude Include="DeviceContext.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="Image.cpp" />
+    <ClCompile Include="CommandPool.cpp" />
+    <ClCompile Include="ImageManager.cpp" />
     <ClCompile Include="InputSystem.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="BufferManager.cpp" />

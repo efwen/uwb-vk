@@ -19,7 +19,6 @@
 
 //ubm-vk
 #include "Vertex.h"
-#include "QueueFamilies.h"
 
 const std::vector<Vertex> squareVertices = {
 	{ { -0.5f, -0.5f },{ 1.0f, 0.0f, 0.0f } },
@@ -35,6 +34,15 @@ struct UniformBufferObject {
 	glm::mat4 view;
 	glm::mat4 proj;
 	glm::mat4 model;
+};
+
+struct QueueFamilyIndices {
+	int graphicsFamily = -1;
+	int presentFamily = -1;
+
+	bool isComplete() {
+		return graphicsFamily >= 0 && presentFamily >= 0;
+	}
 };
 
 //Validation Layers

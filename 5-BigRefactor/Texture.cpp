@@ -82,7 +82,7 @@ void Texture::createTextureImage(unsigned char* pixelData)
 		static_cast<uint32_t>(mWidth),
 		static_cast<uint32_t>(mHeight));
 
-	//Transition from transfer destinatino to shader reading
+	//Transition from transfer destination to shader reading
 	mRenderSystem->transitionImageLayout(mImage,
 		VK_FORMAT_R8G8B8A8_UNORM,
 		VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,

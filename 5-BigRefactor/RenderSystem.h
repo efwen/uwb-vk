@@ -5,6 +5,7 @@
 #include <GLFW/glfw3.h>
 
 //glm
+#define GLM_FORCE_DEPTH_ZERO_TO_ONE
 #include <glm/vec2.hpp>
 #include <glm/vec3.hpp>
 #include <glm/mat4x4.hpp>
@@ -22,6 +23,7 @@
 #include "Validation.h"
 #include "DeviceContext.h"
 #include "QueueFamilies.h"
+#include "CommandPool.h"
 #include "BufferManager.h"
 #include "Swapchain.h"
 #include "Texture.h"
@@ -30,10 +32,10 @@
 
 
 const std::vector<Vertex> squareVertices = {
-	{ { -0.5f, -0.5f }, { 1.0f, 0.0f, 0.0f }, { 1.0f, 0.0f } },
-	{ { 0.5f, -0.5f }, { 0.0f, 1.0f, 0.0f }, { 0.0f, 0.0f } },
-	{ { 0.5f, 0.5f }, { 0.0f, 0.0f, 1.0f }, { 0.0f, 1.0f } },
-	{ { -0.5f, 0.5f }, { 1.0f, 1.0f, 1.0f }, { 1.0f, 1.0f } }
+	{ { -0.5f, -0.5f, 0.0f }, { 1.0f, 0.0f, 0.0f }, { 1.0f, 0.0f } },
+	{ { 0.5f, -0.5f, 0.0f }, { 0.0f, 1.0f, 0.0f }, { 0.0f, 0.0f } },
+	{ { 0.5f, 0.5f, 0.0f }, { 0.0f, 0.0f, 1.0f }, { 0.0f, 1.0f } },
+	{ { -0.5f, 0.5f, 0.0f }, { 1.0f, 1.0f, 1.0f }, { 1.0f, 1.0f } }
 };
 
 const std::vector<uint16_t> squareIndices = { 0, 1, 2, 2, 3, 0 };
@@ -104,7 +106,8 @@ private:
 #pragma endregion
 
 	//Command Buffers
-	VkCommandPool mCommandPool;
+	std::shared_ptr<CommandPool> mCommandPool;
+	//VkCommandPool mCommandPool;
 	std::vector<VkCommandBuffer> mCommandBuffers;
 
 	//Rendering Synchronization primitives
@@ -116,6 +119,7 @@ private:
 	VkClearValue mClearColor = { 0.0f, 0.5f, 0.5f, 1.0f };
 	glm::mat4 model = glm::scale(glm::mat4(1.0f), glm::vec3(0.5f));
 
+#pragma region Buffers
 	VkBuffer mVertexBuffer;
 	VkDeviceMemory mVertexBufferMemory;
 
@@ -124,10 +128,9 @@ private:
 
 	std::vector<VkBuffer> mUniformBuffers;
 	std::vector<VkDeviceMemory> mUniformBuffersMemory;
+#pragma endregion
 
 	Texture* mTexture;
-
-
 
 private:
 	void createInstance();
@@ -157,11 +160,13 @@ private:
 	void createSyncObjects();
 
 	std::vector<const char*> getRequiredExtensions();
-	VkCommandBuffer beginSingleCmdBuffer();
-	void endSingleCmdBuffer(VkCommandBuffer commandBuffer);
+	//VkCommandBuffer beginSingleCmdBuffer();
+	//void endSingleCmdBuffer(VkCommandBuffer commandBuffer);
 
 
 	/*Buffer Management*/
+	void createBuffers();
+
 	void createVertexBuffer();
 	void createIndexBuffer();
 	void createUniformBuffers();

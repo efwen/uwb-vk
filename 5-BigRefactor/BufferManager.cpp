@@ -1,6 +1,6 @@
 #include "BufferManager.h"
 
-BufferManager::BufferManager(std::shared_ptr<DeviceContext> context, VkCommandPool commandPool) :
+BufferManager::BufferManager(std::shared_ptr<DeviceContext> context, std::shared_ptr<CommandPool> commandPool) :
 	mContext(context),
 	mCommandPool(commandPool)
 {}
@@ -75,7 +75,7 @@ void BufferManager::createIndexBuffer(const std::vector<uint16_t>& indices, VkBu
 
 void BufferManager::copyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width, uint32_t height)
 {
-	VkCommandBuffer commandBuffer = beginSingleCmdBuffer();
+	VkCommandBuffer commandBuffer = mCommandPool->beginSingleCmdBuffer();
 
 	VkBufferImageCopy region = {};
 	region.bufferOffset = 0;
@@ -101,7 +101,7 @@ void BufferManager::copyBufferToImage(VkBuffer buffer, VkImage image, uint32_t w
 		&region									//array address
 	);
 
-	endSingleCmdBuffer(commandBuffer);
+	mCommandPool->endSingleCmdBuffer(commandBuffer);
 }
 
 void BufferManager::createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer & buffer, VkDeviceMemory & bufferMemory)
@@ -134,7 +134,7 @@ void BufferManager::createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, Vk
 
 void BufferManager::copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size)
 {
-	VkCommandBuffer commandBuffer = beginSingleCmdBuffer();
+	VkCommandBuffer commandBuffer = mCommandPool->beginSingleCmdBuffer();
 
 	VkBufferCopy copyRegion = {};
 	copyRegion.srcOffset = 0; // Optional
@@ -142,7 +142,7 @@ void BufferManager::copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceS
 	copyRegion.size = size;
 	vkCmdCopyBuffer(commandBuffer, srcBuffer, dstBuffer, 1, &copyRegion);
 
-	endSingleCmdBuffer(commandBuffer);
+	mCommandPool->endSingleCmdBuffer(commandBuffer);
 }
 
 uint32_t BufferManager::findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties)
@@ -159,38 +159,38 @@ uint32_t BufferManager::findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlag
 	throw std::runtime_error("Failed to find a suitable memory type!");
 }
 
-VkCommandBuffer BufferManager::beginSingleCmdBuffer()
-{
-	VkCommandBufferAllocateInfo allocInfo = {};
-	allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-	allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-	allocInfo.commandPool = mCommandPool;
-	allocInfo.commandBufferCount = 1;
-
-	VkCommandBuffer commandBuffer;
-	vkAllocateCommandBuffers(mContext->device, &allocInfo, &commandBuffer);
-
-	VkCommandBufferBeginInfo beginInfo = {};
-	beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-	beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
-
-	vkBeginCommandBuffer(commandBuffer, &beginInfo);
-
-	return commandBuffer;
-}
-
-
-void BufferManager::endSingleCmdBuffer(VkCommandBuffer commandBuffer)
-{
-	vkEndCommandBuffer(commandBuffer);
-
-	VkSubmitInfo submitInfo = {};
-	submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-	submitInfo.commandBufferCount = 1;
-	submitInfo.pCommandBuffers = &commandBuffer;
-
-	vkQueueSubmit(mContext->graphicsQueue, 1, &submitInfo, VK_NULL_HANDLE);
-	vkQueueWaitIdle(mContext->graphicsQueue);
-
-	vkFreeCommandBuffers(mContext->device, mCommandPool, 1, &commandBuffer);
-}
+//VkCommandBuffer BufferManager::beginSingleCmdBuffer()
+//{
+//	VkCommandBufferAllocateInfo allocInfo = {};
+//	allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+//	allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+//	allocInfo.commandPool = mCommandPool;
+//	allocInfo.commandBufferCount = 1;
+//
+//	VkCommandBuffer commandBuffer;
+//	vkAllocateCommandBuffers(mContext->device, &allocInfo, &commandBuffer);
+//
+//	VkCommandBufferBeginInfo beginInfo = {};
+//	beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+//	beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+//
+//	vkBeginCommandBuffer(commandBuffer, &beginInfo);
+//
+//	return commandBuffer;
+//}
+//
+//
+//void BufferManager::endSingleCmdBuffer(VkCommandBuffer commandBuffer)
+//{
+//	vkEndCommandBuffer(commandBuffer);
+//
+//	VkSubmitInfo submitInfo = {};
+//	submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+//	submitInfo.commandBufferCount = 1;
+//	submitInfo.pCommandBuffers = &commandBuffer;
+//
+//	vkQueueSubmit(mContext->graphicsQueue, 1, &submitInfo, VK_NULL_HANDLE);
+//	vkQueueWaitIdle(mContext->graphicsQueue);
+//
+//	vkFreeCommandBuffers(mContext->device, mCommandPool, 1, &commandBuffer);
+//}

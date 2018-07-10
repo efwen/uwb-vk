@@ -17,24 +17,28 @@ void RenderSystem::initialize(GLFWwindow * window)
 	createSurface(window);
 
 	mContext = std::make_shared<DeviceContext>(DeviceContext());
+	mContext->initialize(window);
+
 	createDevice();
 
 	createCommandPool();
 	mBufferManager = std::make_shared<BufferManager>(BufferManager(mContext, mCommandPool));
 
 	createSwapchain();
-	createRenderPass();
+	createDescriptorPool();	//moved
 
+	createRenderPass();
 	createDescriptorSetLayout();
 	createGraphicsPipeline();
 	createFramebuffers();
 
 
 	createTexture();
-	createVertexBuffer();
-	createIndexBuffer();
-	createUniformBuffers();
-	createDescriptorPool();
+	createBuffers();
+	//createVertexBuffer();
+	//createIndexBuffer();
+	//createUniformBuffers();
+	//createDescriptorSetPool();
 	createDescriptorSets();
 
 	createCommandBuffers();
@@ -60,7 +64,8 @@ void RenderSystem::cleanupSwapchain()
 		vkDestroyFramebuffer(mContext->device, framebuffer, nullptr);
 	}
 
-	vkFreeCommandBuffers(mContext->device, mCommandPool, static_cast<uint32_t>(mCommandBuffers.size()), mCommandBuffers.data());
+	mCommandPool->freeCommandBuffers(mCommandBuffers);
+	//vkFreeCommandBuffers(mContext->device, mCommandPool, static_cast<uint32_t>(mCommandBuffers.size()), mCommandBuffers.data());
 
 	vkDestroyPipeline(mContext->device, mPipeline, nullptr);
 	vkDestroyPipelineLayout(mContext->device, mPipelineLayout, nullptr);
@@ -100,7 +105,8 @@ void RenderSystem::cleanup()
 		vkDestroyFence(mContext->device, mFrameFences[i], nullptr);
 	}
 
-	vkDestroyCommandPool(mContext->device, mCommandPool, nullptr);
+	//vkDestroyCommandPool(mContext->device, mCommandPool, nullptr);
+	mCommandPool->cleanup();
 
 	vkDestroyDevice(mContext->device, nullptr);
 	if (enableValidationLayers) {
@@ -688,15 +694,8 @@ void RenderSystem::createFramebuffers()
 void RenderSystem::createCommandPool()
 {
 	std::cout << "Creating command pool" << std::endl;
-
-	VkCommandPoolCreateInfo poolInfo = {};
-	poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
-	poolInfo.queueFamilyIndex = mContext->selectedIndices.graphicsFamily;
-	poolInfo.flags = 0; // Optional
-
-	if (vkCreateCommandPool(mContext->device, &poolInfo, nullptr, &mCommandPool) != VK_SUCCESS) {
-		throw std::runtime_error("failed to create command pool!");
-	}
+	mCommandPool = std::make_shared<CommandPool>(CommandPool(mContext));
+	mCommandPool->initialize();
 }
 
 void RenderSystem::createCommandBuffers()
@@ -704,16 +703,7 @@ void RenderSystem::createCommandBuffers()
 	std::cout << "Creating command buffers" << std::endl;
 
 	mCommandBuffers.resize(mSwapchainFramebuffers.size());
-
-	VkCommandBufferAllocateInfo allocInfo = {};
-	allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-	allocInfo.commandPool = mCommandPool;
-	allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-	allocInfo.commandBufferCount = (uint32_t)mCommandBuffers.size();
-
-	if (vkAllocateCommandBuffers(mContext->device, &allocInfo, mCommandBuffers.data()) != VK_SUCCESS) {
-		throw std::runtime_error("failed to allocate command buffers!");
-	}
+	mCommandPool->allocateCommandBuffers(mCommandBuffers, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
 
 	//record into the command buffers
 	for (size_t i = 0; i < mCommandBuffers.size(); i++) {
@@ -739,16 +729,17 @@ void RenderSystem::createCommandBuffers()
 
 		vkCmdBindPipeline(mCommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, mPipeline);
 
-
+		//Set up draw info
 		VkBuffer vertexBuffers = { mVertexBuffer };
 		VkDeviceSize offsets[] = { 0 };
 		vkCmdBindVertexBuffers(mCommandBuffers[i], 0, 1, &vertexBuffers, offsets);
-
 		vkCmdBindIndexBuffer(mCommandBuffers[i], mIndexBuffer, 0, VK_INDEX_TYPE_UINT16);
-
 		vkCmdBindDescriptorSets(mCommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, mPipelineLayout, 0, 1, &mDescriptorSets[i], 0, nullptr);
+		
+		//Draw our square
 		vkCmdDrawIndexed(mCommandBuffers[i], static_cast<uint32_t>(squareIndices.size()), 1, 0, 0, 0);
 
+		
 		vkCmdEndRenderPass(mCommandBuffers[i]);
 
 		if (vkEndCommandBuffer(mCommandBuffers[i]) != VK_SUCCESS) {
@@ -801,41 +792,6 @@ std::vector<const char*> RenderSystem::getRequiredExtensions()
 	return extensions;
 }
 
-VkCommandBuffer RenderSystem::beginSingleCmdBuffer()
-{
-	VkCommandBufferAllocateInfo allocInfo = {};
-	allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-	allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-	allocInfo.commandPool = mCommandPool;
-	allocInfo.commandBufferCount = 1;
-
-	VkCommandBuffer commandBuffer;
-	vkAllocateCommandBuffers(mContext->device, &allocInfo, &commandBuffer);
-
-	VkCommandBufferBeginInfo beginInfo = {};
-	beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-	beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
-
-	vkBeginCommandBuffer(commandBuffer, &beginInfo);
-
-	return commandBuffer;
-}
-
-void RenderSystem::endSingleCmdBuffer(VkCommandBuffer commandBuffer)
-{
-	vkEndCommandBuffer(commandBuffer);
-
-	VkSubmitInfo submitInfo = {};
-	submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-	submitInfo.commandBufferCount = 1;
-	submitInfo.pCommandBuffers = &commandBuffer;
-
-	vkQueueSubmit(mContext->graphicsQueue, 1, &submitInfo, VK_NULL_HANDLE);
-	vkQueueWaitIdle(mContext->graphicsQueue);
-
-	vkFreeCommandBuffers(mContext->device, mCommandPool, 1, &commandBuffer);
-}
-
 
 uint32_t RenderSystem::findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties)
 {
@@ -853,7 +809,7 @@ uint32_t RenderSystem::findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags
 
 void RenderSystem::transitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout)
 {
-	VkCommandBuffer commandBuffer = beginSingleCmdBuffer();
+	VkCommandBuffer commandBuffer = mCommandPool->beginSingleCmdBuffer();
 
 	std::cout << "TransitionImageLayout();" << std::endl;
 
@@ -912,19 +868,16 @@ void RenderSystem::transitionImageLayout(VkImage image, VkFormat format, VkImage
 	);
 
 
-	endSingleCmdBuffer(commandBuffer);
+	mCommandPool->endSingleCmdBuffer(commandBuffer);
 }
 
-void RenderSystem::createVertexBuffer()
-{
+void RenderSystem::createBuffers()
+{	
 	std::cout << "Creating Vertex Buffer..." << std::endl;
 	mBufferManager->createVertexBuffer(squareVertices, mVertexBuffer, mVertexBufferMemory);
-}
-
-
-void RenderSystem::createIndexBuffer()
-{
 	mBufferManager->createIndexBuffer(squareIndices, mIndexBuffer, mIndexBufferMemory);
+
+	createUniformBuffers();
 }
 
 void RenderSystem::createUniformBuffers()
@@ -1045,6 +998,8 @@ void RenderSystem::createTexture()
 
 void RenderSystem::setClearColor(VkClearValue clearColor)
 {
+	//wait for the device to be idle, then recreate the command buffers with the new clear color
+	//could be made more efficient by recreating just a clearColor secondary command buffer?
 	vkDeviceWaitIdle(mContext->device);
 	mClearColor = clearColor;
 	createCommandBuffers();
