@@ -1,10 +1,11 @@
 #include "Swapchain.h"
 
-Swapchain::Swapchain(std::shared_ptr<VulkanContext> context) :
+Swapchain::Swapchain(std::shared_ptr<VulkanContext> context, std::shared_ptr<ImageManager> imageManager) :
 	mSwapchain(VK_NULL_HANDLE),
 	mImageFormat(VK_FORMAT_UNDEFINED),
 	mExtent{ 0, 0 },
-	mContext(context)
+	mContext(context),
+	mImageManager(imageManager)
 {}
 
 Swapchain::~Swapchain() {}
@@ -65,6 +66,9 @@ void Swapchain::initialize(VkSurfaceKHR surface, uint32_t imageCount)
 	//for use later
 	mImageFormat = surfaceFormat.format;
 	mExtent = extent;
+
+	//createImageViews
+	createImageViews();
 }
 
 void Swapchain::cleanup()
@@ -161,29 +165,9 @@ VkExtent2D Swapchain::chooseExtent(const VkSurfaceCapabilitiesKHR & capabilities
 void Swapchain::createImageViews()
 {
 	std::cout << "Creating swapchain image views" << std::endl;
-
 	mImageViews.resize(mImages.size());
-
 	for (size_t i = 0; i < mImages.size(); i++) {
-		VkImageViewCreateInfo imageViewCreateInfo = {};
-		imageViewCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-		imageViewCreateInfo.image = mImages[i];
-		imageViewCreateInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
-		imageViewCreateInfo.format = mImageFormat;
-		imageViewCreateInfo.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
-		imageViewCreateInfo.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
-		imageViewCreateInfo.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
-		imageViewCreateInfo.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
-		imageViewCreateInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-		imageViewCreateInfo.subresourceRange.baseMipLevel = 0;
-		imageViewCreateInfo.subresourceRange.levelCount = 1;
-		imageViewCreateInfo.subresourceRange.baseArrayLayer = 0;
-		imageViewCreateInfo.subresourceRange.layerCount = 1;
-
-		if (vkCreateImageView(mContext->device, &imageViewCreateInfo, nullptr, &mImageViews[i]) != VK_SUCCESS) {
-			throw std::runtime_error("Failed to create swapchain image views!");
-		}
-
+		mImageViews[i] = mImageManager->createImageView(mImages[i], mImageFormat);
 	}
 }
 

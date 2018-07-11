@@ -13,17 +13,17 @@
 //uwb-vk
 #include "VulkanContext.h"
 #include "QueueFamilies.h"
+#include "ImageManager.h"
 
 class Swapchain 
 {
 public:
-	Swapchain(std::shared_ptr<VulkanContext> context);
+	Swapchain(std::shared_ptr<VulkanContext> context, std::shared_ptr<ImageManager> imageManager);
 	~Swapchain();
 
 	void initialize(VkSurfaceKHR surface, uint32_t imageCount);
 	void cleanup();
 
-	void createImageViews();
 	std::vector<VkFramebuffer> createFramebuffers(VkRenderPass renderPass);
 
 	VkSwapchainKHR getVkSwapchain() const;
@@ -33,6 +33,7 @@ public:
 	uint32_t size() const;
 private:
 	std::shared_ptr<VulkanContext> mContext;
+	std::shared_ptr<ImageManager> mImageManager;
 	
 	VkSwapchainKHR mSwapchain;
 	std::vector<VkImage> mImages;
@@ -44,4 +45,5 @@ private:
 	VkSurfaceFormatKHR chooseSurfaceFormat(VkSurfaceKHR surface);
 	VkPresentModeKHR choosePresentMode(VkSurfaceKHR surface);
 	VkExtent2D chooseExtent(const VkSurfaceCapabilitiesKHR& capabilities);
+	void createImageViews();
 };

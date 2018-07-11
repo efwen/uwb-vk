@@ -2,16 +2,16 @@
 #include "RenderSystem.h"
 #include <assert.h>
 
-Texture::Texture(RenderSystem* renderSystem, std::shared_ptr<VulkanContext> context, std::shared_ptr<BufferManager> bufferManager) :
+Texture::Texture(std::shared_ptr<VulkanContext> context, std::shared_ptr<BufferManager> bufferManager, std::shared_ptr<ImageManager> imageManager) :
 	mWidth(0),
 	mHeight(0),
 	mChannels(0),
 	mImageSize(0),
 	mImage(VK_NULL_HANDLE),
 	mImageMemory(VK_NULL_HANDLE),
-	mRenderSystem(renderSystem),
 	mContext(context),
-	mBufferManager(bufferManager)
+	mBufferManager(bufferManager),
+	mImageManager(imageManager)
 {
 }
 
@@ -65,14 +65,14 @@ void Texture::createTextureImage(unsigned char* pixelData)
 	memcpy(data, pixelData, static_cast<size_t>(mImageSize));
 	vkUnmapMemory(mContext->device, stagingBufferMemory);
 
-	mRenderSystem->createImage(mWidth, mHeight, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_TILING_OPTIMAL,
+	mImageManager->createImage(mWidth, mHeight, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_TILING_OPTIMAL,
 		VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
 		mImage, mImageMemory);
 
 	//copy the staging buffer to the texture image
 
 	//transition from undefined layout to a layout conducive to being copied into
-	mRenderSystem->transitionImageLayout(mImage,
+	mImageManager->transitionImageLayout(mImage,
 		VK_FORMAT_R8G8B8A8_UNORM,
 		VK_IMAGE_LAYOUT_UNDEFINED,
 		VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
@@ -83,7 +83,7 @@ void Texture::createTextureImage(unsigned char* pixelData)
 		static_cast<uint32_t>(mHeight));
 
 	//Transition from transfer destination to shader reading
-	mRenderSystem->transitionImageLayout(mImage,
+	mImageManager->transitionImageLayout(mImage,
 		VK_FORMAT_R8G8B8A8_UNORM,
 		VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
 		VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
@@ -94,7 +94,7 @@ void Texture::createTextureImage(unsigned char* pixelData)
 
 void Texture::createTextureImageView()
 {
-	mImageView = mRenderSystem->createImageView(mImage, VK_FORMAT_R8G8B8A8_UNORM);
+	mImageView = mImageManager->createImageView(mImage, VK_FORMAT_R8G8B8A8_UNORM);
 }
 
 void Texture::createTextureSampler()

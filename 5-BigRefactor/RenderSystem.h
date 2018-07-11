@@ -26,6 +26,7 @@
 #include "QueueFamilies.h"
 #include "CommandPool.h"
 #include "BufferManager.h"
+#include "ImageManager.h"
 #include "Swapchain.h"
 #include "Texture.h"
 #include "Vertex.h"
@@ -47,8 +48,6 @@ struct UniformBufferObject {
 	glm::mat4 proj;
 };
 
-
-
 const int MAX_CONCURRENT_FRAMES = 2;
 
 class RenderSystem
@@ -63,23 +62,20 @@ public:
 
 	void setClearColor(VkClearValue clearColor);
 
-	/* Image Management */
-	void createImage(uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties, VkImage & image, VkDeviceMemory & imageMemory);
-	VkImageView createImageView(VkImage image, VkFormat imageFormat);
-	void transitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout);
-
 private:
 	VkInstance mInstance;
 	VkDebugReportCallbackEXT mCallback;
 
 	std::shared_ptr<VulkanContext> mContext;
+	std::shared_ptr<CommandPool> mCommandPool;
 	std::shared_ptr<BufferManager> mBufferManager;
-
-	//Presentation Surface
-	VkSurfaceKHR mSurface;
+	std::shared_ptr<ImageManager> mImageManager;
 
 	//Swapchain Setup
 	std::unique_ptr<Swapchain> mSwapchain;
+
+	//Command Buffers
+	std::vector<VkCommandBuffer> mCommandBuffers;
 
 #pragma region Pipeline
 	//more closely attached to a renderpass than swapchain
@@ -94,10 +90,6 @@ private:
 	VkPipeline mPipeline;
 #pragma endregion
 
-	//Command Buffers
-	std::shared_ptr<CommandPool> mCommandPool;
-	//VkCommandPool mCommandPool;
-	std::vector<VkCommandBuffer> mCommandBuffers;
 
 	//Rendering Synchronization primitives
 	std::vector<VkSemaphore> mImageAvailableSemaphores;

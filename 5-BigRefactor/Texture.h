@@ -7,14 +7,13 @@
 #include <string>
 #include <memory>
 
-//Forward declare to avoid circular dependency
-class RenderSystem;
 #include "BufferManager.h"
+#include "ImageManager.h"
 
 class Texture
 {
 public:
-	Texture(RenderSystem* renderSystem, std::shared_ptr<VulkanContext> context, std::shared_ptr<BufferManager> bufferManager);
+	Texture(std::shared_ptr<VulkanContext> context, std::shared_ptr<BufferManager> bufferManager, std::shared_ptr<ImageManager> imageManager);
 
 	Texture& load(unsigned char* data, int width, int height, int channels);
 	void free();
@@ -33,9 +32,9 @@ protected:
 	VkImageView mImageView;
 	VkSampler mSampler;
 
-	RenderSystem* mRenderSystem;
 	std::shared_ptr<VulkanContext> mContext;
 	std::shared_ptr<BufferManager> mBufferManager;
+	std::shared_ptr<ImageManager> mImageManager;
 
 	void createTextureImage(unsigned char* pixelData);
 	void createTextureImageView();
