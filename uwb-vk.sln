@@ -13,6 +13,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "4-TextureMapping", "4-Textu
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "5-BigRefactor", "5-BigRefactor\5-BigRefactor.vcxproj", "{51448A41-C19C-47B3-846E-6D143E395D32}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "6-DepthBuffer", "6-DepthBuffer\6-DepthBuffer.vcxproj", "{2704F33C-13C2-4DFB-9529-D471BD06D52E}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -61,6 +63,14 @@ Global
 		{51448A41-C19C-47B3-846E-6D143E395D32}.Release|x64.Build.0 = Release|x64
 		{51448A41-C19C-47B3-846E-6D143E395D32}.Release|x86.ActiveCfg = Release|Win32
 		{51448A41-C19C-47B3-846E-6D143E395D32}.Release|x86.Build.0 = Release|Win32
+		{2704F33C-13C2-4DFB-9529-D471BD06D52E}.Debug|x64.ActiveCfg = Debug|x64
+		{2704F33C-13C2-4DFB-9529-D471BD06D52E}.Debug|x64.Build.0 = Debug|x64
+		{2704F33C-13C2-4DFB-9529-D471BD06D52E}.Debug|x86.ActiveCfg = Debug|Win32
+		{2704F33C-13C2-4DFB-9529-D471BD06D52E}.Debug|x86.Build.0 = Debug|Win32
+		{2704F33C-13C2-4DFB-9529-D471BD06D52E}.Release|x64.ActiveCfg = Release|x64
+		{2704F33C-13C2-4DFB-9529-D471BD06D52E}.Release|x64.Build.0 = Release|x64
+		{2704F33C-13C2-4DFB-9529-D471BD06D52E}.Release|x86.ActiveCfg = Release|Win32
+		{2704F33C-13C2-4DFB-9529-D471BD06D52E}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
