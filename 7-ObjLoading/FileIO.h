@@ -1,22 +1,11 @@
 #pragma once
 
 //STL
-#include <fstream>
+#include <string>
 #include <vector>
 
-static std::vector<char> readShaderFile(const std::string& filename) {
-	std::ifstream file(filename, std::ios::ate | std::ios::binary);
+#include "Vertex.h"
 
-	if (!file.is_open()) {
-		throw std::runtime_error("Unable to open shader file!");
-	}
+std::vector<char> readShaderFile(const std::string& filename);
 
-	size_t fileSize = (size_t)file.tellg();
-	std::vector<char> buffer(fileSize);
-
-	file.seekg(0);
-	file.read(buffer.data(), fileSize);
-
-	file.close();
-	return buffer;
-}
+void readObjFile(const std::string& filename, std::vector<Vertex>& vertices, std::vector<uint32_t>& indices);

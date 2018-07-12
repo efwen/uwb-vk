@@ -32,7 +32,8 @@ void RenderSystem::initialize(GLFWwindow * window)
 	createGraphicsPipeline();			//assumes shader, UBO, texture/sampler, 
 	createFramebuffers();				//needs swapchain, attachments
 
-	createMesh(doubleSquareVertices, doubleSquareIndices);
+	//createMesh(doubleSquareVertices, doubleSquareIndices);
+	loadModel(MODEL_PATH, mVertices, mIndices);
 	createUniformBufferObject();
 	createTexture(TEXTURE_PATH);
 	createDescriptorSets();		//relies on swapchain, descriptorpool, texture
@@ -623,11 +624,11 @@ void RenderSystem::createCommandBuffers()
 		VkBuffer vertexBuffers = { mVertexBuffer };
 		VkDeviceSize offsets[] = { 0 };
 		vkCmdBindVertexBuffers(mCommandBuffers[i], 0, 1, &vertexBuffers, offsets);
-		vkCmdBindIndexBuffer(mCommandBuffers[i], mIndexBuffer, 0, VK_INDEX_TYPE_UINT16);
+		vkCmdBindIndexBuffer(mCommandBuffers[i], mIndexBuffer, 0, VK_INDEX_TYPE_UINT32);
 		vkCmdBindDescriptorSets(mCommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, mPipelineLayout, 0, 1, &mDescriptorSets[i], 0, nullptr);
 		
 		//Draw our square
-		vkCmdDrawIndexed(mCommandBuffers[i], static_cast<uint32_t>(doubleSquareIndices.size()), 1, 0, 0, 0);
+		vkCmdDrawIndexed(mCommandBuffers[i], static_cast<uint32_t>(mIndices.size()), 1, 0, 0, 0);
 
 		
 		vkCmdEndRenderPass(mCommandBuffers[i]);
@@ -663,11 +664,20 @@ void RenderSystem::createSyncObjects()
 	}
 }
 
-void RenderSystem::createMesh(const std::vector<Vertex> &vertices, const std::vector<uint16_t> &indices)
+void RenderSystem::createMesh(std::vector<Vertex> &vertices, std::vector<uint32_t> &indices)
 {
 	std::cout << "Creating Mesh..." << std::endl;
 	mBufferManager->createVertexBuffer(vertices, mVertexBuffer, mVertexBufferMemory);
 	mBufferManager->createIndexBuffer(indices, mIndexBuffer, mIndexBufferMemory);
+}
+
+void RenderSystem::loadModel(const std::string & filename, std::vector<Vertex>& vertices, std::vector<uint32_t>& indices)
+{
+	std::cout << "Loading Model" << std::endl;
+	readObjFile(filename, vertices, indices);
+	mBufferManager->createVertexBuffer(vertices, mVertexBuffer, mVertexBufferMemory);
+	mBufferManager->createIndexBuffer(indices, mIndexBuffer, mIndexBufferMemory);
+	std::cout << "Done loading model" << std::endl;
 }
 
 

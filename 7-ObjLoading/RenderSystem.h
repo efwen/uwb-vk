@@ -32,7 +32,7 @@
 #include "Vertex.h"
 
 
-
+/*
 const std::vector<Vertex> doubleSquareVertices = {
 	{ { -0.5f, -0.5f, 0.0f },{ 1.0f, 0.0f, 0.0f },{ 0.0f, 0.0f } },
 	{ { 0.5f, -0.5f, 0.0f },{ 0.0f, 1.0f, 0.0f },{ 1.0f, 0.0f } },
@@ -49,6 +49,7 @@ const std::vector<uint16_t> doubleSquareIndices = {
 	0, 1, 2, 2, 3, 0,
 	4, 5, 6, 6, 7, 4
 };
+*/
 
 struct UniformBufferObject {
 	glm::mat4 model;
@@ -59,7 +60,8 @@ struct UniformBufferObject {
 const int MAX_CONCURRENT_FRAMES = 2;
 const std::string VERT_SHADER_PATH = "shaders/square_vert.spv";
 const std::string FRAG_SHADER_PATH = "shaders/square_frag.spv";
-const std::string TEXTURE_PATH = "textures/texture.jpg";
+const std::string TEXTURE_PATH = "textures/chalet.jpg";
+const std::string MODEL_PATH = "models/chalet.obj";
 
 class RenderSystem
 {
@@ -118,6 +120,8 @@ private:
 	VkDeviceMemory mVertexBufferMemory;
 
 	//index buffer
+	std::vector<Vertex> mVertices;
+	std::vector<uint32_t> mIndices;
 	VkBuffer mIndexBuffer;
 	VkDeviceMemory mIndexBufferMemory;
 
@@ -156,7 +160,8 @@ private:
 	void createSyncObjects();
 
 
-	void createMesh(const std::vector<Vertex> &vertices, const std::vector<uint16_t> &indices);
+	void createMesh(std::vector<Vertex> &vertices, std::vector<uint32_t> &indices);
+	void loadModel(const std::string &filename, std::vector<Vertex> &vertices, std::vector<uint32_t> &indices);
 	void createTexture(const std::string &filename);
 	void createUniformBufferObject();
 	void updateUniformBuffer(uint32_t currentImage);

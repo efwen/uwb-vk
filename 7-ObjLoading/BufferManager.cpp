@@ -42,7 +42,7 @@ void BufferManager::createVertexBuffer(const std::vector<Vertex>& vertices, VkBu
 	vkFreeMemory(mContext->device, stagingBufferMemory, nullptr);
 }
 
-void BufferManager::createIndexBuffer(const std::vector<uint16_t>& indices, VkBuffer & indexBuffer, VkDeviceMemory & indexBufferMemory)
+void BufferManager::createIndexBuffer(const std::vector<uint32_t>& indices, VkBuffer & indexBuffer, VkDeviceMemory & indexBufferMemory)
 {
 	VkDeviceSize bufferSize = sizeof(indices[0]) * indices.size();
 

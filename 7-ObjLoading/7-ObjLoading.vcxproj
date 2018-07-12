@@ -122,6 +122,7 @@
   <ItemGroup>
     <ClCompile Include="BufferManager.cpp" />
     <ClCompile Include="CommandPool.cpp" />
+    <ClCompile Include="FileIO.cpp" />
     <ClCompile Include="ImageManager.cpp" />
     <ClCompile Include="InputSystem.cpp" />
     <ClCompile Include="main.cpp" />
