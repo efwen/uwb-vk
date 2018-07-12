@@ -7,14 +7,8 @@
 
 void RenderSystem::initialize(GLFWwindow * window)
 {
-	printExtensions();
-	createInstance();
-	if (enableValidationLayers) {
-		setupDebugCallback();
-	}
-
 	mContext = std::make_shared<VulkanContext>(VulkanContext());
-	mContext->initialize(mInstance, window);
+	mContext->initialize(window);
 
 	mCommandPool = std::make_shared<CommandPool>(CommandPool(mContext));
 	mCommandPool->initialize();
@@ -28,18 +22,20 @@ void RenderSystem::initialize(GLFWwindow * window)
 	createSwapchain();
 	createDescriptorPool();
 
-	createRenderPass();
-	createDescriptorSetLayout();
-	createGraphicsPipeline();
-	createFramebuffers();
-
-
-	createTexture();
-	createBuffers();
-	createDescriptorSets();
-
-	createCommandBuffers();
+	//for synchronizing the rendering process
 	createSyncObjects();
+
+
+	createRenderPass();					//assumes swapchain & attachments?
+	createDescriptorSetLayout();		//assumes UBO, texture/sampler
+	createGraphicsPipeline();			//assumes shader, UBO, texture/sampler, 
+	createFramebuffers();				//needs swapchain, attachments
+
+	createMesh(squareVertices, squareIndices);
+	createUniformBufferObject();
+	createTexture("textures/texture.jpg");
+	createDescriptorSets();		//relies on swapchain, descriptorpool, texture
+	createCommandBuffers();
 }
 
 void RenderSystem::cleanup()
@@ -76,13 +72,7 @@ void RenderSystem::cleanup()
 	}
 
 	mCommandPool->cleanup();
-	mContext->cleanup(mInstance);
-
-	if (enableValidationLayers) {
-		DestroyDebugReportCallbackEXT(mInstance, mCallback, nullptr);
-	}
-
-	vkDestroyInstance(mInstance, nullptr);
+	mContext->cleanup();
 }
 
 void RenderSystem::drawFrame()
@@ -144,42 +134,6 @@ void RenderSystem::drawFrame()
 	mCurrentFrame = (mCurrentFrame + 1) % MAX_CONCURRENT_FRAMES;
 }
 
-
-void RenderSystem::createInstance()
-{
-	std::cout << "creating vulkan instance.." << std::endl;
-
-	VkApplicationInfo appInfo = {};
-	appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
-	appInfo.pApplicationName = "5-BigRefactor";
-	appInfo.applicationVersion = 1;
-	appInfo.pEngineName = "uwb-vk";
-	appInfo.engineVersion = 1;
-	appInfo.apiVersion = VK_MAKE_VERSION(1, 0, 0);
-
-
-	VkInstanceCreateInfo createInfo = {};
-	createInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
-	createInfo.pApplicationInfo = &appInfo;
-	
-	//instance extensionsv
-	auto extensions = getRequiredExtensions();
-	createInfo.enabledExtensionCount = static_cast<uint32_t>(extensions.size());
-	createInfo.ppEnabledExtensionNames = extensions.data();
-	
-	//validation layers
-	if (enableValidationLayers) {
-		createInfo.enabledLayerCount = static_cast<uint32_t>(validationLayers.size());
-		createInfo.ppEnabledLayerNames = validationLayers.data();
-	}
-	else {
-		createInfo.enabledLayerCount = 0;
-	}
-
-	if (vkCreateInstance(&createInfo, nullptr, &mInstance) != VK_SUCCESS) {
-		std::cerr << "Failed to create instance!" << std::endl;
-	}
-}
 void RenderSystem::createSwapchain()
 {
 	mSwapchain = std::make_unique<Swapchain>(Swapchain(mContext, mImageManager));
@@ -654,36 +608,17 @@ void RenderSystem::createSyncObjects()
 	}
 }
 
-/*
-Utility Functions
-*/
-
-std::vector<const char*> RenderSystem::getRequiredExtensions()
+void RenderSystem::createMesh(const std::vector<Vertex> &vertices, const std::vector<uint16_t> &indices)
 {
-	uint32_t glfwExtensionCount = 0;
-	const char** glfwExtensions;
-	glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
-
-	std::vector<const char*> extensions(glfwExtensions, glfwExtensions + glfwExtensionCount);
-
-	if (enableValidationLayers) {
-		extensions.push_back(VK_EXT_DEBUG_REPORT_EXTENSION_NAME);
-	}
-
-	return extensions;
+	std::cout << "Creating Mesh..." << std::endl;
+	mBufferManager->createVertexBuffer(vertices, mVertexBuffer, mVertexBufferMemory);
+	mBufferManager->createIndexBuffer(indices, mIndexBuffer, mIndexBufferMemory);
 }
 
-void RenderSystem::createBuffers()
-{	
-	std::cout << "Creating Vertex Buffer..." << std::endl;
-	mBufferManager->createVertexBuffer(squareVertices, mVertexBuffer, mVertexBufferMemory);
-	mBufferManager->createIndexBuffer(squareIndices, mIndexBuffer, mIndexBufferMemory);
 
-	createUniformBuffers();
-}
-
-void RenderSystem::createUniformBuffers()
+void RenderSystem::createUniformBufferObject()
 {
+	std::cout << "Creating Uniform Buffer Object" << std::endl;
 	VkDeviceSize bufferSize = sizeof(UniformBufferObject);
 
 	mUniformBuffers.resize(mSwapchain->size());
@@ -719,11 +654,11 @@ void RenderSystem::updateUniformBuffer(uint32_t currentImage)
 	vkUnmapMemory(mContext->device, mUniformBuffersMemory[currentImage]);
 }
 
-void RenderSystem::createTexture()
+void RenderSystem::createTexture(const std::string &filename)
 {
 	std::cout << "Creating texture..." << std::endl;
 	int width, height, channels;
-	stbi_uc* pixels = stbi_load("textures/texture.jpg", &width, &height, &channels, STBI_rgb_alpha);
+	stbi_uc* pixels = stbi_load(filename.c_str(), &width, &height, &channels, STBI_rgb_alpha);
 
 	if (!pixels) {
 		throw std::runtime_error("Failed to load texture image");
@@ -743,38 +678,4 @@ void RenderSystem::setClearColor(VkClearValue clearColor)
 	vkDeviceWaitIdle(mContext->device);
 	mClearColor = clearColor;
 	createCommandBuffers();
-}
-
-void RenderSystem::printExtensions()
-{
-	std::cout << "--------------------------------" << std::endl;
-	uint32_t extensionCount = 0;
-	vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, nullptr);
-	std::cout << extensionCount << " vulkan extensions supported: " << std::endl << std::endl;
-
-	std::vector<VkExtensionProperties> extensionProperties;
-	extensionProperties.resize(extensionCount);
-	vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, extensionProperties.data());
-
-	
-	for (auto properties : extensionProperties) {
-		std::cout << properties.extensionName << std::endl;
-	}
-	std::cout << "--------------------------------" << std::endl;
-}
-
-void RenderSystem::setupDebugCallback()
-{
-	if (!enableValidationLayers) return;
-
-	std::cout << "Setting up debug callback" << std::endl;
-
-	VkDebugReportCallbackCreateInfoEXT createInfo = {};
-	createInfo.sType = VK_STRUCTURE_TYPE_DEBUG_REPORT_CALLBACK_CREATE_INFO_EXT;
-	createInfo.flags = VK_DEBUG_REPORT_ERROR_BIT_EXT | VK_DEBUG_REPORT_WARNING_BIT_EXT;
-	createInfo.pfnCallback = debugCallback;
-
-	if (CreateDebugReportCallbackEXT(mInstance, &createInfo, nullptr, &mCallback) != VK_SUCCESS) {
-		throw std::runtime_error("failed to set up debug callback!");
-	}
 }

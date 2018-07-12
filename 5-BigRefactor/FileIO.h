@@ -4,9 +4,6 @@
 #include <fstream>
 #include <vector>
 
-//uwb-vk
-#include "Texture.h"
-
 static std::vector<char> readShaderFile(const std::string& filename) {
 	std::ifstream file(filename, std::ios::ate | std::ios::binary);
 

@@ -63,8 +63,8 @@ public:
 	void setClearColor(VkClearValue clearColor);
 
 private:
-	VkInstance mInstance;
-	VkDebugReportCallbackEXT mCallback;
+	//VkInstance mInstance;
+	//VkDebugReportCallbackEXT mCallback;
 
 	std::shared_ptr<VulkanContext> mContext;
 	std::shared_ptr<CommandPool> mCommandPool;
@@ -114,7 +114,7 @@ private:
 	Texture* mTexture;
 
 private:
-	void createInstance();
+	//void createInstance();
 	void createDevice();
 	void createSurface(GLFWwindow* window);
 	
@@ -136,21 +136,13 @@ private:
 	void createFramebuffers();
 	void createCommandPool();
 	void createCommandBuffers();
-
 	void createSyncObjects();
 
-	/*Buffer Management*/
-	void createBuffers();
 
-	void createVertexBuffer();
-	void createIndexBuffer();
-	void createUniformBuffers();
+	void createMesh(const std::vector<Vertex> &vertices, const std::vector<uint16_t> &indices);
+
+	void createUniformBufferObject();
 	void updateUniformBuffer(uint32_t currentImage);
 	
-	void createTexture();
-
-	//Utility
-	std::vector<const char*> getRequiredExtensions();
-	void printExtensions();
-	void setupDebugCallback();
+	void createTexture(const std::string &filename);
 };
