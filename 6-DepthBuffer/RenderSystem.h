@@ -57,6 +57,9 @@ struct UniformBufferObject {
 };
 
 const int MAX_CONCURRENT_FRAMES = 2;
+const std::string VERT_SHADER_PATH = "shaders/square_vert.spv";
+const std::string FRAG_SHADER_PATH = "shaders/square_frag.spv";
+const std::string TEXTURE_PATH = "textures/texture.jpg";
 
 class RenderSystem
 {
@@ -71,9 +74,6 @@ public:
 	void setClearColor(VkClearValue clearColor);
 
 private:
-	//VkInstance mInstance;
-	//VkDebugReportCallbackEXT mCallback;
-
 	std::shared_ptr<VulkanContext> mContext;
 	std::shared_ptr<CommandPool> mCommandPool;
 	std::shared_ptr<BufferManager> mBufferManager;
@@ -143,6 +143,7 @@ private:
 	VkShaderModule createShaderModule(const std::vector<char>& code);
 	void createRenderPass();
 
+	//Descriptors
 	void createDescriptorSetLayout();
 	void createDescriptorPool();
 	void createDescriptorSets();

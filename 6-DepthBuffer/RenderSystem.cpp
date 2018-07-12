@@ -34,7 +34,7 @@ void RenderSystem::initialize(GLFWwindow * window)
 
 	createMesh(doubleSquareVertices, doubleSquareIndices);
 	createUniformBufferObject();
-	createTexture("textures/texture.jpg");
+	createTexture(TEXTURE_PATH);
 	createDescriptorSets();		//relies on swapchain, descriptorpool, texture
 	createCommandBuffers();
 }
@@ -181,8 +181,8 @@ void RenderSystem::createGraphicsPipeline()
 	std::cout << "Creating Graphics pipeline" << std::endl;
 
 	//Set up the programmable stages of the pipeline
-	auto vertShaderCode = readShaderFile("shaders/square_vert.spv");
-	auto fragShaderCode = readShaderFile("shaders/square_frag.spv");
+	auto vertShaderCode = readShaderFile(VERT_SHADER_PATH);
+	auto fragShaderCode = readShaderFile(FRAG_SHADER_PATH);
 
 	VkShaderModule vertShaderModule;
 	VkShaderModule fragShaderModule;
@@ -762,7 +762,6 @@ void RenderSystem::createDepthBuffer()
 void RenderSystem::setClearColor(VkClearValue clearColor)
 {
 	//wait for the device to be idle, then recreate the command buffers with the new clear color
-	//could be made more efficient by recreating just a clearColor secondary command buffer?
 	vkDeviceWaitIdle(mContext->device);
 	mClearColor = clearColor;
 	createCommandBuffers();
