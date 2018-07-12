@@ -13,6 +13,9 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
+    <Filter Include="Shaders">
+      <UniqueIdentifier>{7620b431-632e-4071-b272-3f12dc4793c1}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="BufferManager.cpp">
@@ -94,7 +97,11 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <None Include="shaders\square.frag" />
-    <None Include="shaders\square.vert" />
+    <None Include="shaders\square.frag">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="shaders\square.vert">
+      <Filter>Shaders</Filter>
+    </None>
   </ItemGroup>
 </Project>

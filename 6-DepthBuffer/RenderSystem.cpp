@@ -31,7 +31,7 @@ void RenderSystem::initialize(GLFWwindow * window)
 	createGraphicsPipeline();			//assumes shader, UBO, texture/sampler, 
 	createFramebuffers();				//needs swapchain, attachments
 
-	createMesh(squareVertices, squareIndices);
+	createMesh(doubleSquareVertices, doubleSquareIndices);
 	createUniformBufferObject();
 	createTexture("textures/texture.jpg");
 	createDescriptorSets();		//relies on swapchain, descriptorpool, texture
@@ -572,7 +572,7 @@ void RenderSystem::createCommandBuffers()
 		vkCmdBindDescriptorSets(mCommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, mPipelineLayout, 0, 1, &mDescriptorSets[i], 0, nullptr);
 		
 		//Draw our square
-		vkCmdDrawIndexed(mCommandBuffers[i], static_cast<uint32_t>(squareIndices.size()), 1, 0, 0, 0);
+		vkCmdDrawIndexed(mCommandBuffers[i], static_cast<uint32_t>(doubleSquareIndices.size()), 1, 0, 0, 0);
 
 		
 		vkCmdEndRenderPass(mCommandBuffers[i]);
