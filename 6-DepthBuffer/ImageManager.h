@@ -15,8 +15,12 @@ public:
 	~ImageManager();
 
 	void createImage(uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties, VkImage & image, VkDeviceMemory & imageMemory);
-	VkImageView createImageView(VkImage image, VkFormat imageFormat);
+	VkImageView createImageView(VkImage image, VkFormat imageFormat, VkImageAspectFlags aspectFlags);
 	void transitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout);
+
+	void createDepthResources(VkImage &depthImage, VkImageView& depthImageView, VkDeviceMemory &deviceMemory);
+
+	bool hasStencilComponent(VkFormat format);
 private:
 	std::shared_ptr<VulkanContext> mContext;
 	std::shared_ptr<CommandPool> mCommandPool;

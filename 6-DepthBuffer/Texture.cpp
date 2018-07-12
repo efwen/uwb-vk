@@ -94,7 +94,7 @@ void Texture::createTextureImage(unsigned char* pixelData)
 
 void Texture::createTextureImageView()
 {
-	mImageView = mImageManager->createImageView(mImage, VK_FORMAT_R8G8B8A8_UNORM);
+	mImageView = mImageManager->createImageView(mImage, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_ASPECT_COLOR_BIT);
 }
 
 void Texture::createTextureSampler()

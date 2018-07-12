@@ -167,7 +167,7 @@ void Swapchain::createImageViews()
 	std::cout << "Creating swapchain image views" << std::endl;
 	mImageViews.resize(mImages.size());
 	for (size_t i = 0; i < mImages.size(); i++) {
-		mImageViews[i] = mImageManager->createImageView(mImages[i], mImageFormat);
+		mImageViews[i] = mImageManager->createImageView(mImages[i], mImageFormat, VK_IMAGE_ASPECT_COLOR_BIT);
 	}
 }
 

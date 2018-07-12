@@ -25,7 +25,7 @@ void RenderSystem::initialize(GLFWwindow * window)
 	//for synchronizing the rendering process
 	createSyncObjects();
 
-
+	createDepthResources();				//set up the depth buffer
 	createRenderPass();					//assumes swapchain & attachments?
 	createDescriptorSetLayout();		//assumes UBO, texture/sampler
 	createGraphicsPipeline();			//assumes shader, UBO, texture/sampler, 
@@ -149,12 +149,17 @@ void RenderSystem::recreateSwapchain()
 	createSwapchain();
 	createRenderPass();
 	createGraphicsPipeline();
+	createDepthResources();
 	createFramebuffers();
 	createCommandBuffers();
 }
 
 void RenderSystem::cleanupSwapchain()
 {
+	vkDestroyImageView(mContext->device, mDepthImageView, nullptr);
+	vkDestroyImage(mContext->device, mDepthImage, nullptr);
+	vkFreeMemory(mContext->device, mDepthImageMemory, nullptr);
+
 	for (auto framebuffer : mSwapchainFramebuffers) {
 		vkDestroyFramebuffer(mContext->device, framebuffer, nullptr);
 	}
@@ -274,7 +279,17 @@ void RenderSystem::createGraphicsPipeline()
 
 	//Depth & Stencil testing
 	//not using for now, so just pass in nullptr
-
+	VkPipelineDepthStencilStateCreateInfo depthStencil = {};
+	depthStencil.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
+	depthStencil.depthTestEnable = VK_TRUE;					//should the depth of new fragments be compared
+	depthStencil.depthWriteEnable = VK_TRUE;				//should the depth be written?	FALSE for transparent objects?
+	depthStencil.depthCompareOp = VK_COMPARE_OP_LESS;		//lower depth = closer convention
+	depthStencil.depthBoundsTestEnable = VK_FALSE;
+	depthStencil.minDepthBounds = 0.0f;
+	depthStencil.maxDepthBounds = 1.0f;
+	depthStencil.stencilTestEnable = VK_FALSE;
+	depthStencil.front = {};
+	depthStencil.back = {};
 
 	//Color blending
 	//For now, no blending
@@ -336,7 +351,7 @@ void RenderSystem::createGraphicsPipeline()
 	pipelineCreateInfo.pViewportState = &viewportState;
 	pipelineCreateInfo.pRasterizationState = &rasterizer;
 	pipelineCreateInfo.pMultisampleState = &multisampling;
-	pipelineCreateInfo.pDepthStencilState = nullptr;
+	pipelineCreateInfo.pDepthStencilState = &depthStencil;
 	pipelineCreateInfo.pColorBlendState = &colorBlending;
 	pipelineCreateInfo.pDynamicState = nullptr;
 
@@ -375,6 +390,7 @@ void RenderSystem::createRenderPass()
 {
 	std::cout << "Creating render pass" << std::endl;
 
+	//color attachment
 	VkAttachmentDescription colorAttachment = {};
 	colorAttachment.format = mSwapchain->getImageFormat();
 	colorAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
@@ -389,17 +405,48 @@ void RenderSystem::createRenderPass()
 	colorAttachmentRef.attachment = 0;
 	colorAttachmentRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
+
+	//depth buffer
+	VkAttachmentDescription depthAttachment = {};
+	depthAttachment.format = findDepthFormat();
+	depthAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
+	depthAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;		//clear to constant at start
+	depthAttachment.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;	//not used after drawing finished
+	depthAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+	depthAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+	depthAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+	depthAttachment.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+
+	VkAttachmentReference depthAttachmentRef = {};
+	depthAttachmentRef.attachment = 1;
+	depthAttachmentRef.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+
 	VkSubpassDescription subpass = {};
 	subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
 	subpass.colorAttachmentCount = 1;
 	subpass.pColorAttachments = &colorAttachmentRef;
+	subpass.pDepthStencilAttachment = &depthAttachmentRef;
+
+	//not necessary right now, but will come into play w/ multipass rendering
+	VkSubpassDependency dependency = {};
+	dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
+	dependency.dstSubpass = 0;
+	dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+	dependency.srcAccessMask = 0;
+	dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+	dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+
+	std::array<VkAttachmentDescription, 2> attachments = { colorAttachment, depthAttachment };
 
 	VkRenderPassCreateInfo renderPassInfo = {};
 	renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
-	renderPassInfo.attachmentCount = 1;
-	renderPassInfo.pAttachments = &colorAttachment;
+	renderPassInfo.attachmentCount = static_cast<uint32_t>(attachments.size());
+	renderPassInfo.pAttachments = attachments.data();
 	renderPassInfo.subpassCount = 1;
 	renderPassInfo.pSubpasses = &subpass;
+	renderPassInfo.dependencyCount = 1;
+	renderPassInfo.pDependencies = &dependency;
+
 
 	if (vkCreateRenderPass(mContext->device, &renderPassInfo, nullptr, &mRenderPass) != VK_SUCCESS) {
 		throw std::runtime_error("Failed to create render pass!");
@@ -514,15 +561,16 @@ void RenderSystem::createFramebuffers()
 	mSwapchainFramebuffers.resize(swapchainImageViews.size());
 
 	for (size_t i = 0; i < swapchainImageViews.size(); i++) {
-		VkImageView attachments[] = {
-			swapchainImageViews[i]
+		std::array<VkImageView, 2> attachments = {
+			swapchainImageViews[i],
+			mDepthImageView
 		};
 
 		VkFramebufferCreateInfo framebufferInfo = {};
 		framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
 		framebufferInfo.renderPass = mRenderPass;
-		framebufferInfo.attachmentCount = 1;
-		framebufferInfo.pAttachments = attachments;
+		framebufferInfo.attachmentCount = static_cast<uint32_t>(attachments.size());
+		framebufferInfo.pAttachments = attachments.data();
 		framebufferInfo.width = mSwapchain->getExtent().width;
 		framebufferInfo.height = mSwapchain->getExtent().height;
 		framebufferInfo.layers = 1;
@@ -557,9 +605,15 @@ void RenderSystem::createCommandBuffers()
 		renderPassInfo.renderArea.offset = { 0, 0 };
 		renderPassInfo.renderArea.extent = mSwapchain->getExtent();
 		
-		renderPassInfo.clearValueCount = 1;
-		renderPassInfo.pClearValues = &mClearColor;
+		//set up clear values as part of renderPassInfo
+		std::array<VkClearValue, 2> clearValues = {};
+		clearValues[0].color = { 0.0f, 0.0f, 0.0f, 1.0f };
+		clearValues[1].depthStencil = { 1.0f, 0 };
 
+		renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
+		renderPassInfo.pClearValues = clearValues.data();
+
+		//begin the render pass
 		vkCmdBeginRenderPass(mCommandBuffers[i], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 
 		vkCmdBindPipeline(mCommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, mPipeline);
@@ -669,6 +723,62 @@ void RenderSystem::createTexture(const std::string &filename)
 
 	stbi_image_free(pixels);
 
+}
+
+void RenderSystem::createDepthResources()
+{
+	std::cout << "Creating depth resources" << std::endl;
+	VkFormat depthFormat = findDepthFormat();
+	
+	//create the depth image
+	std::cout << "creating depth image" << std::endl;
+	mImageManager->createImage(mSwapchain->getExtent().width,
+						mSwapchain->getExtent().height,
+						depthFormat,
+						VK_IMAGE_TILING_OPTIMAL,
+						VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
+						VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+						mDepthImage,
+						mDepthImageMemory);
+
+	//make an image view so we know how to access the depth image
+	std::cout << "creating depth image view" << std::endl;
+	mDepthImageView = mImageManager->createImageView(mDepthImage, depthFormat, VK_IMAGE_ASPECT_DEPTH_BIT);
+
+	//transition to a layout suitable for depth attachment use
+	std::cout << "transitioning from undefinied to depth_stencil_attachment_optimal" << std::endl;
+	mImageManager->transitionImageLayout(mDepthImage,
+									depthFormat,
+									VK_IMAGE_LAYOUT_UNDEFINED,
+									VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
+}
+
+VkFormat RenderSystem::findSupportedFormat(const std::vector<VkFormat>& candidates, VkImageTiling tiling, VkFormatFeatureFlags features)
+{
+	for (VkFormat format : candidates)
+	{
+		VkFormatProperties properties;
+		vkGetPhysicalDeviceFormatProperties(mContext->physicalDevice, format, &properties);
+
+		if (tiling == VK_IMAGE_TILING_LINEAR && (properties.linearTilingFeatures & features) == features)
+		{
+			return format;
+		}
+		else if (tiling == VK_IMAGE_TILING_OPTIMAL && (properties.optimalTilingFeatures & features) == features)
+		{
+			return format;
+		}
+	}
+
+	throw std::runtime_error("Failed to find a supported format!");
+}
+
+VkFormat RenderSystem::findDepthFormat()
+{
+	return findSupportedFormat(
+		{ VK_FORMAT_D32_SFLOAT, VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D24_UNORM_S8_UINT },
+		VK_IMAGE_TILING_OPTIMAL,
+		VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);
 }
 
 void RenderSystem::setClearColor(VkClearValue clearColor)

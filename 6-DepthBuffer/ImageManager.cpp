@@ -46,7 +46,7 @@ void ImageManager::createImage(uint32_t width, uint32_t height, VkFormat format,
 	vkBindImageMemory(mContext->device, image, imageMemory, 0);
 }
 
-VkImageView ImageManager::createImageView(VkImage image, VkFormat imageFormat)
+VkImageView ImageManager::createImageView(VkImage image, VkFormat imageFormat, VkImageAspectFlags aspectFlags)
 {
 	VkImageView imageView;
 
@@ -55,7 +55,7 @@ VkImageView ImageManager::createImageView(VkImage image, VkFormat imageFormat)
 	viewInfo.image = image;
 	viewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
 	viewInfo.format = imageFormat;
-	viewInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+	viewInfo.subresourceRange.aspectMask = aspectFlags;
 	viewInfo.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
 	viewInfo.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
 	viewInfo.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
@@ -74,6 +74,7 @@ VkImageView ImageManager::createImageView(VkImage image, VkFormat imageFormat)
 
 void ImageManager::transitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout)
 {
+	std::cout << "transitioning image from " << oldLayout << " to  " << newLayout << std::endl;
 	VkCommandBuffer commandBuffer = mCommandPool->beginSingleCmdBuffer();
 
 	VkImageMemoryBarrier barrier = {};
@@ -83,7 +84,21 @@ void ImageManager::transitionImageLayout(VkImage image, VkFormat format, VkImage
 	barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;	//used for transitioning family ownership
 	barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
 	barrier.image = image;									//the image to transition
-	barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+
+	if (newLayout == VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL)	//we're dealing with a depth/stencil image
+	{
+		barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
+
+		if (hasStencilComponent(format))	//stencil format, so adjust the subresourceRange
+		{
+			barrier.subresourceRange.aspectMask |= VK_IMAGE_ASPECT_STENCIL_BIT;
+		}
+	}
+	else
+	{
+		barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+	}
+	
 	barrier.subresourceRange.baseMipLevel = 0;
 	barrier.subresourceRange.levelCount = 1;
 	barrier.subresourceRange.baseArrayLayer = 0;
@@ -92,9 +107,9 @@ void ImageManager::transitionImageLayout(VkImage image, VkFormat format, VkImage
 	barrier.srcAccessMask = 0;	//todo
 	barrier.dstAccessMask = 0;  //todo
 
-								//determine which masks to use in the barrier
-								//and which stages to enter for vkCmdPipelineBarrier
 
+	//determine which masks to use in the barrier
+	//and which stages to enter for vkCmdPipelineBarrier
 	VkPipelineStageFlags srcStage;
 	VkPipelineStageFlags dstStage;
 
@@ -116,6 +131,15 @@ void ImageManager::transitionImageLayout(VkImage image, VkFormat format, VkImage
 		barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
 		dstStage = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
 	}
+	else if (oldLayout == VK_IMAGE_LAYOUT_UNDEFINED && newLayout == VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL)
+	{
+		barrier.srcAccessMask = 0;
+		srcStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
+
+		barrier.dstAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT |
+								VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;	//reading and writing
+		dstStage = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;					//reading during early tests, writing during late fragment tests
+	}
 	else
 	{
 		throw std::invalid_argument("Layout transition not supported!");
@@ -132,4 +156,9 @@ void ImageManager::transitionImageLayout(VkImage image, VkFormat format, VkImage
 
 
 	mCommandPool->endSingleCmdBuffer(commandBuffer);
+}
+
+bool ImageManager::hasStencilComponent(VkFormat format)
+{
+	return format == VK_FORMAT_D32_SFLOAT_S8_UINT || format == VK_FORMAT_D24_UNORM_S8_UINT;
 }

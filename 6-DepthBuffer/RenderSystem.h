@@ -109,14 +109,22 @@ private:
 	glm::mat4 model = glm::scale(glm::mat4(1.0f), glm::vec3(0.5f));
 
 #pragma region Buffers
+	//vertex buffer
 	VkBuffer mVertexBuffer;
 	VkDeviceMemory mVertexBufferMemory;
 
+	//index buffer
 	VkBuffer mIndexBuffer;
 	VkDeviceMemory mIndexBufferMemory;
 
+	//ubo
 	std::vector<VkBuffer> mUniformBuffers;
 	std::vector<VkDeviceMemory> mUniformBuffersMemory;
+
+	//depth buffer
+	VkImage mDepthImage;
+	VkDeviceMemory mDepthImageMemory;
+	VkImageView mDepthImageView;
 #pragma endregion
 
 	Texture* mTexture;
@@ -153,4 +161,8 @@ private:
 	void updateUniformBuffer(uint32_t currentImage);
 	
 	void createTexture(const std::string &filename);
+
+	void createDepthResources();
+	VkFormat findSupportedFormat(const std::vector<VkFormat>& candidates, VkImageTiling tiling, VkFormatFeatureFlags features);
+	VkFormat findDepthFormat();
 };
