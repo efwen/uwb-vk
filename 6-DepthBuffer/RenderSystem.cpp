@@ -20,12 +20,13 @@ void RenderSystem::initialize(GLFWwindow * window)
 	//mImageManager->initialize();?
 
 	createSwapchain();
+	createDepthBuffer();				//set up the depth buffer (must be before createRenderPass and after createSwapchain!)
 	createDescriptorPool();
 
 	//for synchronizing the rendering process
 	createSyncObjects();
 
-	createDepthResources();				//set up the depth buffer
+
 	createRenderPass();					//assumes swapchain & attachments?
 	createDescriptorSetLayout();		//assumes UBO, texture/sampler
 	createGraphicsPipeline();			//assumes shader, UBO, texture/sampler, 
@@ -149,7 +150,7 @@ void RenderSystem::recreateSwapchain()
 	createSwapchain();
 	createRenderPass();
 	createGraphicsPipeline();
-	createDepthResources();
+	createDepthBuffer();
 	createFramebuffers();
 	createCommandBuffers();
 }
@@ -408,7 +409,7 @@ void RenderSystem::createRenderPass()
 
 	//depth buffer
 	VkAttachmentDescription depthAttachment = {};
-	depthAttachment.format = findDepthFormat();
+	depthAttachment.format = mDepthImageFormat;
 	depthAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
 	depthAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;		//clear to constant at start
 	depthAttachment.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;	//not used after drawing finished
@@ -725,16 +726,21 @@ void RenderSystem::createTexture(const std::string &filename)
 
 }
 
-void RenderSystem::createDepthResources()
+void RenderSystem::createDepthBuffer()
 {
 	std::cout << "Creating depth resources" << std::endl;
-	VkFormat depthFormat = findDepthFormat();
+
+	std::cout << "Finding a depth image format" << std::endl;
+	mDepthImageFormat = mImageManager->findSupportedFormat(
+						{ VK_FORMAT_D32_SFLOAT, VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D24_UNORM_S8_UINT },
+						VK_IMAGE_TILING_OPTIMAL,
+						VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);
 	
 	//create the depth image
 	std::cout << "creating depth image" << std::endl;
 	mImageManager->createImage(mSwapchain->getExtent().width,
 						mSwapchain->getExtent().height,
-						depthFormat,
+						mDepthImageFormat,
 						VK_IMAGE_TILING_OPTIMAL,
 						VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
 						VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
@@ -743,42 +749,14 @@ void RenderSystem::createDepthResources()
 
 	//make an image view so we know how to access the depth image
 	std::cout << "creating depth image view" << std::endl;
-	mDepthImageView = mImageManager->createImageView(mDepthImage, depthFormat, VK_IMAGE_ASPECT_DEPTH_BIT);
+	mDepthImageView = mImageManager->createImageView(mDepthImage, mDepthImageFormat, VK_IMAGE_ASPECT_DEPTH_BIT);
 
 	//transition to a layout suitable for depth attachment use
 	std::cout << "transitioning from undefinied to depth_stencil_attachment_optimal" << std::endl;
 	mImageManager->transitionImageLayout(mDepthImage,
-									depthFormat,
+									mDepthImageFormat,
 									VK_IMAGE_LAYOUT_UNDEFINED,
 									VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
-}
-
-VkFormat RenderSystem::findSupportedFormat(const std::vector<VkFormat>& candidates, VkImageTiling tiling, VkFormatFeatureFlags features)
-{
-	for (VkFormat format : candidates)
-	{
-		VkFormatProperties properties;
-		vkGetPhysicalDeviceFormatProperties(mContext->physicalDevice, format, &properties);
-
-		if (tiling == VK_IMAGE_TILING_LINEAR && (properties.linearTilingFeatures & features) == features)
-		{
-			return format;
-		}
-		else if (tiling == VK_IMAGE_TILING_OPTIMAL && (properties.optimalTilingFeatures & features) == features)
-		{
-			return format;
-		}
-	}
-
-	throw std::runtime_error("Failed to find a supported format!");
-}
-
-VkFormat RenderSystem::findDepthFormat()
-{
-	return findSupportedFormat(
-		{ VK_FORMAT_D32_SFLOAT, VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D24_UNORM_S8_UINT },
-		VK_IMAGE_TILING_OPTIMAL,
-		VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);
 }
 
 void RenderSystem::setClearColor(VkClearValue clearColor)

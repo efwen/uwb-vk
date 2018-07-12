@@ -97,7 +97,11 @@ private:
 	VkPipelineLayout mPipelineLayout;
 	VkPipeline mPipeline;
 #pragma endregion
-
+	//depth buffer
+	VkImage mDepthImage;
+	VkFormat mDepthImageFormat;
+	VkDeviceMemory mDepthImageMemory;
+	VkImageView mDepthImageView;
 
 	//Rendering Synchronization primitives
 	std::vector<VkSemaphore> mImageAvailableSemaphores;
@@ -120,11 +124,6 @@ private:
 	//ubo
 	std::vector<VkBuffer> mUniformBuffers;
 	std::vector<VkDeviceMemory> mUniformBuffersMemory;
-
-	//depth buffer
-	VkImage mDepthImage;
-	VkDeviceMemory mDepthImageMemory;
-	VkImageView mDepthImageView;
 #pragma endregion
 
 	Texture* mTexture;
@@ -152,17 +151,12 @@ private:
 	void createFramebuffers();
 	void createCommandPool();
 	void createCommandBuffers();
+	void createDepthBuffer();
 	void createSyncObjects();
 
 
 	void createMesh(const std::vector<Vertex> &vertices, const std::vector<uint16_t> &indices);
-
+	void createTexture(const std::string &filename);
 	void createUniformBufferObject();
 	void updateUniformBuffer(uint32_t currentImage);
-	
-	void createTexture(const std::string &filename);
-
-	void createDepthResources();
-	VkFormat findSupportedFormat(const std::vector<VkFormat>& candidates, VkImageTiling tiling, VkFormatFeatureFlags features);
-	VkFormat findDepthFormat();
 };

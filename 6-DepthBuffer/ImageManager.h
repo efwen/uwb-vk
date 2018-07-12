@@ -18,8 +18,7 @@ public:
 	VkImageView createImageView(VkImage image, VkFormat imageFormat, VkImageAspectFlags aspectFlags);
 	void transitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout);
 
-	void createDepthResources(VkImage &depthImage, VkImageView& depthImageView, VkDeviceMemory &deviceMemory);
-
+	VkFormat findSupportedFormat(const std::vector<VkFormat>& candidates, VkImageTiling tiling, VkFormatFeatureFlags features);
 	bool hasStencilComponent(VkFormat format);
 private:
 	std::shared_ptr<VulkanContext> mContext;

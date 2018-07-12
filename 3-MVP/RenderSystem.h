@@ -95,7 +95,8 @@ static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
 	return VK_FALSE;
 }
 
-const int MAX_CONCURRENT_FRAMES = 2;
+const int MAX_CONCURRENT_FRAMES = 3;
+
 
 static std::vector<char> readShaderFile(const std::string& filename) {
 	std::ifstream file(filename, std::ios::ate | std::ios::binary);
@@ -158,7 +159,6 @@ private:
 	size_t mCurrentFrame = 0;
 
 	VkClearValue mClearColor = { 0.0f, 0.5f, 0.5f, 1.0f };
-	glm::mat4 model = glm::scale(glm::mat4(1.0f), glm::vec3(0.5f));
 
 	VkBuffer mVertexBuffer;
 	VkDeviceMemory mVertexBufferMemory;
