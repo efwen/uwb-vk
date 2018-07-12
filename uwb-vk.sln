@@ -15,6 +15,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "5-BigRefactor", "5-BigRefac
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "6-DepthBuffer", "6-DepthBuffer\6-DepthBuffer.vcxproj", "{2704F33C-13C2-4DFB-9529-D471BD06D52E}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "7-ObjLoading", "7-ObjLoading\7-ObjLoading.vcxproj", "{6DE51A07-6699-40D2-9DB4-00A95DA4732F}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -71,6 +73,14 @@ Global
 		{2704F33C-13C2-4DFB-9529-D471BD06D52E}.Release|x64.Build.0 = Release|x64
 		{2704F33C-13C2-4DFB-9529-D471BD06D52E}.Release|x86.ActiveCfg = Release|Win32
 		{2704F33C-13C2-4DFB-9529-D471BD06D52E}.Release|x86.Build.0 = Release|Win32
+		{6DE51A07-6699-40D2-9DB4-00A95DA4732F}.Debug|x64.ActiveCfg = Debug|x64
+		{6DE51A07-6699-40D2-9DB4-00A95DA4732F}.Debug|x64.Build.0 = Debug|x64
+		{6DE51A07-6699-40D2-9DB4-00A95DA4732F}.Debug|x86.ActiveCfg = Debug|Win32
+		{6DE51A07-6699-40D2-9DB4-00A95DA4732F}.Debug|x86.Build.0 = Debug|Win32
+		{6DE51A07-6699-40D2-9DB4-00A95DA4732F}.Release|x64.ActiveCfg = Release|x64
+		{6DE51A07-6699-40D2-9DB4-00A95DA4732F}.Release|x64.Build.0 = Release|x64
+		{6DE51A07-6699-40D2-9DB4-00A95DA4732F}.Release|x86.ActiveCfg = Release|Win32
+		{6DE51A07-6699-40D2-9DB4-00A95DA4732F}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
