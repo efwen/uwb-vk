@@ -36,6 +36,9 @@ void readObjFile(const std::string& filename, std::vector<Vertex>& vertices, std
 	std::string cmd;
 	std::string line;
 
+	std::unordered_map<Vertex, uint32_t> vertexMap = {};	//to help take advantage of the index buffer
+
+	std::vector<glm::vec3> vertPositions;
 	std::vector<glm::vec2> texCoords;
 
 	std::cout << "Reading obj file \"" << filename << "\"" << std::endl;
@@ -45,25 +48,24 @@ void readObjFile(const std::string& filename, std::vector<Vertex>& vertices, std
 
 		std::istringstream linestr(line);
 		linestr >> cmd;
-		if (cmd == "v") //vertex definition
+		if (cmd == "v")			//geometric vertex definition
 		{
-			Vertex vertex;
-			linestr >> vertex.pos.x >> vertex.pos.y >> vertex.pos.z;
-			
-			vertex.color = { 1.0, 1.0, 1.0 };
-			vertex.texCoord = { -1.0f, -1.0f };
-			vertices.push_back(vertex);
+			glm::vec3 pos;
+			linestr >> pos.x >> pos.y >> pos.z;
+			vertPositions.push_back(pos);
 		}
-		else if (cmd == "vt")
+		else if (cmd == "vt")	//texture vertex definition
 		{
 			glm::vec2 texCoord;
 			linestr >> texCoord.x >> texCoord.y;
 			texCoord.y = 1.0f - texCoord.y;
-
 			texCoords.push_back(texCoord);
 		}
 		else if (cmd == "f")	//format of f index/tecCoordIndex/normalIndex index/tecCoordIndex/normalIndex index/tecCoordIndex/normalIndex ...
 		{
+			//this is where we actually add the vertex/index
+
+
 			//currently assumes triangles only
 			std::array<std::string, 3> faceVertices;
 			linestr >> faceVertices[0] >> faceVertices[1] >> faceVertices[2];
@@ -76,32 +78,32 @@ void readObjFile(const std::string& filename, std::vector<Vertex>& vertices, std
 					throw std::runtime_error("Invalid vertex details size!");
 
 				//get the index corresponding to the vertex we want (-1 because obj files use >= 1 for indexing)
-				uint32_t index = std::stoi(details[0]) - 1;
-				if (index < 0 || index >= vertices.size())
-					throw std::runtime_error("Invalid index! ");
+				uint32_t posIndex = std::stoi(details[0]) - 1;
+				if (posIndex < 0 || posIndex >= vertPositions.size())
+					throw std::runtime_error("Invalid geometry index!");
 
-				//get texture coordinate (optional)
-				uint32_t vt;
+				uint32_t texIndex = 0;
 				if (details.size() > 1 && details[1] != "")	//if a texture coordinate was provided
 				{
-					vt = std::stoi(details[1]) - 1; // (-1 again because obj files use >= 1 for indexing)
-
-					if (vertices[index].texCoord.x != -1.0f && vertices[index].texCoord.y != -1.0f)
-					{
-						if (vertices[index].texCoord != texCoords[vt])
-						{
-							//we are forced to construct a new vertex to accomodate the different texture coordinate
-							Vertex vertex = vertices[index];
-							vertex.texCoord = texCoords[vt];
-							vertices.push_back(vertex);
-							indices.push_back(vertices.size() - 1);
-							continue;
-						}
-					}
-					vertices[index].texCoord = texCoords[vt];
+					texIndex = std::stoi(details[1]) - 1; // get the index (-1 again because obj files use >= 1 for indexing)
+					if (texIndex < 0 || texIndex >= texCoords.size())
+						throw std::runtime_error("Invalid texture index!");
 				}
-				
-				indices.push_back(index);
+
+				//make a vertex object, and fill it with data
+				Vertex vertex;
+				vertex.pos = vertPositions[posIndex];
+				vertex.color = { 1.0f, 1.0f, 1.0f };
+				if (texIndex > 0)
+					vertex.texCoord = texCoords[texIndex];
+
+				if (vertexMap.count(vertex) == 0)	//if this is our first occurence add it to the map
+				{
+					vertexMap[vertex] = static_cast<uint32_t>(vertices.size());
+					vertices.push_back(vertex);
+				}
+
+				indices.push_back(vertexMap[vertex]);
 			}
 		}
 	}
