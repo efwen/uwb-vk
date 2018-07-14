@@ -32,25 +32,6 @@
 #include "Vertex.h"
 
 
-/*
-const std::vector<Vertex> doubleSquareVertices = {
-	{ { -0.5f, -0.5f, 0.0f },{ 1.0f, 0.0f, 0.0f },{ 0.0f, 0.0f } },
-	{ { 0.5f, -0.5f, 0.0f },{ 0.0f, 1.0f, 0.0f },{ 1.0f, 0.0f } },
-	{ { 0.5f, 0.5f, 0.0f },{ 0.0f, 0.0f, 1.0f },{ 1.0f, 1.0f } },
-	{ { -0.5f, 0.5f, 0.0f },{ 1.0f, 1.0f, 1.0f },{ 0.0f, 1.0f } },
-
-	{ { -0.5f, -0.5f, -0.5f },{ 1.0f, 0.0f, 0.0f },{ 0.0f, 0.0f } },
-	{ { 0.5f, -0.5f, -0.5f },{ 0.0f, 1.0f, 0.0f },{ 1.0f, 0.0f } },
-	{ { 0.5f, 0.5f, -0.5f },{ 0.0f, 0.0f, 1.0f },{ 1.0f, 1.0f } },
-	{ { -0.5f, 0.5f, -0.5f },{ 1.0f, 1.0f, 1.0f },{ 0.0f, 1.0f } }
-};
-
-const std::vector<uint16_t> doubleSquareIndices = {
-	0, 1, 2, 2, 3, 0,
-	4, 5, 6, 6, 7, 4
-};
-*/
-
 struct UniformBufferObject {
 	glm::mat4 model;
 	glm::mat4 view;
@@ -74,7 +55,8 @@ public:
 	void cleanup();
 
 	void setClearColor(VkClearValue clearColor);
-
+	void setCamDist(float dist);
+	float getCamDist();
 private:
 	std::shared_ptr<VulkanContext> mContext;
 	std::shared_ptr<CommandPool> mCommandPool;
@@ -113,6 +95,7 @@ private:
 
 	VkClearValue mClearColor = { 0.0f, 0.5f, 0.5f, 1.0f };
 	glm::mat4 model = glm::scale(glm::mat4(1.0f), glm::vec3(0.5f));
+	float mCamDist = 4.0;
 
 #pragma region Buffers
 	//vertex buffer
@@ -131,6 +114,8 @@ private:
 #pragma endregion
 
 	Texture* mTexture;
+
+	//"camera"
 
 private:
 	//void createInstance();

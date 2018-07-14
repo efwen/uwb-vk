@@ -23,6 +23,8 @@ private:
 												{0.0, 1.0, 0.0, 1.0},		//G
 												{0.0, 0.0, 1.0, 1.0} };		//B
 	int clearColorIndex = 0;
+
+	float mCamDist = 0.0f;
 public:
 	VkApp();
 	void run();

@@ -32,6 +32,8 @@ void VkApp::initialize()
 	createWindow();
 	mInputSystem.initialize(mWindow);
 	mRenderSystem.initialize(mWindow);
+
+	mCamDist = mRenderSystem.getCamDist();
 }
 
 void VkApp::shutdown()
@@ -68,4 +70,15 @@ void VkApp::handleInput()
 
 	if (mInputSystem.isKeyPressed(GLFW_KEY_F))
 		std::cout << "frameTime: " << mFrameTime * 1000.0 << " ms ( " << (1.0 / mFrameTime) << " fps)" << std::endl;
+
+	if (mInputSystem.isKeyDown(GLFW_KEY_UP))
+	{
+		mCamDist -= 0.001f;
+		mRenderSystem.setCamDist(mCamDist);
+	}
+	else if (mInputSystem.isKeyDown(GLFW_KEY_DOWN))
+	{
+		mCamDist += 0.001f;
+		mRenderSystem.setCamDist(mCamDist);
+	}
 }
