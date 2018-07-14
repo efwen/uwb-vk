@@ -609,7 +609,7 @@ void RenderSystem::createCommandBuffers()
 		
 		//set up clear values as part of renderPassInfo
 		std::array<VkClearValue, 2> clearValues = {};
-		clearValues[0].color = { 0.0f, 0.0f, 0.0f, 1.0f };
+		clearValues[0].color = mClearColor.color;
 		clearValues[1].depthStencil = { 1.0f, 0 };
 
 		renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
@@ -702,18 +702,32 @@ void RenderSystem::createUniformBufferObject()
 
 void RenderSystem::updateUniformBuffer(uint32_t currentImage)
 {
+	float modelScale = 1.0f;
+	float modelRotateZ = 90.0f;
+	float translate = mCamDist;// 5.0f;
+	float rotateX = 0.0f;
+	float rotateY = 90.0f;
+
 	static auto startTime = std::chrono::high_resolution_clock::now();
 
 	auto currentTime = std::chrono::high_resolution_clock::now();
 	float time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
 
 	UniformBufferObject ubo = {};
-	//ubo.model = glm::rotate(glm::mat4(1.0f), glm::radians(90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
-	ubo.model = glm::rotate(glm::mat4(1.0f)/*ubo.model*/, time * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-	ubo.view = glm::lookAt(glm::vec3(2.0f, mCamDist, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-	ubo.proj = glm::perspective(glm::radians(45.0f), mSwapchain->getExtent().width / (float)mSwapchain->getExtent().height, 0.1f, 100.0f);
-	ubo.proj[1][1] *= -1;
+	ubo.model = glm::scale(glm::mat4(1.0f), glm::vec3(modelScale));
+	//ubo.model = glm::rotate(ubo.model, time * glm::radians(modelRotateZ), glm::vec3(0.0f, 0.0f, 1.0f));
 
+	ubo.view = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, -translate));
+	ubo.view = glm::rotate(ubo.view, glm::radians(mCamRotate.x), glm::vec3(1.0f, 0.0f, 0.0f));
+	ubo.view = glm::rotate(ubo.view, glm::radians(mCamRotate.y), glm::vec3(0.0f, 1.0f, 0.0f));
+	ubo.view = glm::rotate(ubo.view, glm::radians(mCamRotate.z), glm::vec3(0.0f, 0.0f, 1.0f));
+
+
+
+
+	ubo.proj = glm::perspective(glm::radians(45.0f), mSwapchain->getExtent().width / (float)mSwapchain->getExtent().height, 0.1f, 100.0f);
+	
+	ubo.proj[1][1] *= -1;
 	void* data;
 	vkMapMemory(mContext->device, mUniformBuffersMemory[currentImage], 0, sizeof(ubo), 0, &data);
 	memcpy(data, &ubo, sizeof(ubo));
@@ -786,4 +800,9 @@ void RenderSystem::setCamDist(float dist)
 float RenderSystem::getCamDist()
 {
 	return mCamDist;
+}
+
+glm::vec3* RenderSystem::getCamRotate()
+{
+	return &mCamRotate;
 }

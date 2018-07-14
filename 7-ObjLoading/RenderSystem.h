@@ -57,6 +57,7 @@ public:
 	void setClearColor(VkClearValue clearColor);
 	void setCamDist(float dist);
 	float getCamDist();
+	glm::vec3* getCamRotate();
 private:
 	std::shared_ptr<VulkanContext> mContext;
 	std::shared_ptr<CommandPool> mCommandPool;
@@ -96,6 +97,7 @@ private:
 	VkClearValue mClearColor = { 0.0f, 0.5f, 0.5f, 1.0f };
 	glm::mat4 model = glm::scale(glm::mat4(1.0f), glm::vec3(0.5f));
 	float mCamDist = 4.0;
+	glm::vec3 mCamRotate = glm::vec3(0.0f);
 
 #pragma region Buffers
 	//vertex buffer
