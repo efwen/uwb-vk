@@ -56,7 +56,7 @@ void VulkanContext::createInstance()
 {
 	VkApplicationInfo appInfo = {};
 	appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
-	appInfo.pApplicationName = "5-BigRefactor";
+	appInfo.pApplicationName = "7-ObjLoading";
 	appInfo.applicationVersion = 1;
 	appInfo.pEngineName = "uwb-vk";
 	appInfo.engineVersion = 1;

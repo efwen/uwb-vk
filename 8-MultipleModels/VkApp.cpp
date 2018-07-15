@@ -32,6 +32,9 @@ void VkApp::initialize()
 	createWindow();
 	mInputSystem.initialize(mWindow);
 	mRenderSystem.initialize(mWindow);
+
+	mCamDist = mRenderSystem.getCamDist();
+	mCamRotate = mRenderSystem.getCamRotate();
 }
 
 void VkApp::shutdown()
@@ -44,7 +47,7 @@ void VkApp::shutdown()
 void VkApp::createWindow()
 { 
 	glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-	mWindow = glfwCreateWindow(800, 600, "6-DepthBuffer", nullptr, nullptr);
+	mWindow = glfwCreateWindow(800, 600, "8-MultipleModels", nullptr, nullptr);
 
 	if (mWindow == nullptr) {
 		throw std::runtime_error("Window creation failed!");
@@ -66,6 +69,30 @@ void VkApp::handleInput()
 	if (mInputSystem.isKeyPressed(GLFW_KEY_ESCAPE))
 		glfwSetWindowShouldClose(mWindow, GLFW_TRUE);
 
+	//print out FPS
 	if (mInputSystem.isKeyPressed(GLFW_KEY_F))
 		std::cout << "frameTime: " << mFrameTime * 1000.0 << " ms ( " << (1.0 / mFrameTime) << " fps)" << std::endl;
+
+	//Camera Controls
+	if (mInputSystem.isKeyDown(GLFW_KEY_UP)){
+		mCamRotate->x += mCamRotateSpeed * mFrameTime;
+	}
+	if (mInputSystem.isKeyDown(GLFW_KEY_DOWN)){
+		mCamRotate->x -= mCamRotateSpeed * mFrameTime;
+	}
+	if (mInputSystem.isKeyDown(GLFW_KEY_LEFT)) {
+		mCamRotate->z += mCamRotateSpeed * mFrameTime;
+	}
+	if (mInputSystem.isKeyDown(GLFW_KEY_RIGHT)) {
+		mCamRotate->z -= mCamRotateSpeed * mFrameTime;
+	}
+	//forward / back
+	if (mInputSystem.isKeyDown(GLFW_KEY_W)) {
+		mCamDist -= mCamTranslateSpeed * mFrameTime;
+		mRenderSystem.setCamDist(mCamDist);
+	}
+	else if (mInputSystem.isKeyDown(GLFW_KEY_S)) {
+		mCamDist += mCamTranslateSpeed * mFrameTime;
+		mRenderSystem.setCamDist(mCamDist);
+	}
 }

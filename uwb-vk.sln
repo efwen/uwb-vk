@@ -17,6 +17,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "6-DepthBuffer", "6-DepthBuf
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "7-ObjLoading", "7-ObjLoading\7-ObjLoading.vcxproj", "{6DE51A07-6699-40D2-9DB4-00A95DA4732F}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "8-MultipleModels", "8-MultipleModels\8-MultipleModels.vcxproj", "{47CD29FF-7523-4620-9B23-756279CE21F5}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -81,6 +83,14 @@ Global
 		{6DE51A07-6699-40D2-9DB4-00A95DA4732F}.Release|x64.Build.0 = Release|x64
 		{6DE51A07-6699-40D2-9DB4-00A95DA4732F}.Release|x86.ActiveCfg = Release|Win32
 		{6DE51A07-6699-40D2-9DB4-00A95DA4732F}.Release|x86.Build.0 = Release|Win32
+		{47CD29FF-7523-4620-9B23-756279CE21F5}.Debug|x64.ActiveCfg = Debug|x64
+		{47CD29FF-7523-4620-9B23-756279CE21F5}.Debug|x64.Build.0 = Debug|x64
+		{47CD29FF-7523-4620-9B23-756279CE21F5}.Debug|x86.ActiveCfg = Debug|Win32
+		{47CD29FF-7523-4620-9B23-756279CE21F5}.Debug|x86.Build.0 = Debug|Win32
+		{47CD29FF-7523-4620-9B23-756279CE21F5}.Release|x64.ActiveCfg = Release|x64
+		{47CD29FF-7523-4620-9B23-756279CE21F5}.Release|x64.Build.0 = Release|x64
+		{47CD29FF-7523-4620-9B23-756279CE21F5}.Release|x86.ActiveCfg = Release|Win32
+		{47CD29FF-7523-4620-9B23-756279CE21F5}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

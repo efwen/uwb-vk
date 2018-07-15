@@ -32,10 +32,15 @@ void RenderSystem::initialize(GLFWwindow * window)
 	createGraphicsPipeline();			//assumes shader, UBO, texture/sampler, 
 	createFramebuffers();				//needs swapchain, attachments
 
-	createMesh(doubleSquareVertices, doubleSquareIndices);
+	//createMesh(doubleSquareVertices, doubleSquareIndices);
+	//loadModel(CHALET_MODEL_PATH, chalet.mVertices, chalet.mIndices);
+	loadModel(mChaletModel, CHALET_MODEL_PATH);
+	//loadModel(mGroundModel, GROUND_MODEL_PATH);
 	createUniformBufferObject();
-	createTexture(TEXTURE_PATH);
-	createDescriptorSets();		//relies on swapchain, descriptorpool, texture
+	createTexture(mChaletModel.mTexture, CHALET_TEXTURE_PATH);
+	//createTexture(mGroundTexture, GROUND_TEXTURE_PATH);
+	createDescriptorSets(mChaletModel);		//relies on swapchain, descriptorpool, texture
+	//createDescriptorSets(mGroundModel);
 	createCommandBuffers();
 }
 
@@ -45,7 +50,7 @@ void RenderSystem::cleanup()
 	vkQueueWaitIdle(mContext->presentQueue);
 	
 	cleanupSwapchain();
-	mTexture->free();
+	mChaletModel.mTexture->free();
 
 	//cleanup descriptorpool
 	vkDestroyDescriptorPool(mContext->device, mDescriptorPool, nullptr);
@@ -56,14 +61,15 @@ void RenderSystem::cleanup()
 		vkDestroyBuffer(mContext->device, mUniformBuffers[i], nullptr);
 		vkFreeMemory(mContext->device, mUniformBuffersMemory[i], nullptr);
 	}
-
+	
+	///foreach model
 	//cleanup index buffer
-	vkDestroyBuffer(mContext->device, mIndexBuffer, nullptr);
-	vkFreeMemory(mContext->device, mIndexBufferMemory, nullptr);
+	vkDestroyBuffer(mContext->device, mChaletModel.mIndexBuffer, nullptr);
+	vkFreeMemory(mContext->device, mChaletModel.mIndexBufferMemory, nullptr);
 
 	//cleanup vertex buffer
-	vkDestroyBuffer(mContext->device, mVertexBuffer, nullptr);
-	vkFreeMemory(mContext->device, mVertexBufferMemory, nullptr);
+	vkDestroyBuffer(mContext->device, mChaletModel.mVertexBuffer, nullptr);
+	vkFreeMemory(mContext->device, mChaletModel.mVertexBufferMemory, nullptr);
 
 	//clean up synchronization constructs
 	for (size_t i = 0; i < MAX_CONCURRENT_FRAMES; i++) {
@@ -503,7 +509,7 @@ void RenderSystem::createDescriptorPool()
 	}
 }
 
-void RenderSystem::createDescriptorSets()
+void RenderSystem::createDescriptorSets(Model& model)
 {
 	std::vector<VkDescriptorSetLayout> layouts(mSwapchain->size(), mDescriptorSetLayout);
 	VkDescriptorSetAllocateInfo allocInfo = {};
@@ -525,9 +531,11 @@ void RenderSystem::createDescriptorSets()
 
 		VkDescriptorImageInfo imageInfo = {};
 		imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-		imageInfo.imageView = mTexture->getImageView();
-		imageInfo.sampler = mTexture->getSampler();
-		
+		//imageInfo.imageView = mChaletTexture->getImageView();
+		//imageInfo.sampler = mChaletTexture->getSampler();
+		imageInfo.imageView = model.mTexture->getImageView();
+		imageInfo.sampler = model.mTexture->getSampler();
+
 		std::array<VkWriteDescriptorSet, 2> descriptorWrites = {};
 		descriptorWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
 		descriptorWrites[0].dstSet = mDescriptorSets[i];
@@ -608,7 +616,7 @@ void RenderSystem::createCommandBuffers()
 		
 		//set up clear values as part of renderPassInfo
 		std::array<VkClearValue, 2> clearValues = {};
-		clearValues[0].color = { 0.0f, 0.0f, 0.0f, 1.0f };
+		clearValues[0].color = mClearColor.color;
 		clearValues[1].depthStencil = { 1.0f, 0 };
 
 		renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
@@ -619,15 +627,16 @@ void RenderSystem::createCommandBuffers()
 
 		vkCmdBindPipeline(mCommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, mPipeline);
 
+		///foreach model?
 		//Set up draw info
-		VkBuffer vertexBuffers = { mVertexBuffer };
+		VkBuffer vertexBuffers = { mChaletModel.mVertexBuffer };
 		VkDeviceSize offsets[] = { 0 };
 		vkCmdBindVertexBuffers(mCommandBuffers[i], 0, 1, &vertexBuffers, offsets);
-		vkCmdBindIndexBuffer(mCommandBuffers[i], mIndexBuffer, 0, VK_INDEX_TYPE_UINT16);
+		vkCmdBindIndexBuffer(mCommandBuffers[i], mChaletModel.mIndexBuffer, 0, VK_INDEX_TYPE_UINT32);
 		vkCmdBindDescriptorSets(mCommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, mPipelineLayout, 0, 1, &mDescriptorSets[i], 0, nullptr);
 		
-		//Draw our model
-		vkCmdDrawIndexed(mCommandBuffers[i], static_cast<uint32_t>(doubleSquareIndices.size()), 1, 0, 0, 0);
+		//Draw our square
+		vkCmdDrawIndexed(mCommandBuffers[i], static_cast<uint32_t>(mChaletModel.mIndices.size()), 1, 0, 0, 0);
 
 		
 		vkCmdEndRenderPass(mCommandBuffers[i]);
@@ -663,11 +672,20 @@ void RenderSystem::createSyncObjects()
 	}
 }
 
-void RenderSystem::createMesh(const std::vector<Vertex> &vertices, const std::vector<uint16_t> &indices)
+/*void RenderSystem::createMesh(std::vector<Vertex> &vertices, std::vector<uint32_t> &indices)
 {
 	std::cout << "Creating Mesh..." << std::endl;
 	mBufferManager->createVertexBuffer(vertices, mVertexBuffer, mVertexBufferMemory);
 	mBufferManager->createIndexBuffer(indices, mIndexBuffer, mIndexBufferMemory);
+}*/
+
+void RenderSystem::loadModel(Model& model, const std::string & meshFile)
+{
+	std::cout << "Loading Model" << std::endl;
+	readObjFile(meshFile, model.mVertices, model.mIndices);
+	mBufferManager->createVertexBuffer(model.mVertices, model.mVertexBuffer, model.mVertexBufferMemory);
+	mBufferManager->createIndexBuffer(model.mIndices, model.mIndexBuffer, model.mIndexBufferMemory);
+	std::cout << "Done loading model" << std::endl;
 }
 
 
@@ -692,24 +710,35 @@ void RenderSystem::createUniformBufferObject()
 
 void RenderSystem::updateUniformBuffer(uint32_t currentImage)
 {
+	float modelScale = 1.0f;
+	float modelRotateZ = 90.0f;
+	float translate = mCamDist;
+	float rotateX = 0.0f;
+	float rotateY = 90.0f;
+
 	static auto startTime = std::chrono::high_resolution_clock::now();
 
 	auto currentTime = std::chrono::high_resolution_clock::now();
 	float time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
 
 	UniformBufferObject ubo = {};
-	ubo.model = glm::rotate(glm::mat4(1.0f), time * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-	ubo.view = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-	ubo.proj = glm::perspective(glm::radians(45.0f), mSwapchain->getExtent().width / (float)mSwapchain->getExtent().height, 0.1f, 10.0f);
-	ubo.proj[1][1] *= -1;
+	ubo.model = glm::scale(glm::mat4(1.0f), glm::vec3(modelScale));
 
+	ubo.view = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, -translate));
+	ubo.view = glm::rotate(ubo.view, glm::radians(mCamRotate.x), glm::vec3(1.0f, 0.0f, 0.0f));
+	ubo.view = glm::rotate(ubo.view, glm::radians(mCamRotate.y), glm::vec3(0.0f, 1.0f, 0.0f));
+	ubo.view = glm::rotate(ubo.view, glm::radians(mCamRotate.z), glm::vec3(0.0f, 0.0f, 1.0f));
+
+	ubo.proj = glm::perspective(glm::radians(45.0f), mSwapchain->getExtent().width / (float)mSwapchain->getExtent().height, 0.1f, 100.0f);
+	
+	ubo.proj[1][1] *= -1;
 	void* data;
 	vkMapMemory(mContext->device, mUniformBuffersMemory[currentImage], 0, sizeof(ubo), 0, &data);
 	memcpy(data, &ubo, sizeof(ubo));
 	vkUnmapMemory(mContext->device, mUniformBuffersMemory[currentImage]);
 }
 
-void RenderSystem::createTexture(const std::string &filename)
+void RenderSystem::createTexture(std::shared_ptr<Texture>& texture, const std::string &filename)
 {
 	std::cout << "Creating texture..." << std::endl;
 	int width, height, channels;
@@ -719,8 +748,8 @@ void RenderSystem::createTexture(const std::string &filename)
 		throw std::runtime_error("Failed to load texture image");
 	}
 
-	mTexture = new Texture(mContext, mBufferManager, mImageManager);
-	mTexture->load(pixels, width, height, channels);
+	texture = std::make_shared<Texture>(Texture(mContext, mBufferManager, mImageManager));
+	texture->load(pixels, width, height, channels);
 
 	stbi_image_free(pixels);
 
@@ -765,4 +794,19 @@ void RenderSystem::setClearColor(VkClearValue clearColor)
 	vkDeviceWaitIdle(mContext->device);
 	mClearColor = clearColor;
 	createCommandBuffers();
+}
+
+void RenderSystem::setCamDist(float dist)
+{
+	mCamDist = dist;
+}
+
+float RenderSystem::getCamDist()
+{
+	return mCamDist;
+}
+
+glm::vec3* RenderSystem::getCamRotate()
+{
+	return &mCamRotate;
 }
