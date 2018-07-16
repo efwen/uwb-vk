@@ -35,6 +35,11 @@ void VkApp::initialize()
 
 	mCamDist = mRenderSystem.getCamDist();
 	mCamRotate = mRenderSystem.getCamRotate();
+
+	mTestPlane = mRenderSystem.createModel(GROUND_MODEL_PATH, GROUND_TEXTURE_PATH);
+	mTestModel = mRenderSystem.createModel(CHALET_MODEL_PATH, CHALET_TEXTURE_PATH);
+
+	mTestPlane->mScale = glm::vec3(2.0f, 2.0f, 1.0f);
 }
 
 void VkApp::shutdown()
@@ -72,6 +77,28 @@ void VkApp::handleInput()
 	//print out FPS
 	if (mInputSystem.isKeyPressed(GLFW_KEY_F))
 		std::cout << "frameTime: " << mFrameTime * 1000.0 << " ms ( " << (1.0 / mFrameTime) << " fps)" << std::endl;
+
+
+	//Model Controls
+	if (mInputSystem.isKeyDown(GLFW_KEY_J)) {
+		mTestModel->mPosition -= glm::vec3(mModelTranslateSpeed * mFrameTime, 0.0f, 0.0f);
+	}
+	if (mInputSystem.isKeyDown(GLFW_KEY_L)) {
+		mTestModel->mPosition += glm::vec3(mModelTranslateSpeed * mFrameTime, 0.0f, 0.0f);
+	}
+	if (mInputSystem.isKeyDown(GLFW_KEY_I)) {
+		mTestModel->mPosition += glm::vec3(0.0f, mModelTranslateSpeed * mFrameTime, 0.0f);
+	}
+	if (mInputSystem.isKeyDown(GLFW_KEY_K)) {
+		mTestModel->mPosition -= glm::vec3(0.0f, mModelTranslateSpeed * mFrameTime, 0.0f);
+	}
+	if (mInputSystem.isKeyDown(GLFW_KEY_U)) {
+		mTestModel->zRotation += mModelRotateSpeed * mFrameTime;
+	}
+	if (mInputSystem.isKeyDown(GLFW_KEY_O)) {
+		mTestModel->zRotation -= mModelRotateSpeed * mFrameTime;
+	}
+
 
 	//Camera Controls
 	if (mInputSystem.isKeyDown(GLFW_KEY_UP)){

@@ -12,6 +12,8 @@ const std::vector<const char*> validationLayers = {
 	"VK_LAYER_LUNARG_standard_validation"
 };
 
+#define FORCE_VALIDATION
+
 #ifndef FORCE_VALIDATION
 	#ifdef _DEBUG
 		const bool enableValidationLayers = true;

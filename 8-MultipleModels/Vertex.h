@@ -55,8 +55,17 @@ struct Vertex {
 			   color    == other.color &&
 			   texCoord == other.texCoord;
 	}
+
+	friend std::ostream& operator<<(std::ostream& os, const Vertex& v);
 };
 
+inline std::ostream& operator<< (std::ostream& os, const Vertex& v)
+{
+	os << "[p(" << v.pos.x		<< ", " << v.pos.y		<< ", " << v.pos.z << ")" << 
+		 " c(" << v.color.r		<< ", " << v.color.g	<< ", " << v.color.b << ")" << 
+		 " t(" << v.texCoord.x	<< ", " << v.texCoord.y	<< ")]";
+	return os;
+}
 
 namespace std {
 	template<> struct hash<Vertex>

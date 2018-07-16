@@ -33,15 +33,19 @@ std::vector<char> readShaderFile(const std::string& filename) {
 void readObjFile(const std::string& filename, std::vector<Vertex>& vertices, std::vector<uint32_t>& indices)
 {
 	std::ifstream file(filename);
-	std::string cmd;
-	std::string line;
+
+	if (!file.is_open()) {
+		throw std::runtime_error("Unable to open .obj file!");
+	}
+	std::cout << "Reading obj file \"" << filename << "\"" << std::endl;
+
 
 	std::unordered_map<Vertex, uint32_t> vertexMap = {};	//to help take advantage of the index buffer
-
 	std::vector<glm::vec3> vertPositions;
 	std::vector<glm::vec2> texCoords;
-
-	std::cout << "Reading obj file \"" << filename << "\"" << std::endl;
+	
+	std::string cmd;
+	std::string line;
 	while (std::getline(file, line)) {
 		if (line == "" || line[0] == '#')	//ignore empty lines and comments
 			continue;
@@ -64,8 +68,6 @@ void readObjFile(const std::string& filename, std::vector<Vertex>& vertices, std
 		else if (cmd == "f")	//format of f index/tecCoordIndex/normalIndex index/tecCoordIndex/normalIndex index/tecCoordIndex/normalIndex ...
 		{
 			//this is where we actually add the vertex/index
-
-
 			//currently assumes triangles only
 			std::array<std::string, 3> faceVertices;
 			linestr >> faceVertices[0] >> faceVertices[1] >> faceVertices[2];
@@ -74,6 +76,7 @@ void readObjFile(const std::string& filename, std::vector<Vertex>& vertices, std
 			for(size_t i = 0; i < faceVertices.size(); i++)
 			{
 				std::vector<std::string> details = getVertexDetails(faceVertices[i]);
+
 				if (details.size() < 1)
 					throw std::runtime_error("Invalid vertex details size!");
 
@@ -82,7 +85,7 @@ void readObjFile(const std::string& filename, std::vector<Vertex>& vertices, std
 				if (posIndex < 0 || posIndex >= vertPositions.size())
 					throw std::runtime_error("Invalid geometry index!");
 
-				uint32_t texIndex = 0;
+				int32_t texIndex = -1;
 				if (details.size() > 1 && details[1] != "")	//if a texture coordinate was provided
 				{
 					texIndex = std::stoi(details[1]) - 1; // get the index (-1 again because obj files use >= 1 for indexing)
@@ -94,7 +97,7 @@ void readObjFile(const std::string& filename, std::vector<Vertex>& vertices, std
 				Vertex vertex;
 				vertex.pos = vertPositions[posIndex];
 				vertex.color = { 1.0f, 1.0f, 1.0f };
-				if (texIndex > 0)
+				if (texIndex > -1)
 					vertex.texCoord = texCoords[texIndex];
 
 				if (vertexMap.count(vertex) == 0)	//if this is our first occurence add it to the map

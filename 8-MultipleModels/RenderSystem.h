@@ -39,13 +39,10 @@ struct UniformBufferObject {
 	glm::mat4 proj;
 };
 
-const int MAX_CONCURRENT_FRAMES = 2;
 const std::string VERT_SHADER_PATH = "shaders/square_vert.spv";
 const std::string FRAG_SHADER_PATH = "shaders/square_frag.spv";
-const std::string CHALET_TEXTURE_PATH = "textures/chalet.jpg";
-const std::string GROUND_TEXTURE_PATH = "textures/ground.jpg";
-const std::string CHALET_MODEL_PATH = "models/chalet.obj";
-const std::string GROUND_MODEL_PATH = "models/ground.obj";
+const int MAX_CONCURRENT_FRAMES = 2;
+
 class RenderSystem
 {
 public:
@@ -56,20 +53,28 @@ public:
 	void drawFrame();
 	void cleanup();
 
+	//create a Model to render (probably better to use Mesh + Texture objects for reuse
+	std::shared_ptr<Model> createModel(const std::string& meshFile, const std::string& textureFile);
+	void cleanupModel(std::shared_ptr<Model> model);
+
+
 	void setClearColor(VkClearValue clearColor);
 	void setCamDist(float dist);
 	float getCamDist();
 	glm::vec3* getCamRotate();
+
+
+
+	//std::shared_ptr<Model> mGroundModel;
+	//std::shared_ptr<Model> mChaletModel;
+	std::vector<std::shared_ptr<Model>> modelList;
 private:
 	std::shared_ptr<VulkanContext> mContext;
 	std::shared_ptr<CommandPool> mCommandPool;
 	std::shared_ptr<BufferManager> mBufferManager;
 	std::shared_ptr<ImageManager> mImageManager;
 
-	//Swapchain Setup
 	std::unique_ptr<Swapchain> mSwapchain;
-
-	//Command Buffers
 	std::vector<VkCommandBuffer> mCommandBuffers;
 
 #pragma region Pipeline
@@ -80,15 +85,16 @@ private:
 	VkRenderPass mRenderPass;
 	VkDescriptorSetLayout mDescriptorSetLayout;
 	VkDescriptorPool mDescriptorPool;
-	std::vector<VkDescriptorSet> mDescriptorSets;	//perhaps put in Model struct/class
+
 	VkPipelineLayout mPipelineLayout;
 	VkPipeline mPipeline;
-#pragma endregion
+
 	//depth buffer
 	VkImage mDepthImage;
 	VkFormat mDepthImageFormat;
 	VkDeviceMemory mDepthImageMemory;
 	VkImageView mDepthImageView;
+#pragma endregion
 
 	//Rendering Synchronization primitives
 	std::vector<VkSemaphore> mImageAvailableSemaphores;
@@ -100,23 +106,6 @@ private:
 	glm::mat4 model = glm::scale(glm::mat4(1.0f), glm::vec3(0.5f));
 	float mCamDist = 4.0;
 	glm::vec3 mCamRotate = glm::vec3(0.0f);
-
-
-#pragma region Model
-	Model mGroundModel;
-	Model mChaletModel;
-
-	//ubo
-	std::vector<VkBuffer> mUniformBuffers;
-	std::vector<VkDeviceMemory> mUniformBuffersMemory;	
-	
-	//textures
-	//Texture* mChaletTexture;
-	//Texture* mGroundTexture;
-#pragma endregion
-
-
-	//"camera"
 
 private:
 	//void createInstance();
@@ -135,8 +124,8 @@ private:
 
 	//Descriptors
 	void createDescriptorSetLayout();
-	void createDescriptorPool();
-	void createDescriptorSets(Model& model);
+	void createDescriptorPool(uint32_t maxSets);
+	void createDescriptorSets(std::vector<VkDescriptorSet>& descriptorSets, std::shared_ptr<Texture> texture, std::vector<VkBuffer>& uniformBuffers);
 
 	//Command Buffers
 	void createFramebuffers();
@@ -146,10 +135,12 @@ private:
 	void createSyncObjects();
 
 
-	//void createMesh(std::vector<Vertex> &vertices, std::vector<uint32_t> &indices);
-	//void loadModel(const std::string &filename, std::vector<Vertex> &vertices, std::vector<uint32_t> &indices);
-	void loadModel(Model& model, const std::string& meshFile);
+
+
+	void loadMesh(std::shared_ptr<Model> model, const std::string & meshFile);
 	void createTexture(std::shared_ptr<Texture>& texture, const std::string &filename);
-	void createUniformBufferObject();
-	void updateUniformBuffer(uint32_t currentImage);
+	void createUniformBufferObject(std::vector<VkBuffer>& uniformBuffers, std::vector<VkDeviceMemory>& uniformBuffersMemory);
+	void updateUniformBuffer(std::shared_ptr<Model> model, uint32_t currentImage);
+
+	void drawModel(VkCommandBuffer commandBuffer, std::shared_ptr<Model> model, VkDescriptorSet& descriptorSet);
 };

@@ -21,7 +21,7 @@ void RenderSystem::initialize(GLFWwindow * window)
 
 	createSwapchain();
 	createDepthBuffer();				//set up the depth buffer (must be before createRenderPass and after createSwapchain!)
-	createDescriptorPool();
+	createDescriptorPool(2);
 
 	//for synchronizing the rendering process
 	createSyncObjects();
@@ -32,15 +32,11 @@ void RenderSystem::initialize(GLFWwindow * window)
 	createGraphicsPipeline();			//assumes shader, UBO, texture/sampler, 
 	createFramebuffers();				//needs swapchain, attachments
 
-	//createMesh(doubleSquareVertices, doubleSquareIndices);
-	//loadModel(CHALET_MODEL_PATH, chalet.mVertices, chalet.mIndices);
-	loadModel(mChaletModel, CHALET_MODEL_PATH);
-	//loadModel(mGroundModel, GROUND_MODEL_PATH);
-	createUniformBufferObject();
-	createTexture(mChaletModel.mTexture, CHALET_TEXTURE_PATH);
-	//createTexture(mGroundTexture, GROUND_TEXTURE_PATH);
-	createDescriptorSets(mChaletModel);		//relies on swapchain, descriptorpool, texture
-	//createDescriptorSets(mGroundModel);
+
+	//create and set up our models and related resources
+	//mChaletModel = createModel(CHALET_MODEL_PATH, CHALET_TEXTURE_PATH);
+	//mGroundModel = createModel(GROUND_MODEL_PATH, GROUND_TEXTURE_PATH);
+
 	createCommandBuffers();
 }
 
@@ -50,26 +46,14 @@ void RenderSystem::cleanup()
 	vkQueueWaitIdle(mContext->presentQueue);
 	
 	cleanupSwapchain();
-	mChaletModel.mTexture->free();
 
 	//cleanup descriptorpool
 	vkDestroyDescriptorPool(mContext->device, mDescriptorPool, nullptr);
 	vkDestroyDescriptorSetLayout(mContext->device, mDescriptorSetLayout, nullptr);
-	
-	//cleanup uniform buffers
-	for (size_t i = 0; i < mUniformBuffers.size(); i++) {
-		vkDestroyBuffer(mContext->device, mUniformBuffers[i], nullptr);
-		vkFreeMemory(mContext->device, mUniformBuffersMemory[i], nullptr);
-	}
-	
-	///foreach model
-	//cleanup index buffer
-	vkDestroyBuffer(mContext->device, mChaletModel.mIndexBuffer, nullptr);
-	vkFreeMemory(mContext->device, mChaletModel.mIndexBufferMemory, nullptr);
 
-	//cleanup vertex buffer
-	vkDestroyBuffer(mContext->device, mChaletModel.mVertexBuffer, nullptr);
-	vkFreeMemory(mContext->device, mChaletModel.mVertexBufferMemory, nullptr);
+	for (auto& model : modelList) {
+		cleanupModel(model);
+	}
 
 	//clean up synchronization constructs
 	for (size_t i = 0; i < MAX_CONCURRENT_FRAMES; i++) {
@@ -91,7 +75,10 @@ void RenderSystem::drawFrame()
 	uint32_t imageIndex;
 	vkAcquireNextImageKHR(mContext->device, mSwapchain->getVkSwapchain(), std::numeric_limits<uint64_t>::max(), mImageAvailableSemaphores[mCurrentFrame], VK_NULL_HANDLE, &imageIndex);
 
-	updateUniformBuffer(imageIndex);
+	///update ubos for each model
+	for (auto& model : modelList) {
+		updateUniformBuffer(model, imageIndex);
+	}
 
 	VkSubmitInfo submitInfo = {};
 	submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
@@ -490,7 +477,7 @@ void RenderSystem::createDescriptorSetLayout()
 	}
 }
 
-void RenderSystem::createDescriptorPool()
+void RenderSystem::createDescriptorPool(uint32_t maxSets)
 {
 	std::array<VkDescriptorPoolSize, 2> poolSizes = {};
 	poolSizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;			//#1: MVP matrices
@@ -502,14 +489,14 @@ void RenderSystem::createDescriptorPool()
 	poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
 	poolInfo.poolSizeCount = static_cast<uint32_t>(poolSizes.size());
 	poolInfo.pPoolSizes = poolSizes.data();
-	poolInfo.maxSets = mSwapchain->size();
+	poolInfo.maxSets = mSwapchain->size() * maxSets;
 
 	if (vkCreateDescriptorPool(mContext->device, &poolInfo, nullptr, &mDescriptorPool) != VK_SUCCESS) {
 		throw std::runtime_error("Failed to create descriptor pool!");
 	}
 }
 
-void RenderSystem::createDescriptorSets(Model& model)
+void RenderSystem::createDescriptorSets(std::vector<VkDescriptorSet>& descriptorSets, std::shared_ptr<Texture> texture, std::vector<VkBuffer>& uniformBuffers)
 {
 	std::vector<VkDescriptorSetLayout> layouts(mSwapchain->size(), mDescriptorSetLayout);
 	VkDescriptorSetAllocateInfo allocInfo = {};
@@ -518,27 +505,26 @@ void RenderSystem::createDescriptorSets(Model& model)
 	allocInfo.descriptorSetCount = mSwapchain->size();
 	allocInfo.pSetLayouts = layouts.data();
 
-	mDescriptorSets.resize(mSwapchain->size());
-	if (vkAllocateDescriptorSets(mContext->device, &allocInfo, &mDescriptorSets[0]) != VK_SUCCESS) {
+	descriptorSets.resize(mSwapchain->size());
+	VkResult result = vkAllocateDescriptorSets(mContext->device, &allocInfo, &descriptorSets[0]);
+	if (result != VK_SUCCESS) {
 		throw std::runtime_error("Failed to allocate descriptor set!");
 	}
 
 	for (size_t i = 0; i < mSwapchain->size(); i++) {
 		VkDescriptorBufferInfo bufferInfo = {};
-		bufferInfo.buffer = mUniformBuffers[i];
+		bufferInfo.buffer = uniformBuffers[i];
 		bufferInfo.offset = 0;
 		bufferInfo.range = sizeof(UniformBufferObject);
 
 		VkDescriptorImageInfo imageInfo = {};
 		imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-		//imageInfo.imageView = mChaletTexture->getImageView();
-		//imageInfo.sampler = mChaletTexture->getSampler();
-		imageInfo.imageView = model.mTexture->getImageView();
-		imageInfo.sampler = model.mTexture->getSampler();
+		imageInfo.imageView = texture->getImageView();
+		imageInfo.sampler = texture->getSampler();
 
 		std::array<VkWriteDescriptorSet, 2> descriptorWrites = {};
 		descriptorWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-		descriptorWrites[0].dstSet = mDescriptorSets[i];
+		descriptorWrites[0].dstSet = descriptorSets[i];
 		descriptorWrites[0].dstBinding = 0;
 		descriptorWrites[0].dstArrayElement = 0;
 		descriptorWrites[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
@@ -548,7 +534,7 @@ void RenderSystem::createDescriptorSets(Model& model)
 		descriptorWrites[0].pTexelBufferView = nullptr;
 
 		descriptorWrites[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-		descriptorWrites[1].dstSet = mDescriptorSets[i];
+		descriptorWrites[1].dstSet = descriptorSets[i];
 		descriptorWrites[1].dstBinding = 1;
 		descriptorWrites[1].dstArrayElement = 0;
 		descriptorWrites[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
@@ -628,23 +614,30 @@ void RenderSystem::createCommandBuffers()
 		vkCmdBindPipeline(mCommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, mPipeline);
 
 		///foreach model?
-		//Set up draw info
-		VkBuffer vertexBuffers = { mChaletModel.mVertexBuffer };
-		VkDeviceSize offsets[] = { 0 };
-		vkCmdBindVertexBuffers(mCommandBuffers[i], 0, 1, &vertexBuffers, offsets);
-		vkCmdBindIndexBuffer(mCommandBuffers[i], mChaletModel.mIndexBuffer, 0, VK_INDEX_TYPE_UINT32);
-		vkCmdBindDescriptorSets(mCommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, mPipelineLayout, 0, 1, &mDescriptorSets[i], 0, nullptr);
-		
-		//Draw our square
-		vkCmdDrawIndexed(mCommandBuffers[i], static_cast<uint32_t>(mChaletModel.mIndices.size()), 1, 0, 0, 0);
+		for (auto& model : modelList) {
+			drawModel(mCommandBuffers[i], model, model->mDescriptorSets[i]);
+		}
 
-		
 		vkCmdEndRenderPass(mCommandBuffers[i]);
 
 		if (vkEndCommandBuffer(mCommandBuffers[i]) != VK_SUCCESS) {
 			throw std::runtime_error("failed to record command buffer!");
 		}
 	}
+}
+
+void RenderSystem::drawModel(VkCommandBuffer commandBuffer, std::shared_ptr<Model> model, VkDescriptorSet& descriptorSet)
+{
+	//Set up draw info
+	//VkBuffer vertexBuffers = { model.mIndexBuffer };
+	VkDeviceSize offsets[] = { 0 };
+	vkCmdBindVertexBuffers(commandBuffer, 0, 1, &(model->mVertexBuffer), offsets);
+	vkCmdBindIndexBuffer(commandBuffer, model->mIndexBuffer, 0, VK_INDEX_TYPE_UINT32);
+	vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, mPipelineLayout, 0, 1, &descriptorSet, 0, nullptr);
+
+	//Draw our square
+	vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(model->mIndices.size()), 1, 0, 0, 0);
+
 }
 
 void RenderSystem::createSyncObjects()
@@ -672,43 +665,74 @@ void RenderSystem::createSyncObjects()
 	}
 }
 
-/*void RenderSystem::createMesh(std::vector<Vertex> &vertices, std::vector<uint32_t> &indices)
+std::shared_ptr<Model> RenderSystem::createModel(const std::string & meshFile, const std::string & textureFile)
 {
-	std::cout << "Creating Mesh..." << std::endl;
-	mBufferManager->createVertexBuffer(vertices, mVertexBuffer, mVertexBufferMemory);
-	mBufferManager->createIndexBuffer(indices, mIndexBuffer, mIndexBufferMemory);
-}*/
+	std::shared_ptr<Model> model = std::make_shared<Model>(Model());
 
-void RenderSystem::loadModel(Model& model, const std::string & meshFile)
+	//create and set up our models and related resources
+	loadMesh(model, meshFile);
+	createUniformBufferObject(model->mUniformBuffers, model->mUniformBuffersMemory);
+	createTexture(model->mTexture, textureFile);
+	createDescriptorSets(model->mDescriptorSets, model->mTexture, model->mUniformBuffers);
+
+	modelList.push_back(model);
+
+	//recreate the command buffers to include the new model
+	createCommandBuffers();
+
+	return model;
+}
+
+void RenderSystem::cleanupModel(std::shared_ptr<Model> model)
+{
+	for (size_t i = 0; i < model->mUniformBuffers.size(); i++) {
+		vkDestroyBuffer(mContext->device, model->mUniformBuffers[i], nullptr);
+		vkFreeMemory(mContext->device, model->mUniformBuffersMemory[i], nullptr);
+	}
+
+	model->mTexture->free();
+
+	//cleanup index buffer
+	vkDestroyBuffer(mContext->device, model->mIndexBuffer, nullptr);
+	vkFreeMemory(mContext->device, model->mIndexBufferMemory, nullptr);
+
+	//cleanup vertex buffer
+	vkDestroyBuffer(mContext->device, model->mVertexBuffer, nullptr);
+	vkFreeMemory(mContext->device, model->mVertexBufferMemory, nullptr);
+}
+
+void RenderSystem::loadMesh(std::shared_ptr<Model> model, const std::string & meshFile)
 {
 	std::cout << "Loading Model" << std::endl;
-	readObjFile(meshFile, model.mVertices, model.mIndices);
-	mBufferManager->createVertexBuffer(model.mVertices, model.mVertexBuffer, model.mVertexBufferMemory);
-	mBufferManager->createIndexBuffer(model.mIndices, model.mIndexBuffer, model.mIndexBufferMemory);
+	readObjFile(meshFile, model->mVertices, model->mIndices);
+	
+	mBufferManager->createVertexBuffer(model->mVertices, model->mVertexBuffer, model->mVertexBufferMemory);
+	mBufferManager->createIndexBuffer(model->mIndices, model->mIndexBuffer, model->mIndexBufferMemory);
+	
 	std::cout << "Done loading model" << std::endl;
 }
 
 
-void RenderSystem::createUniformBufferObject()
+void RenderSystem::createUniformBufferObject(std::vector<VkBuffer>& uniformBuffers, std::vector<VkDeviceMemory>& uniformBuffersMemory)
 {
 	std::cout << "Creating Uniform Buffer Object" << std::endl;
 	VkDeviceSize bufferSize = sizeof(UniformBufferObject);
 
-	mUniformBuffers.resize(mSwapchain->size());
-	mUniformBuffersMemory.resize(mSwapchain->size());
+	uniformBuffers.resize(mSwapchain->size());
+	uniformBuffersMemory.resize(mSwapchain->size());
 
 	for (size_t i = 0; i < mSwapchain->size(); i++) {
 		mBufferManager->createBuffer(bufferSize,
 			VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
 			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-			mUniformBuffers[i],
-			mUniformBuffersMemory[i]);
+			uniformBuffers[i],
+			uniformBuffersMemory[i]);
 	}
 
 	//no need for a staging buffer
 }
 
-void RenderSystem::updateUniformBuffer(uint32_t currentImage)
+void RenderSystem::updateUniformBuffer(std::shared_ptr<Model> model, uint32_t currentImage)
 {
 	float modelScale = 1.0f;
 	float modelRotateZ = 90.0f;
@@ -722,7 +746,9 @@ void RenderSystem::updateUniformBuffer(uint32_t currentImage)
 	float time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
 
 	UniformBufferObject ubo = {};
-	ubo.model = glm::scale(glm::mat4(1.0f), glm::vec3(modelScale));
+	ubo.model = glm::scale(glm::mat4(1.0f), model->mScale);
+	ubo.model = glm::translate(ubo.model, model->mPosition);
+	ubo.model = glm::rotate(ubo.model, glm::radians(model->zRotation), glm::vec3(0.0f, 0.0f, 1.0f));
 
 	ubo.view = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, -translate));
 	ubo.view = glm::rotate(ubo.view, glm::radians(mCamRotate.x), glm::vec3(1.0f, 0.0f, 0.0f));
@@ -733,10 +759,11 @@ void RenderSystem::updateUniformBuffer(uint32_t currentImage)
 	
 	ubo.proj[1][1] *= -1;
 	void* data;
-	vkMapMemory(mContext->device, mUniformBuffersMemory[currentImage], 0, sizeof(ubo), 0, &data);
+	vkMapMemory(mContext->device, model->mUniformBuffersMemory[currentImage], 0, sizeof(ubo), 0, &data);
 	memcpy(data, &ubo, sizeof(ubo));
-	vkUnmapMemory(mContext->device, mUniformBuffersMemory[currentImage]);
+	vkUnmapMemory(mContext->device, model->mUniformBuffersMemory[currentImage]);
 }
+
 
 void RenderSystem::createTexture(std::shared_ptr<Texture>& texture, const std::string &filename)
 {

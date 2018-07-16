@@ -129,6 +129,7 @@
     <ClCompile Include="ImageManager.cpp" />
     <ClCompile Include="InputSystem.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="Model.cpp" />
     <ClCompile Include="QueueFamilies.cpp" />
     <ClCompile Include="RenderSystem.cpp" />
     <ClCompile Include="Swapchain.cpp" />
