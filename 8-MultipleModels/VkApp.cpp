@@ -52,7 +52,7 @@ void VkApp::shutdown()
 void VkApp::createWindow()
 { 
 	glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-	mWindow = glfwCreateWindow(800, 600, "8-MultipleModels", nullptr, nullptr);
+	mWindow = glfwCreateWindow(1280, 720, "8-MultipleModels", nullptr, nullptr);
 
 	if (mWindow == nullptr) {
 		throw std::runtime_error("Window creation failed!");

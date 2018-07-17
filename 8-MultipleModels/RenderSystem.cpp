@@ -14,14 +14,12 @@ void RenderSystem::initialize(GLFWwindow * window)
 	mCommandPool->initialize();
 	
 	mBufferManager = std::make_shared<BufferManager>(BufferManager(mContext, mCommandPool));
-	//mBufferManager->initialize();?
 
 	mImageManager = std::make_shared<ImageManager>(ImageManager(mContext, mCommandPool));
-	//mImageManager->initialize();?
 
 	createSwapchain();
 	createDepthBuffer();				//set up the depth buffer (must be before createRenderPass and after createSwapchain!)
-	createDescriptorPool(2);
+	createDescriptorPool(MAX_MESH_COUNT);
 
 	//for synchronizing the rendering process
 	createSyncObjects();
@@ -31,11 +29,6 @@ void RenderSystem::initialize(GLFWwindow * window)
 	createDescriptorSetLayout();		//assumes UBO, texture/sampler
 	createGraphicsPipeline();			//assumes shader, UBO, texture/sampler, 
 	createFramebuffers();				//needs swapchain, attachments
-
-
-	//create and set up our models and related resources
-	//mChaletModel = createModel(CHALET_MODEL_PATH, CHALET_TEXTURE_PATH);
-	//mGroundModel = createModel(GROUND_MODEL_PATH, GROUND_TEXTURE_PATH);
 
 	createCommandBuffers();
 }

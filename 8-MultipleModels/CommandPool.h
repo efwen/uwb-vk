@@ -10,9 +10,7 @@ class CommandPool
 {
 public:
 	CommandPool(std::shared_ptr<VulkanContext> context);
-
 	void initialize();
-
 	void cleanup();
 
 	void allocateCommandBuffers(std::vector<VkCommandBuffer> &commandBuffers, VkCommandBufferLevel level);

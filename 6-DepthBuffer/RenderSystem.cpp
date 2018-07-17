@@ -279,7 +279,6 @@ void RenderSystem::createGraphicsPipeline()
 	multisampling.alphaToOneEnable = VK_FALSE;
 
 	//Depth & Stencil testing
-	//not using for now, so just pass in nullptr
 	VkPipelineDepthStencilStateCreateInfo depthStencil = {};
 	depthStencil.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
 	depthStencil.depthTestEnable = VK_TRUE;					//should the depth of new fragments be compared

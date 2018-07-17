@@ -42,6 +42,7 @@ struct UniformBufferObject {
 const std::string VERT_SHADER_PATH = "shaders/square_vert.spv";
 const std::string FRAG_SHADER_PATH = "shaders/square_frag.spv";
 const int MAX_CONCURRENT_FRAMES = 2;
+const int MAX_MESH_COUNT = 4;
 
 class RenderSystem
 {
@@ -64,9 +65,6 @@ public:
 	glm::vec3* getCamRotate();
 
 
-
-	//std::shared_ptr<Model> mGroundModel;
-	//std::shared_ptr<Model> mChaletModel;
 	std::vector<std::shared_ptr<Model>> modelList;
 private:
 	std::shared_ptr<VulkanContext> mContext;
