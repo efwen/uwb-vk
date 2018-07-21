@@ -86,7 +86,9 @@ private:
 
 	VkPipelineLayout mPipelineLayout;
 	VkPipeline mPipeline;
+#pragma endregion
 
+#pragma region DepthBuffer
 	//depth buffer
 	VkImage mDepthImage;
 	VkFormat mDepthImageFormat;
@@ -94,22 +96,18 @@ private:
 	VkImageView mDepthImageView;
 #pragma endregion
 
-	//Rendering Synchronization primitives
+#pragma region Synchronization
 	std::vector<VkSemaphore> mImageAvailableSemaphores;
 	std::vector<VkSemaphore> mRenderFinishedSemaphores;
 	std::vector<VkFence> mFrameFences;
 	size_t mCurrentFrame = 0;
+#pragma endregion
 
 	VkClearValue mClearColor = { 0.0f, 0.5f, 0.5f, 1.0f };
-	glm::mat4 model = glm::scale(glm::mat4(1.0f), glm::vec3(0.5f));
-	float mCamDist = 4.0;
+	float mCamDist = 5.0f;
 	glm::vec3 mCamRotate = glm::vec3(0.0f);
 
-private:
-	//void createInstance();
-	void createDevice();
-	void createSurface(GLFWwindow* window);
-	
+private:	
 	//SWAPCHAIN
 	void createSwapchain();
 	void recreateSwapchain();
@@ -127,12 +125,9 @@ private:
 
 	//Command Buffers
 	void createFramebuffers();
-	void createCommandPool();
 	void createCommandBuffers();
 	void createDepthBuffer();
 	void createSyncObjects();
-
-
 
 
 	void loadMesh(std::shared_ptr<Model> model, const std::string & meshFile);

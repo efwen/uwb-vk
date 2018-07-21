@@ -1,6 +1,7 @@
 import sys
 import subprocess
 import glob
+import codecs
 
 if len(sys.argv) != 2:
     print("Wrong number of arguments!")
@@ -8,17 +9,18 @@ if len(sys.argv) != 2:
 
 vShaders = glob.glob(sys.argv[1] + "\\*.vert")
 fShaders = glob.glob(sys.argv[1] + "\\*.frag")
+tcShaders = glob.glob(sys.argv[1] + "\\*.tesc")
+teShaders = glob.glob(sys.argv[1] + "\\*.tese")
 
-print("vertex shaders" + str(vShaders))
-print("fragment shaders" + str(fShaders))
+def process(shaderList, ext):
+    print("processing " + ext + " shaders:")
+    for shader in shaderList:
+        outputName = str(shader).split("." + ext)[0] + "_" + ext + ".spv"
+        subprocess.call(["glslangValidator.exe", "-V", str(shader), "-o", outputName])
+        print("output: " + outputName)
+    return
 
-for v in vShaders:
-    outputName = str(v).split(".vert")[0] + "_vert.spv"
-    subprocess.call(["glslangValidator.exe", "-V", str(v), "-o", outputName])
-    print("output: " + outputName)
-
-for f in fShaders:
-    outputName = str(f).split(".frag")[0] + "_frag.spv"
-    subprocess.call(["glslangValidator.exe", "-V", str(f), "-o", outputName])
-    print("output: " + outputName)
-
+process(vShaders, "vert")
+process(fShaders, "frag")
+process(tcShaders, "tesc")
+process(teShaders, "tese")
