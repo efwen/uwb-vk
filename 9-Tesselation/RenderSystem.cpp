@@ -30,10 +30,7 @@ void RenderSystem::initialize(GLFWwindow * window)
 	createCommandBuffers();							//create a basic set of command buffers (doesn't render anything at this point)
 
 
-	createShader(mShaderSet.vertShader, VERT_SHADER_PATH, VK_SHADER_STAGE_VERTEX_BIT);
-	createShader(mShaderSet.tessControlShader, TESS_CONTROL_SHADER_PATH, VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT);
-	createShader(mShaderSet.tessEvalShader, TESS_EVAL_SHADER_PATH, VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT);
-	createShader(mShaderSet.fragShader, FRAG_SHADER_PATH, VK_SHADER_STAGE_FRAGMENT_BIT);
+
 }
 
 void RenderSystem::cleanup()
@@ -88,11 +85,6 @@ void RenderSystem::drawFrame()
 	//Get the next available image
 	uint32_t imageIndex;
 	vkAcquireNextImageKHR(mContext->device, mSwapchain->getVkSwapchain(), std::numeric_limits<uint64_t>::max(), mImageAvailableSemaphores[mCurrentFrame], VK_NULL_HANDLE, &imageIndex);
-
-	///update ubos for each model
-	for (auto& renderable : mRenderables) {
-		updateMVPMatrices(renderable, imageIndex);
-	}
 
 	VkSubmitInfo submitInfo = {};
 	submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
@@ -157,7 +149,7 @@ void RenderSystem::recreateSwapchain()
 	createSwapchain();
 	createRenderPass();
 	for (auto model : mRenderables) {
-		createPipeline(model->mPipeline, model->mPipelineLayout, model->mDescriptorSetLayout, mShaderSet.createShaderInfoSet(), mRenderPass);
+		createPipeline(model->mPipeline, model->mPipelineLayout, model->mDescriptorSetLayout, model->mShaderSet.createShaderInfoSet(), mRenderPass);
 	}
 	createDepthBuffer();
 	createFramebuffers(mRenderPass);
@@ -176,10 +168,9 @@ void RenderSystem::cleanupSwapchain()
 
 	mCommandPool->freeCommandBuffers(mCommandBuffers);
 
-	//mPipelineManager->destroyPipeline(mPipeline)
-	for (auto model : mRenderables) {
-		vkDestroyPipeline(mContext->device, model->mPipeline, nullptr);
-		vkDestroyPipelineLayout(mContext->device, model->mPipelineLayout, nullptr);
+	for (auto renderable : mRenderables) {
+		vkDestroyPipeline(mContext->device, renderable->mPipeline, nullptr);
+		vkDestroyPipelineLayout(mContext->device, renderable->mPipelineLayout, nullptr);
 	}
 	vkDestroyRenderPass(mContext->device, mRenderPass, nullptr);
 
@@ -244,7 +235,7 @@ void RenderSystem::createPipeline(VkPipeline& pipeline, VkPipelineLayout& pipeli
 	rasterizer.rasterizerDiscardEnable = VK_FALSE;
 	rasterizer.polygonMode = VK_POLYGON_MODE_LINE;//VK_POLYGON_MODE_FILL;
 	rasterizer.lineWidth = 1.0f;
-	rasterizer.cullMode = VK_CULL_MODE_BACK_BIT;
+	rasterizer.cullMode = VK_CULL_MODE_NONE;//VK_CULL_MODE_BACK_BIT;
 	rasterizer.frontFace = VK_FRONT_FACE_CLOCKWISE;
 	rasterizer.depthBiasEnable = VK_FALSE;
 	rasterizer.depthBiasConstantFactor = 0.0f;
@@ -587,9 +578,9 @@ void RenderSystem::createCommandBuffers()
 void RenderSystem::drawRenderable(VkCommandBuffer commandBuffer, std::shared_ptr<Renderable> model, VkDescriptorSet& descriptorSet)
 {
 	//Set up draw info
-	VkBuffer vertexBuffers = { model->mMesh->getVertexBuffer() };
+	VkBuffer vertexBuffers[1] = { model->mMesh->getVertexBuffer()};
 	VkDeviceSize offsets[] = { 0 };
-	vkCmdBindVertexBuffers(commandBuffer, 0, 1, &vertexBuffers, offsets);
+	vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
 	vkCmdBindIndexBuffer(commandBuffer, model->mMesh->getIndexBuffer(), 0, VK_INDEX_TYPE_UINT32);
 	vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, model->mPipelineLayout, 0, 1, &descriptorSet, 0, nullptr);
 
@@ -624,28 +615,20 @@ void RenderSystem::createSyncObjects()
 
 
 
-void RenderSystem::createRenderable(std::shared_ptr<Renderable>& renderable, 
-							std::shared_ptr<Mesh> mesh,
-							std::shared_ptr<Texture> texture)
+void RenderSystem::createRenderable(std::shared_ptr<Renderable>& renderable)
 {
 	renderable = std::make_shared<Renderable>(Renderable(mContext));
+}
 
-	//create and set up our models and related resources
-	renderable->setMesh(mesh);
-	renderable->setTexture(texture);
+void RenderSystem::instantiateRenderable(std::shared_ptr<Renderable>& renderable)
+{
+	renderable->createDescriptorSetLayout();
+	renderable->createDescriptorSets(mDescriptorPool, mSwapchain->size());
 
-	mBufferManager->createUBO<MVPMatrices>(renderable->mMVPBuffer, mSwapchain->size());
-
-	
-	renderable->addBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT, 0, 1);
-	renderable->addBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 1, 1);
-
-	createDescriptorSetLayout(renderable->mDescriptorSetLayout, renderable->mBindings);
-	createDescriptorSets(renderable->mDescriptorSetLayout, renderable->mDescriptorSets, renderable->mTexture, renderable->mMVPBuffer);
 
 	createPipeline(renderable->mPipeline, renderable->mPipelineLayout,
 		renderable->mDescriptorSetLayout,
-		mShaderSet.createShaderInfoSet(),
+		renderable->mShaderSet.createShaderInfoSet(),
 		mRenderPass);
 
 	mRenderables.push_back(renderable);
@@ -695,36 +678,6 @@ void RenderSystem::createShader(std::shared_ptr<Shader>& shader, const std::stri
 	mShaders.push_back(shader);
 }
 
-void RenderSystem::updateMVPMatrices(const std::shared_ptr<Renderable>& renderable, uint32_t currentImage)
-{
-	float modelScale = 1.0f;
-	float modelRotateZ = 90.0f;
-	float translate = mCamDist;
-	float rotateX = 0.0f;
-	float rotateY = 90.0f;
-
-	static auto startTime = std::chrono::high_resolution_clock::now();
-
-	auto currentTime = std::chrono::high_resolution_clock::now();
-	float time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
-
-	MVPMatrices mvp = {};
-	mvp.model = glm::scale(glm::mat4(1.0f), renderable->mScale);
-	mvp.model = glm::translate(mvp.model, renderable->mPosition);
-	mvp.model = glm::rotate(mvp.model, glm::radians(renderable->zRotation), glm::vec3(0.0f, 0.0f, 1.0f));
-
-	mvp.view = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, -translate));
-	mvp.view = glm::rotate(mvp.view, glm::radians(mCamRotate.x), glm::vec3(1.0f, 0.0f, 0.0f));
-	mvp.view = glm::rotate(mvp.view, glm::radians(mCamRotate.y), glm::vec3(0.0f, 1.0f, 0.0f));
-	mvp.view = glm::rotate(mvp.view, glm::radians(mCamRotate.z), glm::vec3(0.0f, 0.0f, 1.0f));
-
-	mvp.proj = glm::perspective(glm::radians(45.0f), mSwapchain->getExtent().width / (float)mSwapchain->getExtent().height, 0.1f, 100.0f);
-
-	mvp.proj[1][1] *= -1;
-
-	mBufferManager->updateUBO<MVPMatrices>(renderable->mMVPBuffer, mvp, currentImage);
-}
-
 void RenderSystem::createDepthBuffer()
 {
 	std::cout << "Creating depth resources" << std::endl;
@@ -764,19 +717,4 @@ void RenderSystem::setClearColor(VkClearValue clearColor)
 	vkDeviceWaitIdle(mContext->device);
 	mClearColor = clearColor;
 	createCommandBuffers();
-}
-
-void RenderSystem::setCamDist(float dist)
-{
-	mCamDist = dist;
-}
-
-float RenderSystem::getCamDist()
-{
-	return mCamDist;
-}
-
-glm::vec3* RenderSystem::getCamRotate()
-{
-	return &mCamRotate;
 }

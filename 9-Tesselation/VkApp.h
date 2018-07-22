@@ -12,11 +12,22 @@
 #include "RenderSystem.h"
 #include "InputSystem.h"
 #include "Renderable.h"
+#include "Shader.h"
+#include "Texture.h"
 
+const int WIDTH = 1280;
+const int HEIGHT = 720;
+//texture paths
 const std::string CHALET_TEXTURE_PATH = "textures/chalet.jpg";
 const std::string GROUND_TEXTURE_PATH = "textures/ground.jpg";
+//model paths
 const std::string CHALET_MODEL_PATH = "models/chalet.obj";
 const std::string GROUND_MODEL_PATH = "models/ground.obj";
+//shader paths
+const std::string VERT_SHADER_PATH = "shaders/tessSquare_vert.spv";
+const std::string FRAG_SHADER_PATH = "shaders/tessSquare_frag.spv";
+const std::string TESS_CONTROL_SHADER_PATH = "shaders/tessSquare_tesc.spv";
+const std::string TESS_EVAL_SHADER_PATH = "shaders/tessSquare_tese.spv";
 
 class VkApp
 {
@@ -34,18 +45,27 @@ private:
 												{0.0f,   0.0f,   0.0f,   1.0f } };		
 	int clearColorIndex = 0;
 
-	//"Camera"/View
-	float mCamDist = 0.0f;
-	glm::vec3* mCamRotate = nullptr;
+	std::shared_ptr<UBO> mvpBuffer;
+
+	struct xform
+	{
+		glm::vec3 scale = glm::vec3(1.0f);
+		glm::vec3 pos = glm::vec3(0.0f);
+		glm::vec3 rot = glm::vec3(0.0f);
+	};
+
+	//"Camera"
+	float mCamDist = 5.0f;
+	glm::vec3 mCamRotate = glm::vec3(0.0f);
 	const float mCamTranslateSpeed = 10.0f;
 	const float mCamRotateSpeed = 100.0f;
 
-	//Models
-	//std::shared_ptr<Model> mTestModel = nullptr;
+
 	const float mModelTranslateSpeed = 5.0f;
 	const float mModelRotateSpeed = 100.0f;
 
 	std::shared_ptr<Renderable> mTestPlane = nullptr;
+	xform mTestPlaneXform;
 public:
 	VkApp();
 	void run();
@@ -55,4 +75,7 @@ private:
 	void shutdown();
 	void createWindow();
 	void handleInput();
+
+	void createTesselatedPlane();
+	void updateMVPMatrices(const std::shared_ptr<Renderable>& renderable, const xform& renderableXform);
 };

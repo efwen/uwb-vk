@@ -18,6 +18,7 @@ public:
 	void free();
 
 	VkPipelineShaderStageCreateInfo getShaderStageInfo();
+	VkShaderStageFlagBits getStage();
 protected:
 	std::shared_ptr<VulkanContext> mContext;
 

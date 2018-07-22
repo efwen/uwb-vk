@@ -5,6 +5,7 @@
 
 struct UBO
 {
+	VkDeviceSize bufferSize = 0;
 	std::vector<VkBuffer> buffers;
 	std::vector<VkDeviceMemory> buffersMemory;
 };

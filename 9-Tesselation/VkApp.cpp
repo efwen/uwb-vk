@@ -14,6 +14,7 @@ void VkApp::run()
 		glfwPollEvents();
 		handleInput();
 
+		updateMVPMatrices(mTestPlane, mTestPlaneXform);
 		mRenderSystem.drawFrame();
 
 		//update the frame timer
@@ -33,19 +34,7 @@ void VkApp::initialize()
 	mInputSystem.initialize(mWindow);
 	mRenderSystem.initialize(mWindow);
 
-	mCamDist = mRenderSystem.getCamDist();
-	mCamRotate = mRenderSystem.getCamRotate();
-
-	std::shared_ptr<Mesh> mesh;
-	std::shared_ptr<Texture> texture;
-	mRenderSystem.createMesh(mesh, GROUND_MODEL_PATH);
-	mRenderSystem.createTexture(texture, GROUND_TEXTURE_PATH);
-
-
-	mRenderSystem.createRenderable(mTestPlane, mesh, texture);
-	//mTestModel = mRenderSystem.createModel(CHALET_MODEL_PATH, CHALET_TEXTURE_PATH);
-
-	mTestPlane->mScale = glm::vec3(1.5f, 1.5f, 1.0f);
+	createTesselatedPlane();
 }
 
 void VkApp::shutdown()
@@ -58,7 +47,7 @@ void VkApp::shutdown()
 void VkApp::createWindow()
 { 
 	glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-	mWindow = glfwCreateWindow(1280, 720, "9-Tessellation", nullptr, nullptr);
+	mWindow = glfwCreateWindow(WIDTH, HEIGHT, "9-Tessellation", nullptr, nullptr);
 
 	if (mWindow == nullptr) {
 		throw std::runtime_error("Window creation failed!");
@@ -84,48 +73,87 @@ void VkApp::handleInput()
 	if (mInputSystem.isKeyPressed(GLFW_KEY_F))
 		std::cout << "frameTime: " << mFrameTime * 1000.0 << " ms ( " << (1.0 / mFrameTime) << " fps)" << std::endl;
 
-
-	//Model Controls
-	/*if (mInputSystem.isKeyDown(GLFW_KEY_J)) {
-		mTestModel->mPosition -= glm::vec3(mModelTranslateSpeed * mFrameTime, 0.0f, 0.0f);
-	}
-	if (mInputSystem.isKeyDown(GLFW_KEY_L)) {
-		mTestModel->mPosition += glm::vec3(mModelTranslateSpeed * mFrameTime, 0.0f, 0.0f);
-	}
-	if (mInputSystem.isKeyDown(GLFW_KEY_I)) {
-		mTestModel->mPosition += glm::vec3(0.0f, mModelTranslateSpeed * mFrameTime, 0.0f);
-	}
-	if (mInputSystem.isKeyDown(GLFW_KEY_K)) {
-		mTestModel->mPosition -= glm::vec3(0.0f, mModelTranslateSpeed * mFrameTime, 0.0f);
-	}
-	if (mInputSystem.isKeyDown(GLFW_KEY_U)) {
-		mTestModel->zRotation += mModelRotateSpeed * mFrameTime;
-	}
-	if (mInputSystem.isKeyDown(GLFW_KEY_O)) {
-		mTestModel->zRotation -= mModelRotateSpeed * mFrameTime;
-	}
-	*/
-
 	//Camera Controls
 	if (mInputSystem.isKeyDown(GLFW_KEY_UP)){
-		mCamRotate->x += mCamRotateSpeed * (float)mFrameTime;
+		mCamRotate.x += mCamRotateSpeed * (float)mFrameTime;
 	}
 	if (mInputSystem.isKeyDown(GLFW_KEY_DOWN)){
-		mCamRotate->x -= mCamRotateSpeed * (float)mFrameTime;
+		mCamRotate.x -= mCamRotateSpeed * (float)mFrameTime;
 	}
 	if (mInputSystem.isKeyDown(GLFW_KEY_LEFT)) {
-		mCamRotate->z += mCamRotateSpeed * (float)mFrameTime;
+		mCamRotate.z += mCamRotateSpeed * (float)mFrameTime;
 	}
 	if (mInputSystem.isKeyDown(GLFW_KEY_RIGHT)) {
-		mCamRotate->z -= mCamRotateSpeed * (float)mFrameTime;
+		mCamRotate.z -= mCamRotateSpeed * (float)mFrameTime;
 	}
 	//forward / back
 	if (mInputSystem.isKeyDown(GLFW_KEY_W)) {
 		mCamDist -= mCamTranslateSpeed * (float)mFrameTime;
-		mRenderSystem.setCamDist(mCamDist);
 	}
 	else if (mInputSystem.isKeyDown(GLFW_KEY_S)) {
 		mCamDist += mCamTranslateSpeed * (float)mFrameTime;
-		mRenderSystem.setCamDist(mCamDist);
 	}
+}
+
+void VkApp::createTesselatedPlane()
+{
+	std::shared_ptr<Mesh> mesh;
+	mRenderSystem.createMesh(mesh, GROUND_MODEL_PATH);
+	
+	std::shared_ptr<Texture> texture;
+	mRenderSystem.createTexture(texture, GROUND_TEXTURE_PATH);
+	
+	ShaderSet planeShaderSet;
+	mRenderSystem.createShader(planeShaderSet.vertShader, VERT_SHADER_PATH, VK_SHADER_STAGE_VERTEX_BIT);
+	mRenderSystem.createShader(planeShaderSet.tessControlShader, TESS_CONTROL_SHADER_PATH, VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT);
+	mRenderSystem.createShader(planeShaderSet.tessEvalShader, TESS_EVAL_SHADER_PATH, VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT);
+	mRenderSystem.createShader(planeShaderSet.fragShader, FRAG_SHADER_PATH, VK_SHADER_STAGE_FRAGMENT_BIT);
+
+	//create a renderable and apply relevant resources
+	mRenderSystem.createRenderable(mTestPlane);
+
+	mTestPlane->setMesh(mesh);
+	mTestPlane->addTexture(texture);
+	mTestPlane->applyShaderSet(planeShaderSet);
+
+	//Add uniform buffers
+	mRenderSystem.createUniformBuffer<MVPMatrices>(mvpBuffer);
+	mTestPlane->addUniformBuffer(mvpBuffer);
+
+	//bind resources
+	mTestPlane->addBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT, 0, 1);
+	mTestPlane->addBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 1, 1);
+
+	mTestPlaneXform.scale = glm::vec3(1.5f, 1.5f, 1.0f);
+	mRenderSystem.instantiateRenderable(mTestPlane);
+}
+
+void VkApp::updateMVPMatrices(const std::shared_ptr<Renderable>& renderable, const xform& xform)
+{
+	float modelScale = 1.0f;
+	float modelRotateZ = 90.0f;
+	float translate = mCamDist;
+	float rotateX = 0.0f;
+	float rotateY = 90.0f;
+
+	static auto startTime = std::chrono::high_resolution_clock::now();
+
+	auto currentTime = std::chrono::high_resolution_clock::now();
+	float time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
+
+	MVPMatrices mvp = {};
+	mvp.model = glm::scale(glm::mat4(1.0f), xform.scale);
+	mvp.model = glm::translate(mvp.model, xform.pos);
+	mvp.model = glm::rotate(mvp.model, glm::radians(xform.rot.z), glm::vec3(0.0f, 0.0f, 1.0f));
+
+	mvp.view = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, -translate));
+	mvp.view = glm::rotate(mvp.view, glm::radians(mCamRotate.x), glm::vec3(1.0f, 0.0f, 0.0f));
+	mvp.view = glm::rotate(mvp.view, glm::radians(mCamRotate.y), glm::vec3(0.0f, 1.0f, 0.0f));
+	mvp.view = glm::rotate(mvp.view, glm::radians(mCamRotate.z), glm::vec3(0.0f, 0.0f, 1.0f));
+
+	mvp.proj = glm::perspective(glm::radians(45.0f), (float)WIDTH / (float)HEIGHT, 0.1f, 100.0f);
+
+	mvp.proj[1][1] *= -1;
+
+	mRenderSystem.updateUniformBuffer<MVPMatrices>(*(renderable->mUniformBuffers[0]), mvp);
 }

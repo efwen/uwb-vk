@@ -36,6 +36,11 @@ VkPipelineShaderStageCreateInfo Shader::getShaderStageInfo()
 	return createInfo;
 }
 
+VkShaderStageFlagBits Shader::getStage()
+{
+	return mStage;
+}
+
 void Shader::createShaderModule(const std::vector<char>& code)
 {
 	VkShaderModuleCreateInfo createInfo = {};

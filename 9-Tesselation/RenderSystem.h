@@ -40,11 +40,6 @@ struct MVPMatrices {
 	glm::mat4 proj;
 };
 
-const std::string VERT_SHADER_PATH = "shaders/tessSquare_vert.spv";
-const std::string FRAG_SHADER_PATH = "shaders/tessSquare_frag.spv";
-const std::string TESS_CONTROL_SHADER_PATH = "shaders/tessSquare_tesc.spv";
-const std::string TESS_EVAL_SHADER_PATH = "shaders/tessSquare_tese.spv";
-
 const int MAX_CONCURRENT_FRAMES = 2;
 const int DESCRIPTOR_POOL_SIZE = 4;
 
@@ -62,17 +57,38 @@ public:
 	void createTexture(std::shared_ptr<Texture>& texture, const std::string &filename);
 	void createMesh(std::shared_ptr<Mesh>& mesh, const std::string& filename);
 	void createShader(std::shared_ptr<Shader>& shader, const std::string& filename, VkShaderStageFlagBits stage);
-	void createRenderable(std::shared_ptr<Renderable>& model, 
-					std::shared_ptr<Mesh> mesh,
-					std::shared_ptr<Texture> texture);
+	void createRenderable(std::shared_ptr<Renderable>& renderable);
+	void instantiateRenderable(std::shared_ptr<Renderable>& renderable);
 
+	template<typename T>
+	void createUniformBuffer(std::shared_ptr<UBO>& ubo)
+	{
+		ubo = std::make_shared<UBO>(UBO());
+		size_t swapchainSize = mSwapchain->size();
 
+		ubo->bufferSize = sizeof(T);
+		ubo->buffers.resize(swapchainSize);
+		ubo->buffersMemory.resize(swapchainSize);
 
+		for (size_t i = 0; i < swapchainSize; i++) {
+			mBufferManager->createBuffer(ubo->bufferSize,
+				VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+				VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+				ubo->buffers[i],
+				ubo->buffersMemory[i]);
+		}
+	}
+
+	template<typename T>
+	void updateUniformBuffer(UBO& ubo, T& uboData)
+	{
+		void* data;
+		vkMapMemory(mContext->device, ubo.buffersMemory[mCurrentFrame], 0, sizeof(uboData), 0, &data);
+		memcpy(data, &uboData, sizeof(T));
+		vkUnmapMemory(mContext->device, ubo.buffersMemory[mCurrentFrame]);
+	}
+	
 	void setClearColor(VkClearValue clearColor);
-	void setCamDist(float dist);
-	float getCamDist();
-	glm::vec3* getCamRotate();
-
 
 	std::vector<std::shared_ptr<Renderable>> mRenderables;
 private:
@@ -84,8 +100,6 @@ private:
 	std::unique_ptr<Swapchain> mSwapchain;
 	std::vector<VkCommandBuffer> mCommandBuffers;
 
-	ShaderSet mShaderSet;
-
 	//some defaults so that we (hopefully) never have an invalid model
 	std::shared_ptr<Mesh> mDefaultMesh;				//when no mesh loaded
 	std::shared_ptr<ShaderSet> mDefaultShaderSet;	//when no shader set loaded
@@ -94,6 +108,7 @@ private:
 	std::vector<std::shared_ptr<Mesh>> mMeshes;
 	std::vector<std::shared_ptr<Shader>> mShaders;
 	std::vector<std::shared_ptr<Texture>> mTextures;
+	std::vector<std::shared_ptr<UBO>> mUniformBuffers;
 
 
 	//more closely attached to a renderpass than swapchain
@@ -118,9 +133,6 @@ private:
 #pragma endregion
 
 	VkClearValue mClearColor = { 0.0f, 0.5f, 0.5f, 1.0f };
-	float mCamDist = 5.0f;
-	glm::vec3 mCamRotate = glm::vec3(0.0f);
-
 private:	
 	//SWAPCHAIN
 	void createSwapchain();
@@ -141,9 +153,6 @@ private:
 	void createCommandBuffers();
 	void drawRenderable(VkCommandBuffer commandBuffer, std::shared_ptr<Renderable> model, VkDescriptorSet& descriptorSet);
 
-
 	void createDepthBuffer();
 	void createSyncObjects();
-
-	void updateMVPMatrices(const std::shared_ptr<Renderable>& renderable, uint32_t currentImage);
 };
