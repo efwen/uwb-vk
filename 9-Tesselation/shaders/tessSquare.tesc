@@ -4,6 +4,11 @@
 
 layout(vertices = 3) out;
 
+layout (binding = 0) uniform TessControlOptions
+{
+	float tessLevel;
+} controlOptions;
+
 layout (location = 0) in vec3 inColor[];
 layout (location = 1) in vec2 inUV[];
 
@@ -14,11 +19,11 @@ void main()
 {
     if(gl_InvocationID == 0)
     {
-        gl_TessLevelInner[0] = 16.0f;
+        gl_TessLevelInner[0] = controlOptions.tessLevel;
 
-        gl_TessLevelOuter[0] = 16.0f;
-        gl_TessLevelOuter[1] = 16.0f;
-        gl_TessLevelOuter[2] = 16.0f;
+        gl_TessLevelOuter[0] = controlOptions.tessLevel;
+        gl_TessLevelOuter[1] = controlOptions.tessLevel;
+        gl_TessLevelOuter[2] = controlOptions.tessLevel;
     }
     gl_out[gl_InvocationID].gl_Position = gl_in[gl_InvocationID].gl_Position;
 	outColor[gl_InvocationID] = inColor[gl_InvocationID];

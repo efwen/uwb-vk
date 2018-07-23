@@ -34,12 +34,6 @@
 #include "Mesh.h"
 
 
-struct MVPMatrices {
-	glm::mat4 model;
-	glm::mat4 view;
-	glm::mat4 proj;
-};
-
 const int MAX_CONCURRENT_FRAMES = 2;
 const int DESCRIPTOR_POOL_SIZE = 4;
 
@@ -132,7 +126,7 @@ private:
 	size_t mCurrentFrame = 0;
 #pragma endregion
 
-	VkClearValue mClearColor = { 0.0f, 0.5f, 0.5f, 1.0f };
+	VkClearValue mClearColor = { 0.0f, 0.0f, 0.0f, 1.0f };
 private:	
 	//SWAPCHAIN
 	void createSwapchain();
@@ -146,8 +140,6 @@ private:
 
 	//Descriptors
 	void createDescriptorPool(uint32_t maxSets);
-	void createDescriptorSetLayout(VkDescriptorSetLayout& layout, std::vector<VkDescriptorSetLayoutBinding>& binding);
-	void createDescriptorSets(VkDescriptorSetLayout& layout, std::vector<VkDescriptorSet>& descriptorSets, std::shared_ptr<Texture> texture, UBO& mvpBuffer);
 
 	//Command Buffers
 	void createCommandBuffers();

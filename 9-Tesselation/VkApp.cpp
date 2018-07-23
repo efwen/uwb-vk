@@ -15,6 +15,8 @@ void VkApp::run()
 		handleInput();
 
 		updateMVPMatrices(mTestPlane, mTestPlaneXform);
+		updateDemoOptions();
+
 		mRenderSystem.drawFrame();
 
 		//update the frame timer
@@ -33,6 +35,7 @@ void VkApp::initialize()
 	createWindow();
 	mInputSystem.initialize(mWindow);
 	mRenderSystem.initialize(mWindow);
+
 
 	createTesselatedPlane();
 }
@@ -93,15 +96,36 @@ void VkApp::handleInput()
 	else if (mInputSystem.isKeyDown(GLFW_KEY_S)) {
 		mCamDist += mCamTranslateSpeed * (float)mFrameTime;
 	}
+
+	//Demo options manipulation
+	if (mInputSystem.isKeyDown(GLFW_KEY_I)) {
+		displacementMultiplier += optionsModSpeed * (float)mFrameTime;
+	}
+	else if (mInputSystem.isKeyDown(GLFW_KEY_K)) {
+		displacementMultiplier -= optionsModSpeed * (float)mFrameTime;
+	}
+	if (mInputSystem.isKeyDown(GLFW_KEY_O)) {
+		tessLevel += optionsModSpeed * (float)mFrameTime;
+	}
+	else if (mInputSystem.isKeyDown(GLFW_KEY_L)) {
+		tessLevel -= optionsModSpeed * (float)mFrameTime;
+	}
 }
 
 void VkApp::createTesselatedPlane()
 {
+	//start by creating the component resources
 	std::shared_ptr<Mesh> mesh;
 	mRenderSystem.createMesh(mesh, GROUND_MODEL_PATH);
-	
+
+	std::shared_ptr<Texture> displacementMap;
+	mRenderSystem.createTexture(displacementMap, DISPLACEMENT_MAP_PATH);
+
 	std::shared_ptr<Texture> texture;
 	mRenderSystem.createTexture(texture, GROUND_TEXTURE_PATH);
+
+	mRenderSystem.createUniformBuffer<MVPMatrices>(tessEvalBuffer);
+	mRenderSystem.createUniformBuffer<float>(tessControlBuffer);
 	
 	ShaderSet planeShaderSet;
 	mRenderSystem.createShader(planeShaderSet.vertShader, VERT_SHADER_PATH, VK_SHADER_STAGE_VERTEX_BIT);
@@ -109,20 +133,26 @@ void VkApp::createTesselatedPlane()
 	mRenderSystem.createShader(planeShaderSet.tessEvalShader, TESS_EVAL_SHADER_PATH, VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT);
 	mRenderSystem.createShader(planeShaderSet.fragShader, FRAG_SHADER_PATH, VK_SHADER_STAGE_FRAGMENT_BIT);
 
-	//create a renderable and apply relevant resources
+
+
+	//create a renderable and make the appropriate attachments
+	//current restrictions: 
+	//bindings are uniforms first then textures
+	//uniforms and textures need to be added to the renderable in the same order as their associated bindings
 	mRenderSystem.createRenderable(mTestPlane);
 
-	mTestPlane->setMesh(mesh);
-	mTestPlane->addTexture(texture);
 	mTestPlane->applyShaderSet(planeShaderSet);
+	mTestPlane->addBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT, 0, 1);
+	mTestPlane->addBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT, 1, 1);
+	mTestPlane->addBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT, 2, 1);
+	mTestPlane->addBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 3, 1);
 
-	//Add uniform buffers
-	mRenderSystem.createUniformBuffer<MVPMatrices>(mvpBuffer);
-	mTestPlane->addUniformBuffer(mvpBuffer);
-
-	//bind resources
-	mTestPlane->addBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT, 0, 1);
-	mTestPlane->addBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 1, 1);
+	mTestPlane->setMesh(mesh);
+	mTestPlane->addUniformBuffer(tessControlBuffer);
+	mTestPlane->addUniformBuffer(tessEvalBuffer);
+	mTestPlane->addTexture(displacementMap);
+	mTestPlane->addTexture(texture);
+	
 
 	mTestPlaneXform.scale = glm::vec3(1.5f, 1.5f, 1.0f);
 	mRenderSystem.instantiateRenderable(mTestPlane);
@@ -155,5 +185,12 @@ void VkApp::updateMVPMatrices(const std::shared_ptr<Renderable>& renderable, con
 
 	mvp.proj[1][1] *= -1;
 
-	mRenderSystem.updateUniformBuffer<MVPMatrices>(*(renderable->mUniformBuffers[0]), mvp);
+	mvp.dispMod = displacementMultiplier;
+
+	mRenderSystem.updateUniformBuffer<MVPMatrices>(*tessEvalBuffer, mvp);
+}
+
+void VkApp::updateDemoOptions()
+{
+	mRenderSystem.updateUniformBuffer<float>(*tessControlBuffer, tessLevel);
 }

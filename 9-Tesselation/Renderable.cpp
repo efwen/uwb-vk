@@ -87,6 +87,7 @@ void Renderable::createDescriptorSetLayout()
 	}
 }
 
+//probably shouldn't be in renderable
 void Renderable::createDescriptorSets(const VkDescriptorPool& descriptorPool, uint32_t swapchainSize)
 {
 	std::vector<VkDescriptorSetLayout> layouts(swapchainSize, mDescriptorSetLayout);
@@ -115,30 +116,62 @@ void Renderable::createDescriptorSets(const VkDescriptorPool& descriptorPool, ui
 
 		std::vector<VkDescriptorImageInfo> texturesInfo;
 		texturesInfo.resize(mTextures.size());
-		for (size_t t = 0; t < texturesInfo.size(); t++) 
+		for (size_t t = 0; t < texturesInfo.size(); t++)
 		{
 			texturesInfo[t].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 			texturesInfo[t].imageView = mTextures[t]->getImageView();
 			texturesInfo[t].sampler = mTextures[t]->getSampler();
 		}
 
+		std::vector <VkWriteDescriptorSet> descriptorWrites = {};
+		size_t writeIndex = 0;
+		uint32_t bindingNum = 0;
+		for (auto& bufferInfo : buffersInfo)
+		{
+			VkWriteDescriptorSet bufferDescriptorWrite = {};
+			bufferDescriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+			bufferDescriptorWrite.dstSet = mDescriptorSets[i];
+			bufferDescriptorWrite.dstBinding = bindingNum;
+			bufferDescriptorWrite.dstArrayElement = 0;
+			bufferDescriptorWrite.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+			bufferDescriptorWrite.descriptorCount = 1;
+			bufferDescriptorWrite.pBufferInfo = &bufferInfo;
+			bufferDescriptorWrite.pImageInfo = nullptr;
+			bufferDescriptorWrite.pTexelBufferView = nullptr;
+			descriptorWrites.push_back(bufferDescriptorWrite);
+			writeIndex++;
+			bindingNum++;
+		}
 
+		for (auto& textureInfo : texturesInfo)
+		{
+			VkWriteDescriptorSet textureDescriptorWrite = {};
+			textureDescriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+			textureDescriptorWrite.dstSet = mDescriptorSets[i];
+			textureDescriptorWrite.dstBinding = bindingNum;
+			textureDescriptorWrite.dstArrayElement = 0;
+			textureDescriptorWrite.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+			textureDescriptorWrite.descriptorCount = 1;
+			textureDescriptorWrite.pBufferInfo = nullptr;
+			textureDescriptorWrite.pImageInfo = &textureInfo;
+			textureDescriptorWrite.pTexelBufferView = nullptr;
+			descriptorWrites.push_back(textureDescriptorWrite);
+			writeIndex++;
+			bindingNum++;
+		}
 
+		vkUpdateDescriptorSets(mContext->device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
+	}
+
+		/*
 		std::array<VkWriteDescriptorSet, 2> descriptorWrites = {};
 		descriptorWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
 		descriptorWrites[0].dstSet = mDescriptorSets[i];
 		descriptorWrites[0].dstBinding = 0;
 		descriptorWrites[0].dstArrayElement = 0;
 		descriptorWrites[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-
-		//unsure if this is right thing to do
-		descriptorWrites[0].descriptorCount = static_cast<uint32_t>(buffersInfo.size());
-		descriptorWrites[0].pBufferInfo = buffersInfo.data();
-		
-		//descriptorWrites[0].descriptorCount = 1;
-		//descriptorWrites[0].pBufferInfo = &bufferInfo;
-
-
+		descriptorWrites[0].descriptorCount = 1;
+		descriptorWrites[0].pBufferInfo = &bufferInfo;
 		descriptorWrites[0].pImageInfo = nullptr;
 		descriptorWrites[0].pTexelBufferView = nullptr;
 
@@ -147,12 +180,11 @@ void Renderable::createDescriptorSets(const VkDescriptorPool& descriptorPool, ui
 		descriptorWrites[1].dstBinding = 1;
 		descriptorWrites[1].dstArrayElement = 0;
 		descriptorWrites[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-		//again unsure
-		descriptorWrites[1].descriptorCount = static_cast<uint32_t>(texturesInfo.size());
+		descriptorWrites[1].descriptorCount = 1;
 		descriptorWrites[1].pBufferInfo = nullptr;
-		descriptorWrites[1].pImageInfo = texturesInfo.data();
+		descriptorWrites[1].pImageInfo = &textureInfo;
 		descriptorWrites[1].pTexelBufferView = nullptr;
 
-		vkUpdateDescriptorSets(mContext->device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
-	}
+		*/
+		//vkUpdateDescriptorSets(mContext->device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
 }
