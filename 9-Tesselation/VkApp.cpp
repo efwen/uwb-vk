@@ -128,10 +128,18 @@ void VkApp::createTesselatedPlane()
 	mRenderSystem.createUniformBuffer<float>(tessControlBuffer);
 	
 	ShaderSet planeShaderSet;
-	mRenderSystem.createShader(planeShaderSet.vertShader, VERT_SHADER_PATH, VK_SHADER_STAGE_VERTEX_BIT);
-	mRenderSystem.createShader(planeShaderSet.tessControlShader, TESS_CONTROL_SHADER_PATH, VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT);
-	mRenderSystem.createShader(planeShaderSet.tessEvalShader, TESS_EVAL_SHADER_PATH, VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT);
-	mRenderSystem.createShader(planeShaderSet.fragShader, FRAG_SHADER_PATH, VK_SHADER_STAGE_FRAGMENT_BIT);
+	mRenderSystem.createShader(planeShaderSet.vertShader, 
+							   VERT_SHADER_PATH, 
+							   VK_SHADER_STAGE_VERTEX_BIT);
+	mRenderSystem.createShader(planeShaderSet.tessControlShader, 
+							   TESS_CONTROL_SHADER_PATH,
+							   VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT);
+	mRenderSystem.createShader(planeShaderSet.tessEvalShader, 
+							   TESS_EVAL_SHADER_PATH, 
+						       VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT);
+	mRenderSystem.createShader(planeShaderSet.fragShader, 
+							   FRAG_SHADER_PATH, 
+							   VK_SHADER_STAGE_FRAGMENT_BIT);
 
 
 
@@ -139,13 +147,23 @@ void VkApp::createTesselatedPlane()
 	//current restrictions: 
 	//bindings are uniforms first then textures
 	//uniforms and textures need to be added to the renderable in the same order as their associated bindings
+
 	mRenderSystem.createRenderable(mTestPlane);
 
 	mTestPlane->applyShaderSet(planeShaderSet);
-	mTestPlane->addBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT, 0, 1);
-	mTestPlane->addBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT, 1, 1);
-	mTestPlane->addBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT, 2, 1);
-	mTestPlane->addBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 3, 1);
+	mTestPlane->addBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+						   VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT, 
+						   0,	//binding number (i.e. "layout(binding = 0)" in glsl
+						   1);	//resource quantity (if an array)
+	mTestPlane->addBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 
+						   VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT, 
+						   1, 1);
+	mTestPlane->addBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 
+						   VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT, 
+						   2, 1);
+	mTestPlane->addBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 
+						   VK_SHADER_STAGE_FRAGMENT_BIT, 
+						   3, 1);
 
 	mTestPlane->setMesh(mesh);
 	mTestPlane->addUniformBuffer(tessControlBuffer);

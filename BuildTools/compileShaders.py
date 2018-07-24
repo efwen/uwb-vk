@@ -11,6 +11,7 @@ vShaders = glob.glob(sys.argv[1] + "\\*.vert")
 fShaders = glob.glob(sys.argv[1] + "\\*.frag")
 tcShaders = glob.glob(sys.argv[1] + "\\*.tesc")
 teShaders = glob.glob(sys.argv[1] + "\\*.tese")
+gShaders = glob.glob(sys.argv[1] + "\\*.geom")
 
 def process(shaderList, ext):
     print("processing " + ext + " shaders:")
@@ -24,3 +25,4 @@ process(vShaders, "vert")
 process(fShaders, "frag")
 process(tcShaders, "tesc")
 process(teShaders, "tese")
+process(gShaders, "geom")
