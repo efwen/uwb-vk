@@ -14,7 +14,11 @@ void VkApp::run()
 		glfwPollEvents();
 		handleInput();
 
+
 		updateMVPMatrices(mWall, mTestPlaneXform);
+
+		glm::vec4 finalAmbient = mAmbientColor * ambientMagnitude;
+		mRenderSystem.updateUniformBuffer<glm::vec4>(*mAmbientLightBuffer, finalAmbient);
 
 		mRenderSystem.drawFrame();
 
@@ -24,7 +28,7 @@ void VkApp::run()
 		mPrevTime = mTime;
 	}
 
-	std::cout << "---------------------------------------" << std::endl;
+	std::cout << "--------------------------------------" << std::endl;
 	shutdown();
 }
 
@@ -36,7 +40,7 @@ void VkApp::initialize()
 	mRenderSystem.initialize(mWindow);
 
 
-	createTesselatedPlane();
+	createWall();
 }
 
 void VkApp::shutdown()
@@ -60,6 +64,10 @@ void VkApp::handleInput()
 {
 	mInputSystem.update();
 
+	//close the window
+	if (mInputSystem.isKeyPressed(GLFW_KEY_ESCAPE))
+		glfwSetWindowShouldClose(mWindow, GLFW_TRUE);
+
 	//change the clear color
 	if (mInputSystem.isKeyPressed(GLFW_KEY_B)) {
 		mRenderSystem.setClearColor(clearColors[clearColorIndex]);
@@ -67,19 +75,28 @@ void VkApp::handleInput()
 		if (clearColorIndex >= clearColors.size()) clearColorIndex = 0;
 	}
 
-	//close the window
-	if (mInputSystem.isKeyPressed(GLFW_KEY_ESCAPE))
-		glfwSetWindowShouldClose(mWindow, GLFW_TRUE);
-
 	//print out FPS
 	if (mInputSystem.isKeyPressed(GLFW_KEY_F))
 		std::cout << "frameTime: " << mFrameTime * 1000.0 << " ms ( " << (1.0 / mFrameTime) << " fps)" << std::endl;
 
+	cameraControls();
+
+	//ambient lighting
+	if (mInputSystem.isKeyDown(GLFW_KEY_U))
+		ambientMagnitude += 10.0f * (float)mFrameTime;
+	if (mInputSystem.isKeyDown(GLFW_KEY_J))
+		ambientMagnitude -= 10.0f * (float)mFrameTime;
+	if (ambientMagnitude < 0.0f) ambientMagnitude = 0.0f;
+	
+}
+
+void VkApp::cameraControls()
+{
 	//Camera Controls
-	if (mInputSystem.isKeyDown(GLFW_KEY_UP)){
+	if (mInputSystem.isKeyDown(GLFW_KEY_UP)) {
 		mCamRotate.x += mCamRotateSpeed * (float)mFrameTime;
 	}
-	if (mInputSystem.isKeyDown(GLFW_KEY_DOWN)){
+	if (mInputSystem.isKeyDown(GLFW_KEY_DOWN)) {
 		mCamRotate.x -= mCamRotateSpeed * (float)mFrameTime;
 	}
 	if (mInputSystem.isKeyDown(GLFW_KEY_LEFT)) {
@@ -97,7 +114,7 @@ void VkApp::handleInput()
 	}
 }
 
-void VkApp::createTesselatedPlane()
+void VkApp::createWall()
 {
 	//start by creating the component resources
 	std::shared_ptr<Mesh> wallMesh;
@@ -106,7 +123,8 @@ void VkApp::createTesselatedPlane()
 	std::shared_ptr<Texture> wallTexture;
 	mRenderSystem.createTexture(wallTexture, WALL_TEXTURE_PATH);
 
-	mRenderSystem.createUniformBuffer<MVPMatrices>(mvpBuffer);
+	mRenderSystem.createUniformBuffer<MVPMatrices>(mWallMVPBuffer);
+	mRenderSystem.createUniformBuffer<glm::vec4>(mAmbientLightBuffer);
 	
 	ShaderSet planeShaderSet;
 	mRenderSystem.createShader(planeShaderSet.vertShader, VERT_SHADER_PATH, VK_SHADER_STAGE_VERTEX_BIT);
@@ -121,12 +139,15 @@ void VkApp::createTesselatedPlane()
 	mRenderSystem.createRenderable(mWall);
 
 	mWall->applyShaderSet(planeShaderSet);
-	mWall->addBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT, 0, 1);
-	mWall->addBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 1, 1);
+	mWall->addBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT, 0, 1);				//MVP
+	mWall->addBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT, 1, 1);			//ambient light
+	mWall->addBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 2, 1);	//color texture
 
 	mWall->setMesh(wallMesh);
-	mWall->addUniformBuffer(mvpBuffer);
+	mWall->addUniformBuffer(mWallMVPBuffer);
+	mWall->addUniformBuffer(mAmbientLightBuffer);
 	mWall->addTexture(wallTexture);
+
 	
 
 	mTestPlaneXform.scale = glm::vec3(1.5f, 1.5f, 1.0f);
@@ -160,5 +181,5 @@ void VkApp::updateMVPMatrices(const std::shared_ptr<Renderable>& renderable, con
 
 	mvp.proj[1][1] *= -1;
 
-	mRenderSystem.updateUniformBuffer<MVPMatrices>(*mvpBuffer, mvp);
+	mRenderSystem.updateUniformBuffer<MVPMatrices>(*mWallMVPBuffer, mvp);
 }

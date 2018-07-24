@@ -66,8 +66,13 @@ private:
 
 
 	//UBOs
-	std::shared_ptr<UBO> mvpBuffer;
+	std::shared_ptr<UBO> mWallMVPBuffer;
 	xform mTestPlaneXform;
+	
+	//Lighting
+	std::shared_ptr<UBO> mAmbientLightBuffer;
+	glm::vec4 mAmbientColor = { 1.0, 1.0, 1.0, 1.0f };
+	float ambientMagnitude = 0.1f;
 
 	//"Camera"
 	float mCamDist = 5.0f;
@@ -83,7 +88,8 @@ private:
 	void shutdown();
 	void createWindow();
 	void handleInput();
+	void cameraControls();
 
-	void createTesselatedPlane();
+	void createWall();
 	void updateMVPMatrices(const std::shared_ptr<Renderable>& renderable, const xform& renderableXform);
 };

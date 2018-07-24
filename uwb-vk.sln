@@ -3,27 +3,27 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
 VisualStudioVersion = 15.0.27703.2026
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "1-SimpleSurface", "1-SimpleSurface\1-SimpleSurface.vcxproj", "{EA1FC855-8971-4236-BC96-D50948E810CA}"
-EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "2-RenderGeometry", "2-RenderGeometry\2-RenderGeometry.vcxproj", "{00BF2FC1-0971-4F65-9447-022743E8EFD4}"
-EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "3-MVP", "3-MVP\3-MVP.vcxproj", "{9CAEA816-445E-419A-ADEA-9397F6C54419}"
-EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "4-TextureMapping", "4-TextureMapping\4-TextureMapping.vcxproj", "{B64BA6AF-3A7C-4893-B5E1-42B8B7E5437F}"
-EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "5-BigRefactor", "5-BigRefactor\5-BigRefactor.vcxproj", "{51448A41-C19C-47B3-846E-6D143E395D32}"
-EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "6-DepthBuffer", "6-DepthBuffer\6-DepthBuffer.vcxproj", "{2704F33C-13C2-4DFB-9529-D471BD06D52E}"
-EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "7-ObjLoading", "7-ObjLoading\7-ObjLoading.vcxproj", "{6DE51A07-6699-40D2-9DB4-00A95DA4732F}"
-EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "8-MultipleModels", "8-MultipleModels\8-MultipleModels.vcxproj", "{47CD29FF-7523-4620-9B23-756279CE21F5}"
-EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "9-Tesselation", "9-Tesselation\9-Tesselation.vcxproj", "{2444B074-86C8-41DD-9005-7046C4DB75FC}"
-EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "10-Geometry", "10-Geometry\10-Geometry.vcxproj", "{D0774CF1-D37A-4C95-8D53-790F5A71B84C}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "11-Illumination", "11-Illumination\11-Illumination.vcxproj", "{47629DF0-0A13-4F00-8D79-E651C02B910C}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "01-SimpleSurface", "01-SimpleSurface\01-SimpleSurface.vcxproj", "{EA1FC855-8971-4236-BC96-D50948E810CA}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "02-RenderGeometry", "02-RenderGeometry\02-RenderGeometry.vcxproj", "{00BF2FC1-0971-4F65-9447-022743E8EFD4}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "03-MVP", "03-MVP\03-MVP.vcxproj", "{9CAEA816-445E-419A-ADEA-9397F6C54419}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "04-TextureMapping", "04-TextureMapping\04-TextureMapping.vcxproj", "{B64BA6AF-3A7C-4893-B5E1-42B8B7E5437F}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "05-BigRefactor", "05-BigRefactor\05-BigRefactor.vcxproj", "{51448A41-C19C-47B3-846E-6D143E395D32}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "06-DepthBuffer", "06-DepthBuffer\06-DepthBuffer.vcxproj", "{2704F33C-13C2-4DFB-9529-D471BD06D52E}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "07-ObjLoading", "07-ObjLoading\07-ObjLoading.vcxproj", "{6DE51A07-6699-40D2-9DB4-00A95DA4732F}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "08-MultipleModels", "08-MultipleModels\08-MultipleModels.vcxproj", "{47CD29FF-7523-4620-9B23-756279CE21F5}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "09-Tesselation", "09-Tesselation\09-Tesselation.vcxproj", "{2444B074-86C8-41DD-9005-7046C4DB75FC}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -33,6 +33,22 @@ Global
 		Release|x86 = Release|x86
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{D0774CF1-D37A-4C95-8D53-790F5A71B84C}.Debug|x64.ActiveCfg = Debug|x64
+		{D0774CF1-D37A-4C95-8D53-790F5A71B84C}.Debug|x64.Build.0 = Debug|x64
+		{D0774CF1-D37A-4C95-8D53-790F5A71B84C}.Debug|x86.ActiveCfg = Debug|Win32
+		{D0774CF1-D37A-4C95-8D53-790F5A71B84C}.Debug|x86.Build.0 = Debug|Win32
+		{D0774CF1-D37A-4C95-8D53-790F5A71B84C}.Release|x64.ActiveCfg = Release|x64
+		{D0774CF1-D37A-4C95-8D53-790F5A71B84C}.Release|x64.Build.0 = Release|x64
+		{D0774CF1-D37A-4C95-8D53-790F5A71B84C}.Release|x86.ActiveCfg = Release|Win32
+		{D0774CF1-D37A-4C95-8D53-790F5A71B84C}.Release|x86.Build.0 = Release|Win32
+		{47629DF0-0A13-4F00-8D79-E651C02B910C}.Debug|x64.ActiveCfg = Debug|x64
+		{47629DF0-0A13-4F00-8D79-E651C02B910C}.Debug|x64.Build.0 = Debug|x64
+		{47629DF0-0A13-4F00-8D79-E651C02B910C}.Debug|x86.ActiveCfg = Debug|Win32
+		{47629DF0-0A13-4F00-8D79-E651C02B910C}.Debug|x86.Build.0 = Debug|Win32
+		{47629DF0-0A13-4F00-8D79-E651C02B910C}.Release|x64.ActiveCfg = Release|x64
+		{47629DF0-0A13-4F00-8D79-E651C02B910C}.Release|x64.Build.0 = Release|x64
+		{47629DF0-0A13-4F00-8D79-E651C02B910C}.Release|x86.ActiveCfg = Release|Win32
+		{47629DF0-0A13-4F00-8D79-E651C02B910C}.Release|x86.Build.0 = Release|Win32
 		{EA1FC855-8971-4236-BC96-D50948E810CA}.Debug|x64.ActiveCfg = Debug|x64
 		{EA1FC855-8971-4236-BC96-D50948E810CA}.Debug|x64.Build.0 = Debug|x64
 		{EA1FC855-8971-4236-BC96-D50948E810CA}.Debug|x86.ActiveCfg = Debug|Win32
@@ -105,22 +121,6 @@ Global
 		{2444B074-86C8-41DD-9005-7046C4DB75FC}.Release|x64.Build.0 = Release|x64
 		{2444B074-86C8-41DD-9005-7046C4DB75FC}.Release|x86.ActiveCfg = Release|Win32
 		{2444B074-86C8-41DD-9005-7046C4DB75FC}.Release|x86.Build.0 = Release|Win32
-		{D0774CF1-D37A-4C95-8D53-790F5A71B84C}.Debug|x64.ActiveCfg = Debug|x64
-		{D0774CF1-D37A-4C95-8D53-790F5A71B84C}.Debug|x64.Build.0 = Debug|x64
-		{D0774CF1-D37A-4C95-8D53-790F5A71B84C}.Debug|x86.ActiveCfg = Debug|Win32
-		{D0774CF1-D37A-4C95-8D53-790F5A71B84C}.Debug|x86.Build.0 = Debug|Win32
-		{D0774CF1-D37A-4C95-8D53-790F5A71B84C}.Release|x64.ActiveCfg = Release|x64
-		{D0774CF1-D37A-4C95-8D53-790F5A71B84C}.Release|x64.Build.0 = Release|x64
-		{D0774CF1-D37A-4C95-8D53-790F5A71B84C}.Release|x86.ActiveCfg = Release|Win32
-		{D0774CF1-D37A-4C95-8D53-790F5A71B84C}.Release|x86.Build.0 = Release|Win32
-		{47629DF0-0A13-4F00-8D79-E651C02B910C}.Debug|x64.ActiveCfg = Debug|x64
-		{47629DF0-0A13-4F00-8D79-E651C02B910C}.Debug|x64.Build.0 = Debug|x64
-		{47629DF0-0A13-4F00-8D79-E651C02B910C}.Debug|x86.ActiveCfg = Debug|Win32
-		{47629DF0-0A13-4F00-8D79-E651C02B910C}.Debug|x86.Build.0 = Debug|Win32
-		{47629DF0-0A13-4F00-8D79-E651C02B910C}.Release|x64.ActiveCfg = Release|x64
-		{47629DF0-0A13-4F00-8D79-E651C02B910C}.Release|x64.Build.0 = Release|x64
-		{47629DF0-0A13-4F00-8D79-E651C02B910C}.Release|x86.ActiveCfg = Release|Win32
-		{47629DF0-0A13-4F00-8D79-E651C02B910C}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
