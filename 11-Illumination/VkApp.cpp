@@ -14,7 +14,7 @@ void VkApp::run()
 		glfwPollEvents();
 		handleInput();
 
-		updateMVPMatrices(mTestPlane, mTestPlaneXform);
+		updateMVPMatrices(mWall, mTestPlaneXform);
 
 		mRenderSystem.drawFrame();
 
@@ -49,7 +49,7 @@ void VkApp::shutdown()
 void VkApp::createWindow()
 { 
 	glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-	mWindow = glfwCreateWindow(WIDTH, HEIGHT, "10-Geometry", nullptr, nullptr);
+	mWindow = glfwCreateWindow(WIDTH, HEIGHT, "11-Illumination", nullptr, nullptr);
 
 	if (mWindow == nullptr) {
 		throw std::runtime_error("Window creation failed!");
@@ -100,14 +100,16 @@ void VkApp::handleInput()
 void VkApp::createTesselatedPlane()
 {
 	//start by creating the component resources
-	std::shared_ptr<Mesh> mesh;
-	mRenderSystem.createMesh(mesh, CHALET_MODEL_PATH);
+	std::shared_ptr<Mesh> wallMesh;
+	mRenderSystem.createMesh(wallMesh, WALL_MODEL_PATH);
+
+	std::shared_ptr<Texture> wallTexture;
+	mRenderSystem.createTexture(wallTexture, WALL_TEXTURE_PATH);
 
 	mRenderSystem.createUniformBuffer<MVPMatrices>(mvpBuffer);
 	
 	ShaderSet planeShaderSet;
 	mRenderSystem.createShader(planeShaderSet.vertShader, VERT_SHADER_PATH, VK_SHADER_STAGE_VERTEX_BIT);
-	mRenderSystem.createShader(planeShaderSet.geometryShader, GEOM_SHADER_PATH, VK_SHADER_STAGE_GEOMETRY_BIT);
 	mRenderSystem.createShader(planeShaderSet.fragShader, FRAG_SHADER_PATH, VK_SHADER_STAGE_FRAGMENT_BIT);
 
 
@@ -116,19 +118,19 @@ void VkApp::createTesselatedPlane()
 	//current restrictions: 
 	//bindings are uniforms first then textures
 	//uniforms and textures need to be added to the renderable in the same order as their associated bindings
-	mRenderSystem.createRenderable(mTestPlane);
+	mRenderSystem.createRenderable(mWall);
 
-	mTestPlane->applyShaderSet(planeShaderSet);
-	mTestPlane->addBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT, 0, 1);
-	mTestPlane->addBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_GEOMETRY_BIT, 1, 1);
+	mWall->applyShaderSet(planeShaderSet);
+	mWall->addBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT, 0, 1);
+	mWall->addBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 1, 1);
 
-	mTestPlane->setMesh(mesh);
-	mTestPlane->addUniformBuffer(mvpBuffer);
-	mTestPlane->addUniformBuffer(mvpBuffer);
+	mWall->setMesh(wallMesh);
+	mWall->addUniformBuffer(mvpBuffer);
+	mWall->addTexture(wallTexture);
 	
 
 	mTestPlaneXform.scale = glm::vec3(1.5f, 1.5f, 1.0f);
-	mRenderSystem.instantiateRenderable(mTestPlane);
+	mRenderSystem.instantiateRenderable(mWall);
 }
 
 void VkApp::updateMVPMatrices(const std::shared_ptr<Renderable>& renderable, const xform& xform)

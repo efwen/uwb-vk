@@ -7,6 +7,9 @@
 #include <stdexcept>
 #include <unordered_map>
 
+//#define TINYOBJLOADER_IMPLEMENTATION
+//#include <tiny_obj_loader.h>
+
 std::vector<char> readShaderFile(const std::string& filename) {
 	std::ifstream file(filename, std::ios::ate | std::ios::binary);
 
