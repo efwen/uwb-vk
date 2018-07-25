@@ -56,6 +56,15 @@ void RenderSystem::cleanup()
 		mTextures.pop_back();
 	}
 
+	while (!mUniformBuffers.empty()) {
+		auto& ubo = mUniformBuffers.back();
+		for (size_t i = 0; i < mSwapchain->size(); i++) {
+			vkDestroyBuffer(mContext->device, ubo->buffers[i], nullptr);
+			vkFreeMemory(mContext->device, ubo->buffersMemory[i], nullptr);
+		}
+		mUniformBuffers.pop_back();
+	}
+
 	while (!mShaders.empty()) {
 		auto& shader = mShaders.back();
 		shader->free();
@@ -235,8 +244,8 @@ void RenderSystem::createPipeline(VkPipeline& pipeline, VkPipelineLayout& pipeli
 	rasterizer.rasterizerDiscardEnable = VK_FALSE;
 	rasterizer.polygonMode = VK_POLYGON_MODE_FILL;
 	rasterizer.lineWidth = 1.0f;
-	rasterizer.cullMode = VK_CULL_MODE_NONE;//VK_CULL_MODE_BACK_BIT;
-	rasterizer.frontFace = VK_FRONT_FACE_CLOCKWISE;
+	rasterizer.cullMode = VK_CULL_MODE_BACK_BIT;
+	rasterizer.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
 	rasterizer.depthBiasEnable = VK_FALSE;
 	rasterizer.depthBiasConstantFactor = 0.0f;
 	rasterizer.depthBiasClamp = 0.0f;

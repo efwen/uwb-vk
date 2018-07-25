@@ -15,10 +15,10 @@ void VkApp::run()
 		handleInput();
 
 
-		updateMVPMatrices(mWall, mTestPlaneXform);
+		updateMVPMatrices(mWall, mWallXForm);
 
 		glm::vec4 finalAmbient = mAmbientColor * ambientMagnitude;
-		mRenderSystem.updateUniformBuffer<glm::vec4>(*mAmbientLightBuffer, finalAmbient);
+		mRenderSystem.updateUniformBuffer<glm::vec4>(mAmbientLightBuffer, finalAmbient);
 
 		mRenderSystem.drawFrame();
 
@@ -28,7 +28,7 @@ void VkApp::run()
 		mPrevTime = mTime;
 	}
 
-	std::cout << "--------------------------------------" << std::endl;
+	std::cout << "-------------------------------------" << std::endl;
 	shutdown();
 }
 
@@ -133,24 +133,27 @@ void VkApp::createWall()
 
 
 	//create a renderable and make the appropriate attachments
-	//current restrictions: 
-	//bindings are uniforms first then textures
-	//uniforms and textures need to be added to the renderable in the same order as their associated bindings
 	mRenderSystem.createRenderable(mWall);
 
-	mWall->applyShaderSet(planeShaderSet);
-	mWall->addBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT, 0, 1);				//MVP
-	mWall->addBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT, 1, 1);			//ambient light
-	mWall->addBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 2, 1);	//color texture
+	//setup the shaders and note the bindings they will use
+	//Current restriction: one resource per binding (no arrays right now) 
+	mWall->applyShaderSet(planeShaderSet);	
+	mWall->addShaderBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT, 0, 1);				//MVP
+	mWall->addShaderBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT, 1, 1);				//ambient light
+	mWall->addShaderBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 2, 1);		//color texture
 
 	mWall->setMesh(wallMesh);
-	mWall->addUniformBuffer(mWallMVPBuffer);
-	mWall->addUniformBuffer(mAmbientLightBuffer);
-	mWall->addTexture(wallTexture);
 
-	
+	//bind resources
+	mWall->bindUniformBuffer(mWallMVPBuffer, 0);
+	mWall->bindUniformBuffer(mAmbientLightBuffer, 1);
+	mWall->bindTexture(wallTexture, 2);
 
-	mTestPlaneXform.scale = glm::vec3(1.5f, 1.5f, 1.0f);
+
+	//set some initial conditions
+	mWallXForm.scale = glm::vec3(1.5f, 1.5f, 1.0f);
+
+	//instantiate (flush bindings, create pipeline)
 	mRenderSystem.instantiateRenderable(mWall);
 }
 
@@ -181,5 +184,5 @@ void VkApp::updateMVPMatrices(const std::shared_ptr<Renderable>& renderable, con
 
 	mvp.proj[1][1] *= -1;
 
-	mRenderSystem.updateUniformBuffer<MVPMatrices>(*mWallMVPBuffer, mvp);
+	mRenderSystem.updateUniformBuffer<MVPMatrices>(mWallMVPBuffer, mvp);
 }

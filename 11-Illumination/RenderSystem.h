@@ -71,15 +71,16 @@ public:
 				ubo->buffers[i],
 				ubo->buffersMemory[i]);
 		}
+		mUniformBuffers.push_back(ubo);
 	}
 
 	template<typename T>
-	void updateUniformBuffer(UBO& ubo, T& uboData)
+	void updateUniformBuffer(const std::shared_ptr<UBO>& ubo, T& uboData)
 	{
 		void* data;
-		vkMapMemory(mContext->device, ubo.buffersMemory[mCurrentFrame], 0, sizeof(uboData), 0, &data);
+		vkMapMemory(mContext->device, ubo->buffersMemory[mCurrentFrame], 0, sizeof(T), 0, &data);
 		memcpy(data, &uboData, sizeof(T));
-		vkUnmapMemory(mContext->device, ubo.buffersMemory[mCurrentFrame]);
+		vkUnmapMemory(mContext->device, ubo->buffersMemory[mCurrentFrame]);
 	}
 	
 	void setClearColor(VkClearValue clearColor);
@@ -94,22 +95,15 @@ private:
 	std::unique_ptr<Swapchain> mSwapchain;
 	std::vector<VkCommandBuffer> mCommandBuffers;
 
-	//some defaults so that we (hopefully) never have an invalid model
-	std::shared_ptr<Mesh> mDefaultMesh;				//when no mesh loaded
-	std::shared_ptr<ShaderSet> mDefaultShaderSet;	//when no shader set loaded
-	std::shared_ptr<Texture> mDefaultTexture;		//when no texture loaded
-
 	std::vector<std::shared_ptr<Mesh>> mMeshes;
 	std::vector<std::shared_ptr<Shader>> mShaders;
 	std::vector<std::shared_ptr<Texture>> mTextures;
 	std::vector<std::shared_ptr<UBO>> mUniformBuffers;
 
-
 	//more closely attached to a renderpass than swapchain
 	std::vector<VkFramebuffer> mSwapchainFramebuffers;
 	VkRenderPass mRenderPass;
 	VkDescriptorPool mDescriptorPool;
-#pragma endregion
 
 #pragma region DepthBuffer
 	//depth buffer

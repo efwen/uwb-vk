@@ -10,6 +10,7 @@
 //STL
 #include <vector>
 #include <memory>
+#include <map>
 
 //uwb-vk
 #include "VulkanContext.h"
@@ -28,10 +29,10 @@ public:
 
 	//Set Externally
 	std::shared_ptr<Mesh> mMesh;
-	std::vector<std::shared_ptr<Texture>> mTextures;
 	ShaderSet mShaderSet;
-	std::vector<VkDescriptorSetLayoutBinding> mBindings;
-	std::vector <std::shared_ptr<UBO>> mUniformBuffers;
+	std::map<uint32_t, VkDescriptorSetLayoutBinding> mLayoutBindings;
+	std::map<uint32_t, std::shared_ptr<UBO>> mBufferBindings;
+	std::map<uint32_t, std::shared_ptr<Texture>> mTextureBindings;
 
 	//Descriptor Sets
 	VkDescriptorSetLayout mDescriptorSetLayout;
@@ -42,11 +43,11 @@ public:
 	VkPipeline mPipeline;
 
 	void setMesh(std::shared_ptr<Mesh> mesh);
-	void addTexture(std::shared_ptr<Texture> texture);
 	void setShader(std::shared_ptr<Shader> shader, VkShaderStageFlagBits shaderStage);
 	void applyShaderSet(ShaderSet toApply);
-	void addUniformBuffer(std::shared_ptr<UBO> bufferObject);
-	void addBinding(VkDescriptorType descriptorType, VkShaderStageFlagBits stage, uint32_t bindingNum, uint32_t count);
+	void bindTexture(std::shared_ptr<Texture> texture, uint32_t binding);
+	void bindUniformBuffer(std::shared_ptr<UBO> bufferObject, uint32_t binding);
+	void addShaderBinding(VkDescriptorType descriptorType, VkShaderStageFlagBits stage, uint32_t bindingNum, uint32_t count);
 
 	void createDescriptorSetLayout();
 	void createDescriptorSets(const VkDescriptorPool& descriptorPool, uint32_t swapchainSize);

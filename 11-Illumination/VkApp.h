@@ -67,7 +67,7 @@ private:
 
 	//UBOs
 	std::shared_ptr<UBO> mWallMVPBuffer;
-	xform mTestPlaneXform;
+	xform mWallXForm;
 	
 	//Lighting
 	std::shared_ptr<UBO> mAmbientLightBuffer;
