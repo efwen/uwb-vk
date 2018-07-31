@@ -78,13 +78,11 @@ void Swapchain::cleanup()
 	}
 
 	//Images automatically cleaned up
-
 	vkDestroySwapchainKHR(mContext->device, mSwapchain, nullptr);
 }
 
 VkSurfaceFormatKHR Swapchain::chooseSurfaceFormat(VkSurfaceKHR surface)
 {
-	//std::cout << "choosing swapchain format" << std::endl;
 	//Choose a swapchain format
 	uint32_t formatCount;
 	std::vector<VkSurfaceFormatKHR> availableFormats;

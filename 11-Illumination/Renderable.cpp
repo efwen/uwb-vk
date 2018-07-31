@@ -70,6 +70,10 @@ void Renderable::bindUniformBuffer(std::shared_ptr<UBO> bufferObject, uint32_t b
 	mBufferBindings[binding] = bufferObject;
 }
 
+//Add a binding a particular shader is expecting to an std::map
+//This map will be referenced when binding resources to the renderable
+//	to check if the binding make sense
+//Ideally this would be done through a reflection process
 void Renderable::addShaderBinding(VkDescriptorType descriptorType, VkShaderStageFlagBits stage, uint32_t bindingNum, uint32_t count)
 {	
 	VkDescriptorSetLayoutBinding layoutBinding = {};
@@ -136,7 +140,6 @@ void Renderable::createDescriptorSets(const VkDescriptorPool& descriptorPool, ui
 
 			bufferInfos.push_back(std::make_pair(binding.first, bufferInfo));
 		}
-
 		
 		for (const auto& texBinding : mTextureBindings) {
 			VkDescriptorImageInfo imageInfo = {};

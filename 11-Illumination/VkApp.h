@@ -8,6 +8,8 @@
 #include <GLFW/glfw3.h>
 
 #include <glm/vec3.hpp>
+#define GLM_ENABLE_EXPERIMENTAL
+#include <glm/gtx/quaternion.hpp>
 
 #include "RenderSystem.h"
 #include "InputSystem.h"
@@ -18,36 +20,95 @@
 const int WIDTH = 1280;
 const int HEIGHT = 720;
 
-//texture paths
+
+//resource paths
 const std::string WALL_TEXTURE_PATH = "textures/Brick_Wall_012/Brick_Wall_012_COLOR.jpg";
+const std::string WALL_MODEL_PATH = "models/cube.obj";
+const std::string WALL_VERT_SHADER_PATH = "shaders/phong_vert.spv";
+const std::string WALL_FRAG_SHADER_PATH = "shaders/phong_frag.spv";
 
-//model paths
-const std::string WALL_MODEL_PATH = "models/wall.obj";
-
-//shader paths
-const std::string VERT_SHADER_PATH = "shaders/wall_vert.spv";
-const std::string FRAG_SHADER_PATH = "shaders/wall_frag.spv";
+//light indicator
+const std::string LIGHT_MODEL_PATH = "models/cube.obj";
+const std::string LIGHT_VERT_SHADER_PATH = "shaders/lightObj_vert.spv";
+const std::string LIGHT_FRAG_SHADER_PATH = "shaders/lightObj_frag.spv";
 
 //controls speeds
-const float mCamTranslateSpeed = 10.0f;
-const float mCamRotateSpeed = 100.0f;
-const float mModelTranslateSpeed = 5.0f;
-const float mModelRotateSpeed = 100.0f;
-const float optionsModSpeed = 10.0f;
+const float cCamTranslateSpeed = 10.0f;
+const float cCamRotateSpeed = 100.0f;
+const float cModelTranslateSpeed = 5.0f;
+const float cModelRotateSpeed = 1.0f;
+const float cLightTranslateSpeed = 40.0f;
+const float cOptionsModSpeed = 10.0f;
 
-struct xform
-{
+struct Transform {
 	glm::vec3 scale = glm::vec3(1.0f);
-	glm::vec3 pos = glm::vec3(0.0f);
-	glm::vec3 rot = glm::vec3(0.0f);
+	glm::vec3 position = glm::vec3(0.0f);
+	glm::quat rotation = glm::quat(0.0f, 0.0f, 0.0f, 1.0f);
+
+	glm::mat4 getTransformMatrix() const
+	{
+		glm::mat4 transMat = glm::translate(glm::mat4(1.0f), position);
+		glm::mat4 rotMat = glm::toMat4(rotation);
+		glm::mat4 scaleMat = glm::scale(glm::mat4(1.0f), scale);
+
+		return rotMat * transMat * scaleMat;
+	}
 };
 
 struct MVPMatrices {
 	glm::mat4 model;
 	glm::mat4 view;
-	glm::mat4 proj;
+	glm::mat4 projection;
 };
 
+struct Light {
+	glm::vec4 position;
+	glm::vec4 ambient;
+	glm::vec4 diffuse;
+	glm::vec4 specular;
+};
+
+class Camera
+{
+public:
+	glm::vec3 position = glm::vec3(0.0f, 0.0f, 0.0f);
+	glm::quat rotation = glm::quat(0.0f, 0.0f, 0.0f, 1.0f);
+	glm::mat4 viewMat = glm::mat4(1.0f);
+	glm::mat4 projMat = glm::mat4(1.0f);
+
+	glm::vec3 forward = glm::vec3(0.0f, 0.0f, 1.0f);
+	glm::vec3 right = glm::vec3(1.0f, 0.0f, 0.0f);
+	glm::vec3 up = glm::vec3(0.0f, 1.0f, 0.0f);
+
+	float fov = 45.0f;
+	float nearPlane = 0.1f;
+	float farPlane = 100.0f;
+
+	Camera()
+	{
+		updateViewMat();
+	}
+
+	void updateViewMat() 
+	{		
+		glm::mat4 rotMat = glm::toMat4(rotation);
+		glm::mat4 transMat = glm::translate(glm::mat4(1.0f), position);
+
+		viewMat = rotMat * transMat;
+
+		//update front, right, up
+		forward = rotation * glm::vec3(0.0f, 0.0f, 1.0f);
+		right = rotation * glm::vec3(1.0f, 0.0f, 0.0f);
+		up = glm::cross(forward, right);
+	};
+
+	void updateProjectionMat(float width, float height)
+	{
+		projMat = glm::perspective(glm::radians(fov), width / height, nearPlane, farPlane);
+		projMat[1][1] *= -1;
+	};
+};
+ 
 class VkApp
 {
 private:
@@ -64,21 +125,21 @@ private:
 												{0.176f, 0.11f,  0.114f, 1.0f} };		
 	int clearColorIndex = 0;
 
+	std::shared_ptr<Renderable> mWall = nullptr;
+	std::shared_ptr<Renderable> mLightIndicator = nullptr;
 
 	//UBOs
 	std::shared_ptr<UBO> mWallMVPBuffer;
-	xform mWallXForm;
+	Transform mWallXForm;
+
+	std::shared_ptr<UBO> mLightIndicatorMVPBuffer;
+	Transform mLightIndicatorXForm;
 	
 	//Lighting
-	std::shared_ptr<UBO> mAmbientLightBuffer;
-	glm::vec4 mAmbientColor = { 1.0, 1.0, 1.0, 1.0f };
-	float ambientMagnitude = 0.1f;
+	std::shared_ptr<UBO> mTestLightBuffer;
+	Light mTestLight;
 
-	//"Camera"
-	float mCamDist = 5.0f;
-	glm::vec3 mCamRotate = glm::vec3(0.0f);
-
-	std::shared_ptr<Renderable> mWall = nullptr;
+	Camera mCamera;
 public:
 	VkApp();
 	void run();
@@ -89,7 +150,13 @@ private:
 	void createWindow();
 	void handleInput();
 	void cameraControls();
+	void lightControls();
 
+
+	void setupCamera();
+	void setupLight();
+
+	void createLightIndicator();
 	void createWall();
-	void updateMVPMatrices(const std::shared_ptr<Renderable>& renderable, const xform& renderableXform);
+	void updateMVPMatrices(const std::shared_ptr<Renderable>& renderable, const std::shared_ptr<UBO>& mvpBuffer, const Transform& renderableXform, const glm::mat4& cameraView);
 };
