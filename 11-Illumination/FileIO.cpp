@@ -30,7 +30,7 @@ std::vector<char> readShaderFile(const std::string& filename) {
 //Read in a .obj file and convert it into a vertex and index buffer
 //Current assumptions:
 //Triangles only
-void readObjFile(const std::string& filename, std::vector<Vertex>& vertices, std::vector<uint32_t>& indices)
+void readObjFile(const std::string& filename, std::vector<Vertex>& vertices, std::vector<uint32_t>& indices, VkFrontFace frontFace)
 {
 	std::ifstream file(filename);
 
@@ -72,12 +72,17 @@ void readObjFile(const std::string& filename, std::vector<Vertex>& vertices, std
 			linestr >> normal.x >> normal.y >> normal.z;
 			normals.push_back(normal);
 		}
-		else if (cmd == "f")	//format of f index/tecCoordIndex/normalIndex index/tecCoordIndex/normalIndex index/tecCoordIndex/normalIndex ...
+		//format of f index/tecCoordIndex/normalIndex index/tecCoordIndex/normalIndex index/tecCoordIndex/normalIndex ...
+		//counter-clockwise in file format
+		else if (cmd == "f")	
 		{
 			//this is where we actually add the vertex/index
 			//currently assumes triangles only
 			std::array<std::string, 3> faceVertices;
-			linestr >> faceVertices[0] >> faceVertices[1] >> faceVertices[2];
+			if(frontFace == VK_FRONT_FACE_CLOCKWISE)	//if the pipeline is set up to be clockwise, invert the order
+				linestr >> faceVertices[2] >> faceVertices[1] >> faceVertices[0];
+			else
+				linestr >> faceVertices[0] >> faceVertices[1] >> faceVertices[2];
 
 			//split by "/"
 			for(size_t i = 0; i < faceVertices.size(); i++)

@@ -4,9 +4,10 @@
 
 
 layout(binding = 0) uniform MVP {
+    mat4 projection;
     mat4 model;
     mat4 view;
-    mat4 proj;
+    mat4 normalMat;
 } mvp;
 
 layout(location = 0) in vec4 inPos;
@@ -22,6 +23,6 @@ out gl_PerVertex {
 
 void main() 
 {
-    gl_Position = mvp.proj * mvp.view * mvp.model * inPos;
+    gl_Position = mvp.projection * mvp.view * mvp.model * inPos;
     outColor = inColor;
 }

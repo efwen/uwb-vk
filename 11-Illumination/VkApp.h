@@ -20,15 +20,14 @@
 const int WIDTH = 1280;
 const int HEIGHT = 720;
 
-
 //resource paths
-const std::string WALL_TEXTURE_PATH = "textures/Brick_Wall_012/Brick_Wall_012_COLOR.jpg";
-const std::string WALL_MODEL_PATH = "models/cube.obj";
+const std::string WALL_TEXTURE_PATH = "textures/brickWall/Brick_Wall_012_COLOR.jpg";
+const std::string WALL_MODEL_PATH = "models/oldCube.obj";
 const std::string WALL_VERT_SHADER_PATH = "shaders/phong_vert.spv";
 const std::string WALL_FRAG_SHADER_PATH = "shaders/phong_frag.spv";
 
 //light indicator
-const std::string LIGHT_MODEL_PATH = "models/cube.obj";
+const std::string LIGHT_MODEL_PATH = "models/oldCube.obj";
 const std::string LIGHT_VERT_SHADER_PATH = "shaders/lightObj_vert.spv";
 const std::string LIGHT_FRAG_SHADER_PATH = "shaders/lightObj_frag.spv";
 
@@ -45,24 +44,24 @@ struct Transform {
 	glm::vec3 position = glm::vec3(0.0f);
 	glm::quat rotation = glm::quat(0.0f, 0.0f, 0.0f, 1.0f);
 
-	glm::mat4 getTransformMatrix() const
+	glm::mat4 getModelMatrix() const
 	{
 		glm::mat4 transMat = glm::translate(glm::mat4(1.0f), position);
 		glm::mat4 rotMat = glm::toMat4(rotation);
 		glm::mat4 scaleMat = glm::scale(glm::mat4(1.0f), scale);
 
-		return rotMat * transMat * scaleMat;
+		return transMat * rotMat * scaleMat;
 	}
 };
 
 struct MVPMatrices {
+	glm::mat4 projection;	//projection matrix from the camera
 	glm::mat4 model;
 	glm::mat4 view;
-	glm::mat4 projection;
+	glm::mat4 normalMat;	//equivalent to transpose(inverse(modelview))
 };
 
 struct Light {
-	glm::vec4 position;
 	glm::vec4 ambient;
 	glm::vec4 diffuse;
 	glm::vec4 specular;
@@ -84,28 +83,29 @@ public:
 	float nearPlane = 0.1f;
 	float farPlane = 100.0f;
 
-	Camera()
+	Camera(uint32_t width, uint32_t height)
 	{
 		updateViewMat();
+		updateProjectionMat(width, height);
 	}
 
 	void updateViewMat() 
 	{		
 		glm::mat4 rotMat = glm::toMat4(rotation);
-		glm::mat4 transMat = glm::translate(glm::mat4(1.0f), position);
+		glm::mat4 transMat = glm::translate(glm::mat4(1.0f), -position);
 
 		viewMat = rotMat * transMat;
 
 		//update front, right, up
-		forward = rotation * glm::vec3(0.0f, 0.0f, 1.0f);
+		forward = rotation * glm::vec3(0.0f, 0.0f, -1.0f);
 		right = rotation * glm::vec3(1.0f, 0.0f, 0.0f);
 		up = glm::cross(forward, right);
 	};
 
-	void updateProjectionMat(float width, float height)
+	void updateProjectionMat(uint32_t width, uint32_t height)
 	{
-		projMat = glm::perspective(glm::radians(fov), width / height, nearPlane, farPlane);
-		projMat[1][1] *= -1;
+		projMat = glm::perspective(glm::radians(fov), (float)width / (float)height, nearPlane, farPlane);
+	    projMat[1][1] *= -1;
 	};
 };
  
@@ -136,10 +136,14 @@ private:
 	Transform mLightIndicatorXForm;
 	
 	//Lighting
-	std::shared_ptr<UBO> mTestLightBuffer;
-	Light mTestLight;
+	std::shared_ptr<UBO> mLightBuffer;
+	std::shared_ptr<UBO> mLightPosBuffer;
+	Light mLight;
+	glm::vec3 mLightPos;
 
-	Camera mCamera;
+	std::unique_ptr<Camera> mCamera;
+
+	bool mLightOrbit = true;
 public:
 	VkApp();
 	void run();
@@ -152,11 +156,13 @@ private:
 	void cameraControls();
 	void lightControls();
 
-
 	void setupCamera();
 	void setupLight();
 
 	void createLightIndicator();
 	void createWall();
-	void updateMVPMatrices(const std::shared_ptr<Renderable>& renderable, const std::shared_ptr<UBO>& mvpBuffer, const Transform& renderableXform, const glm::mat4& cameraView);
+	void updateMVPBuffer(const UBO& mvpBuffer, 
+						const Renderable& renderable, 
+						const Transform& renderableXform, 
+						const Camera& cam);
 };

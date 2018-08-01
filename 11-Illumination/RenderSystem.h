@@ -57,7 +57,7 @@ public:
 	template<typename T>
 	void createUniformBuffer(std::shared_ptr<UBO>& ubo)
 	{
-		ubo = std::make_shared<UBO>(UBO());
+		ubo = std::make_shared<UBO>();
 		size_t swapchainSize = mSwapchain->size();
 
 		ubo->bufferSize = sizeof(T);
@@ -75,12 +75,12 @@ public:
 	}
 
 	template<typename T>
-	void updateUniformBuffer(const std::shared_ptr<UBO>& ubo, T& uboData)
+	void updateUniformBuffer(const UBO& ubo, T& uboData)
 	{
 		void* data;
-		vkMapMemory(mContext->device, ubo->buffersMemory[mCurrentFrame], 0, sizeof(T), 0, &data);
+		vkMapMemory(mContext->device, ubo.buffersMemory[mCurrentFrame], 0, sizeof(T), 0, &data);
 		memcpy(data, &uboData, sizeof(T));
-		vkUnmapMemory(mContext->device, ubo->buffersMemory[mCurrentFrame]);
+		vkUnmapMemory(mContext->device, ubo.buffersMemory[mCurrentFrame]);
 	}
 	
 	void setClearColor(VkClearValue clearColor);

@@ -245,7 +245,7 @@ void RenderSystem::createPipeline(VkPipeline& pipeline, VkPipelineLayout& pipeli
 	rasterizer.polygonMode = VK_POLYGON_MODE_FILL;
 	rasterizer.lineWidth = 1.0f;
 	rasterizer.cullMode = VK_CULL_MODE_BACK_BIT;
-	rasterizer.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
+	rasterizer.frontFace = VK_FRONT_FACE_CLOCKWISE;
 	rasterizer.depthBiasEnable = VK_FALSE;
 	rasterizer.depthBiasConstantFactor = 0.0f;
 	rasterizer.depthBiasClamp = 0.0f;
@@ -603,7 +603,7 @@ void RenderSystem::createMesh(std::shared_ptr<Mesh>& mesh, const std::string & f
 	std::cout << "creating mesh \"" << filename << "\"" << std::endl;
 	std::vector<Vertex> vertices;
 	std::vector<uint32_t> indices;
-	readObjFile(filename, vertices, indices);
+	readObjFile(filename, vertices, indices, VK_FRONT_FACE_CLOCKWISE);
 
 	mesh = std::make_shared<Mesh>(Mesh(mContext, mBufferManager));
 	mesh->load(vertices, indices);
