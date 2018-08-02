@@ -18,7 +18,7 @@ public:
 	Mesh(std::shared_ptr<VulkanContext> context, std::shared_ptr<BufferManager> bufferManager);
 	~Mesh();
 	
-	void load(std::vector<Vertex>& vertices, std::vector<uint32_t> indices);
+	void load(std::vector<Vertex>& vertices, std::vector<uint32_t>& indices);
 	void free();
 
 	uint32_t getIndexCount();

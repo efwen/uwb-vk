@@ -27,8 +27,8 @@ void VkApp::run()
 		handleInput();
 
 		mCamera->updateViewMat();
+
 		//update all of our buffers
-		
 		updateMVPBuffer(*mWallMVPBuffer, *mWall, mWallXForm, *mCamera);
 		
 		mLightIndicatorXForm.position = mLightPos;
@@ -102,6 +102,7 @@ void VkApp::handleInput()
 
 	if (mInputSystem.isKeyPressed(GLFW_KEY_L))
 		mLightOrbit = !mLightOrbit;
+
 	cameraControls();
 	lightControls();
 }
@@ -196,7 +197,7 @@ void VkApp::createLightIndicator()
 {
 	//Resources
 	std::shared_ptr<Mesh> lightMesh;
-	mRenderSystem.createMesh(lightMesh, LIGHT_MODEL_PATH);
+	mRenderSystem.createMesh(lightMesh, LIGHT_MODEL_PATH, false);
 
 	mRenderSystem.createUniformBuffer<MVPMatrices>(mLightIndicatorMVPBuffer);
 
@@ -224,10 +225,12 @@ void VkApp::createWall()
 {
 	//start by creating the component resources
 	std::shared_ptr<Mesh> wallMesh;
-	mRenderSystem.createMesh(wallMesh, WALL_MODEL_PATH);
+	mRenderSystem.createMesh(wallMesh, WALL_MODEL_PATH, true);
 
 	std::shared_ptr<Texture> wallTexture;
 	mRenderSystem.createTexture(wallTexture, WALL_TEXTURE_PATH);
+	std::shared_ptr<Texture> wallNormalMap;
+	mRenderSystem.createTexture(wallNormalMap, WALL_NORM_MAP_PATH);
 
 	mRenderSystem.createUniformBuffer<MVPMatrices>(mWallMVPBuffer);
 	
@@ -245,17 +248,21 @@ void VkApp::createWall()
 	mWall->addShaderBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT, 1, 1);				//light position
 	mWall->addShaderBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT, 2, 1);				//light
 	mWall->addShaderBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 3, 1);		//color texture
+	mWall->addShaderBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 4, 1);		//normal map
 
 	mWall->setMesh(wallMesh);
+
 
 	//bind resources
 	mWall->bindUniformBuffer(mWallMVPBuffer, 0);
 	mWall->bindUniformBuffer(mLightPosBuffer, 1);
 	mWall->bindUniformBuffer(mLightBuffer, 2);
 	mWall->bindTexture(wallTexture, 3);
+	mWall->bindTexture(wallNormalMap, 4);
 
 	//set some initial conditions
-	mWallXForm.scale = glm::vec3(2.0f);
+	mWallXForm.scale = glm::vec3(4.0f);
+	mWallXForm.rotation *= glm::angleAxis(glm::radians(90.0f), glm::vec3(1.0, 0.0, 0.0));
 
 	//instantiate (flush bindings, create pipeline)
 	mRenderSystem.instantiateRenderable(mWall);

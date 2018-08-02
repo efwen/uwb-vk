@@ -15,6 +15,7 @@ struct Vertex {
 	glm::vec3 color;
 	glm::vec3 normal;
 	glm::vec2 texCoord;
+	glm::vec3 tangent;
 
 	static VkVertexInputBindingDescription getBindingDescription() {
 		VkVertexInputBindingDescription bindingDescription = {};
@@ -25,8 +26,8 @@ struct Vertex {
 		return bindingDescription;
 	}
 
-	static std::array<VkVertexInputAttributeDescription, 4> getAttributeDescriptions() {
-		std::array<VkVertexInputAttributeDescription, 4> attributeDescriptions = {};
+	static std::array<VkVertexInputAttributeDescription, 5> getAttributeDescriptions() {
+		std::array<VkVertexInputAttributeDescription, 5> attributeDescriptions = {};
 
 		//position attribute
 		attributeDescriptions[0].binding = 0;
@@ -52,6 +53,13 @@ struct Vertex {
 		attributeDescriptions[3].format = VK_FORMAT_R32G32_SFLOAT;
 		attributeDescriptions[3].offset = offsetof(Vertex, texCoord);
 
+		//tangent vector attribute
+		attributeDescriptions[4].binding = 0;
+		attributeDescriptions[4].location = 4;
+		attributeDescriptions[4].format = VK_FORMAT_R32G32B32_SFLOAT;
+		attributeDescriptions[4].offset = offsetof(Vertex, tangent);
+
+
 		return attributeDescriptions;
 	}
 
@@ -60,7 +68,8 @@ struct Vertex {
 		return pos      == other.pos &&
 			   color    == other.color &&
 			   texCoord == other.texCoord &&
-			   normal   == other.normal;
+			   normal   == other.normal &&
+			   tangent  == other.tangent;
 	}
 
 	friend std::ostream& operator<<(std::ostream& os, const Vertex& v);
@@ -68,10 +77,10 @@ struct Vertex {
 
 inline std::ostream& operator<< (std::ostream& os, const Vertex& v)
 {
-	os << "[p(" << v.pos.x		<< ", " << v.pos.y		<< ", " << v.pos.z << ")" << 
-		 " c(" << v.color.r		<< ", " << v.color.g	<< ", " << v.color.b << ")" << 
-		 " n(" << v.normal.r    << ", " << v.normal.g   << ", " << v.normal.b << ")" <<
-		 " t(" << v.texCoord.x	<< ", " << v.texCoord.y	<< ")]";
+	os << "[p(" << v.pos.x		 << ", " << v.pos.y		  << ", " << v.pos.z << ")" << 
+		 " c("  << v.color.r     << ", " << v.color.g	  << ", " << v.color.b << ")" << 
+		 " n("  << v.normal.x    << ", " << v.normal.y    << ", " << v.normal.z << ")" <<
+		 " uv(" << v.texCoord.x	 << ", " << v.texCoord.y  << ")]";
 	return os;
 }
 

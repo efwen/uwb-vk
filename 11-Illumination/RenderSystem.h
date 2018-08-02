@@ -49,7 +49,7 @@ public:
 
 	//create a Model to render (probably better to use Mesh + Texture objects for reuse
 	void createTexture(std::shared_ptr<Texture>& texture, const std::string &filename);
-	void createMesh(std::shared_ptr<Mesh>& mesh, const std::string& filename);
+	void createMesh(std::shared_ptr<Mesh>& mesh, const std::string& filename, bool calculateTangents);
 	void createShader(std::shared_ptr<Shader>& shader, const std::string& filename, VkShaderStageFlagBits stage);
 	void createRenderable(std::shared_ptr<Renderable>& renderable);
 	void instantiateRenderable(std::shared_ptr<Renderable>& renderable);

@@ -92,7 +92,7 @@ void readObjFile(const std::string& filename, std::vector<Vertex>& vertices, std
 				if (details.size() < 1)
 					throw std::runtime_error("Invalid vertex details size!");
 
-				//get the index corresponding to the vertex we want (-1 because obj files use >= 1 for indexing)
+				//get the index corresponding to the vertex we want (subtract 1 because obj files use >= 1 for indexing)
 				uint32_t posIndex = std::stoi(details[0]) - 1;
 				if (posIndex < 0 || posIndex >= vertPositions.size())
 					throw std::runtime_error("Invalid geometry index!");
@@ -117,6 +117,7 @@ void readObjFile(const std::string& filename, std::vector<Vertex>& vertices, std
 				Vertex vertex;
 				vertex.pos = vertPositions[posIndex];
 				vertex.color = { 1.0f, 1.0f, 1.0f };
+				vertex.tangent = { 0.0f, 0.0f, 0.0f };
 				if (texIndex > -1)
 					vertex.texCoord = texCoords[texIndex];
 				if (normalIndex > -1)

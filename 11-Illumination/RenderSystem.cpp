@@ -598,12 +598,43 @@ void RenderSystem::createTexture(std::shared_ptr<Texture>& texture, const std::s
 	mTextures.push_back(texture);
 }
 
-void RenderSystem::createMesh(std::shared_ptr<Mesh>& mesh, const std::string & filename)
+void RenderSystem::createMesh(std::shared_ptr<Mesh>& mesh, const std::string & filename, bool calculateTangents)
 {
 	std::cout << "creating mesh \"" << filename << "\"" << std::endl;
 	std::vector<Vertex> vertices;
 	std::vector<uint32_t> indices;
 	readObjFile(filename, vertices, indices, VK_FRONT_FACE_CLOCKWISE);
+
+	//if needed, calculate tangents of the vertices
+	//this is used for normal mapping
+	if (calculateTangents)
+	{
+		for (int i = 0; i < indices.size(); i += 3)
+		{
+			uint32_t triIdx1 = indices[i];
+			uint32_t triIdx2 = indices[i + 1];
+			uint32_t triIdx3 = indices[i + 2];
+
+			glm::vec3 edge1 = vertices[triIdx2].pos - vertices[triIdx1].pos;
+			glm::vec3 edge2 = vertices[triIdx3].pos - vertices[triIdx1].pos;
+			glm::vec2 deltaUV1 = vertices[triIdx2].texCoord - vertices[triIdx1].texCoord;
+			glm::vec2 deltaUV2 = vertices[triIdx3].texCoord - vertices[triIdx1].texCoord;
+
+
+			float fractional = 1.0f / (deltaUV1.x * deltaUV2.y - deltaUV2.x * deltaUV1.y);
+
+			glm::vec3 tangent;
+
+			tangent.x = fractional * (deltaUV2.y * edge1.x - deltaUV1.y * edge2.x);
+			tangent.y = fractional * (deltaUV2.y * edge1.y - deltaUV1.y * edge2.y);
+			tangent.z = fractional * (deltaUV2.y * edge1.z - deltaUV1.y * edge2.z);
+			tangent = glm::normalize(tangent);
+
+			vertices[triIdx1].tangent = tangent;
+			vertices[triIdx2].tangent = tangent;
+			vertices[triIdx3].tangent = tangent;
+		}
+	}
 
 	mesh = std::make_shared<Mesh>(Mesh(mContext, mBufferManager));
 	mesh->load(vertices, indices);

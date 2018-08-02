@@ -22,12 +22,13 @@ const int HEIGHT = 720;
 
 //resource paths
 const std::string WALL_TEXTURE_PATH = "textures/brickWall/Brick_Wall_012_COLOR.jpg";
-const std::string WALL_MODEL_PATH = "models/oldCube.obj";
+const std::string WALL_NORM_MAP_PATH = "textures/brickWall/Brick_Wall_012_NORM.jpg";
+const std::string WALL_MODEL_PATH = "models/oldCube.mesh";
 const std::string WALL_VERT_SHADER_PATH = "shaders/phong_vert.spv";
 const std::string WALL_FRAG_SHADER_PATH = "shaders/phong_frag.spv";
 
 //light indicator
-const std::string LIGHT_MODEL_PATH = "models/oldCube.obj";
+const std::string LIGHT_MODEL_PATH = "models/oldCube.mesh";
 const std::string LIGHT_VERT_SHADER_PATH = "shaders/lightObj_vert.spv";
 const std::string LIGHT_FRAG_SHADER_PATH = "shaders/lightObj_frag.spv";
 

@@ -8,7 +8,7 @@ Mesh::Mesh(std::shared_ptr<VulkanContext> context, std::shared_ptr<BufferManager
 
 Mesh::~Mesh() {}
 
-void Mesh::load(std::vector<Vertex>& vertices, std::vector<uint32_t> indices)
+void Mesh::load(std::vector<Vertex>& vertices, std::vector<uint32_t> &indices)
 {
 	//do we really need to keep a copy around?
 	mVertices = vertices;
