@@ -20,7 +20,7 @@ void RenderSystem::initialize(GLFWwindow * window)
 
 	createSwapchain();
 	createDepthBuffer();				//set up the depth buffer (must be before createRenderPass and after createSwapchain!)
-	createDescriptorPool(DESCRIPTOR_POOL_SIZE);
+	createDescriptorPool(MAX_DESCRIPTOR_SETS);
 
 	//for synchronizing the rendering process
 	createSyncObjects();

@@ -35,7 +35,7 @@
 
 
 const int MAX_CONCURRENT_FRAMES = 2;
-const int DESCRIPTOR_POOL_SIZE = 4;
+const int MAX_DESCRIPTOR_SETS = 4;
 
 class RenderSystem
 {
