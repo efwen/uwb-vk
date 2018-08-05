@@ -1,17 +1,22 @@
 #include "VkApp.h"
 
 
-std::ostream& operator<< (std::ostream& stream, const glm::vec3& vec)
-{
+std::ostream& operator<< (std::ostream& stream, const glm::vec2& vec) {
+	stream << "(" << vec.x << ", " << vec.y << ")";
+	return stream;
+}
+
+std::ostream& operator<< (std::ostream& stream, const glm::vec3& vec) {
 	stream << "(" << vec.x << ", " << vec.y << ", " << vec.z << ")";
 	return stream;
 }
 
-std::ostream& operator<< (std::ostream& stream, const glm::vec4& vec)
-{
+std::ostream& operator<< (std::ostream& stream, const glm::vec4& vec) {
 	stream << "(" << vec.x << ", " << vec.y << ", " << vec.z << ", " << vec.w << ")";
 	return stream;
 }
+
+
 
 VkApp::VkApp() : mWindow(nullptr) {}
 
@@ -40,11 +45,10 @@ void VkApp::run()
 		mRenderSystem.drawFrame();
 
 		//update the frame timer
-		mTime = glfwGetTime();
-		mFrameTime = mTime - mPrevTime;		
-		mPrevTime = mTime;
+		mElapsedTime = (float)glfwGetTime();
+		mFrameTime = mElapsedTime - mPrevTime;		
+		mPrevTime = mElapsedTime;
 	}
-
 
 	std::cout << "---------------------------------" << std::endl;
 	shutdown();
@@ -74,11 +78,9 @@ void VkApp::shutdown()
 void VkApp::createWindow()
 { 
 	glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-	mWindow = glfwCreateWindow(WIDTH, HEIGHT, "11-Illumination", nullptr, nullptr);
+	mWindow = glfwCreateWindow(WIDTH, HEIGHT, "12-Shadows", nullptr, nullptr);
 
-	if (mWindow == nullptr) {
-		throw std::runtime_error("Window creation failed!");
-	}
+	if (mWindow == nullptr) throw std::runtime_error("Window creation failed!");
 }
 
 void VkApp::handleInput()
@@ -109,8 +111,11 @@ void VkApp::handleInput()
 
 void VkApp::cameraControls()
 {
-	float transDist = cCamTranslateSpeed * (float)mFrameTime;
-	float rotAmount = glm::radians(cCamRotateSpeed * (float)mFrameTime);
+	float transDist = cCamTranslateSpeed * mFrameTime;
+	float rotAmount = glm::radians(cCamRotateSpeed * mFrameTime);
+
+	glm::vec3 deltaCursor = mInputSystem.getMouseDelta();
+	mCamera->rotation *= glm::angleAxis(-deltaCursor.x * 4.0f * mFrameTime, mCamera->up);
 
 	if (mInputSystem.isKeyDown(GLFW_KEY_W)) {
 		mCamera->position += mCamera->forward * transDist;
@@ -119,10 +124,10 @@ void VkApp::cameraControls()
 		mCamera->position -= mCamera->forward * transDist;
 	}
 	if (mInputSystem.isKeyDown(GLFW_KEY_A)) {		
-		mCamera->rotation *= glm::angleAxis(rotAmount, mCamera->up);
+		mCamera->position -= mCamera->right * transDist;
 	}
 	if (mInputSystem.isKeyDown(GLFW_KEY_D)) {
-		mCamera->rotation *= glm::angleAxis(-rotAmount, mCamera->up);
+		mCamera->position += mCamera->right * transDist;
 	}
 	if (mInputSystem.isKeyDown(GLFW_KEY_Q)) { //down
 		mCamera->position -= mCamera->up * transDist;
@@ -144,14 +149,14 @@ void VkApp::lightControls()
 	float wobbleSpeed = 4.0f;
 	float orbitWobble = 5.0f;
 	if (mLightOrbit) {
-		mLightPos = glm::vec4(orbitRadius * glm::sin(orbitSpeed * (float)mTime),
-			orbitWobble * glm::cos(wobbleSpeed * (float)mTime),
-			orbitRadius * glm::cos(orbitSpeed * (float)mTime), 0.0f);
+		mLightPos = glm::vec4(orbitRadius * glm::sin(orbitSpeed * mElapsedTime),
+			orbitWobble * glm::cos(wobbleSpeed * mElapsedTime),
+			orbitRadius * glm::cos(orbitSpeed * mElapsedTime), 0.0f);
 	}
 	else
 	{
 
-		float transDist = cModelTranslateSpeed * (float)mFrameTime;
+		float transDist = cModelTranslateSpeed * mFrameTime;
 
 		if (mInputSystem.isKeyDown(GLFW_KEY_UP)) {	//negative z is away from pov
 			mLightPos += glm::vec3(0.0f, 0.0f, transDist);

@@ -97,7 +97,6 @@ public:
 
 		viewMat = rotMat * transMat;
 
-		//update front, right, up
 		forward = rotation * glm::vec3(0.0f, 0.0f, -1.0f);
 		right = rotation * glm::vec3(1.0f, 0.0f, 0.0f);
 		up = glm::cross(forward, right);
@@ -116,9 +115,9 @@ private:
 	GLFWwindow* mWindow;
 	RenderSystem mRenderSystem;
 	InputSystem mInputSystem;
-	double mTime = 0.0;
-	double mPrevTime = 0.0;
-	double mFrameTime = 0.0;
+	float mElapsedTime = 0.0;
+	float mPrevTime = 0.0;
+	float mFrameTime = 0.0;
 
 	std::vector<VkClearValue> clearColors = {   {0.0f,   0.0f,   0.0f,   1.0f },
 												{0.937f, 0.749f, 0.376f, 1.0f},
