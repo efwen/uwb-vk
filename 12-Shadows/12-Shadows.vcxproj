@@ -86,6 +86,9 @@
       <AdditionalLibraryDirectories>$(SolutionDir)Dependencies/Vulkan/Lib;$(SolutionDir)Dependencies/GLFW/lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>vulkan-1.lib;glfw3.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
+    <PostBuildEvent>
+      <Command>python $(SolutionDir)BuildTools\compileShaders.py $(ProjectDir)shaders</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -107,6 +110,9 @@
       <AdditionalLibraryDirectories>$(SolutionDir)Dependencies/Vulkan/Lib;$(SolutionDir)Dependencies/GLFW/lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>vulkan-1.lib;glfw3.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
+    <PostBuildEvent>
+      <Command>python $(SolutionDir)BuildTools\compileShaders.py $(ProjectDir)shaders</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>

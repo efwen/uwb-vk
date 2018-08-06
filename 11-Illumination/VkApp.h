@@ -62,6 +62,7 @@ struct MVPMatrices {
 	glm::mat4 normalMat;	//equivalent to transpose(inverse(modelview))
 };
 
+
 struct Light {
 	glm::vec4 ambient;
 	glm::vec4 diffuse;
@@ -119,6 +120,7 @@ private:
 	double mTime = 0.0;
 	double mPrevTime = 0.0;
 	double mFrameTime = 0.0;
+
 
 	std::vector<VkClearValue> clearColors = {   {0.0f,   0.0f,   0.0f,   1.0f },
 												{0.937f, 0.749f, 0.376f, 1.0f},

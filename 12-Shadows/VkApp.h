@@ -19,13 +19,16 @@
 
 const int WIDTH = 1280;
 const int HEIGHT = 720;
+const int MAX_LIGHTS = 1;
+
 
 //resource paths
 const std::string WALL_TEXTURE_PATH = "textures/brickWall/Brick_Wall_012_COLOR.jpg";
 const std::string WALL_NORM_MAP_PATH = "textures/brickWall/Brick_Wall_012_NORM.jpg";
 const std::string WALL_MODEL_PATH = "models/oldCube.mesh";
-const std::string WALL_VERT_SHADER_PATH = "shaders/phong_vert.spv";
-const std::string WALL_FRAG_SHADER_PATH = "shaders/phong_frag.spv";
+const std::string WALL_VERT_SHADER_PATH = "shaders/spotlight_vert.spv";
+const std::string WALL_FRAG_SHADER_PATH = "shaders/spotlight_frag.spv";
+
 
 //light indicator
 const std::string LIGHT_MODEL_PATH = "models/oldCube.mesh";
@@ -33,7 +36,7 @@ const std::string LIGHT_VERT_SHADER_PATH = "shaders/lightObj_vert.spv";
 const std::string LIGHT_FRAG_SHADER_PATH = "shaders/lightObj_frag.spv";
 
 //controls speeds
-const float cCamTranslateSpeed = 10.0f;
+const float cCamTranslateSpeed = 20.0f;
 const float cCamRotateSpeed = 100.0f;
 const float cModelTranslateSpeed = 5.0f;
 const float cModelRotateSpeed = 1.0f;
@@ -62,10 +65,35 @@ struct MVPMatrices {
 	glm::mat4 normalMat;	//equivalent to transpose(inverse(modelview))
 };
 
-struct Light {
+
+struct Light
+{	
+	uint32_t isEnabled = false;
+	uint32_t isLocal = false;
+	uint32_t isSpot = false;	
+	float spotCosCutoff = 45.0f;
+	float spotExponent = 1.0f;
+	float constAtten = 0.0f;
+	float linearAtten = 0.0f;
+	float quadAtten = 0.0f;
+	glm::vec4 ambient = glm::vec4(0.0);
+	glm::vec4 diffuse = glm::vec4(0.0);
+	glm::vec4 specular = glm::vec4(0.0);
+};
+
+struct LightTransform
+{
+	glm::vec4 position = glm::vec4(0.0);
+	glm::vec4 direction = glm::vec4(0.0);
+};
+
+struct Material
+{
+	glm::vec4 emission;
 	glm::vec4 ambient;
 	glm::vec4 diffuse;
 	glm::vec4 specular;
+	float shininess;
 };
 
 class Camera
@@ -131,15 +159,14 @@ private:
 	//UBOs
 	std::shared_ptr<UBO> mWallMVPBuffer;
 	Transform mWallXForm;
-
 	std::shared_ptr<UBO> mLightIndicatorMVPBuffer;
 	Transform mLightIndicatorXForm;
-	
+
 	//Lighting
 	std::shared_ptr<UBO> mLightBuffer;
-	std::shared_ptr<UBO> mLightPosBuffer;
 	Light mLight;
-	glm::vec3 mLightPos;
+	std::shared_ptr<UBO> mLightXFormBuffer;
+	LightTransform mLightXForm;
 
 	std::unique_ptr<Camera> mCamera;
 
@@ -157,7 +184,7 @@ private:
 	void lightControls();
 
 	void setupCamera();
-	void setupLight();
+	void setupLights();
 
 	void createLightIndicator();
 	void createWall();

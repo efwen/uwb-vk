@@ -71,7 +71,6 @@ void InputSystem::initialize(GLFWwindow * window)
 
 	glfwSetScrollCallback(mWindow,
 		dispatchMouseScrollCallback);
-	
 }
 
 void InputSystem::update()

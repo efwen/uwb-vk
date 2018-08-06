@@ -261,8 +261,8 @@ void VkApp::createWall()
 	mWall->bindTexture(wallNormalMap, 4);
 
 	//set some initial conditions
-	mWallXForm.scale = glm::vec3(4.0f);
-	mWallXForm.rotation *= glm::angleAxis(glm::radians(90.0f), glm::vec3(1.0, 0.0, 0.0));
+	mWallXForm.scale = glm::vec3(1.0f);
+	//mWallXForm.rotation *= glm::angleAxis(glm::radians(90.0f), glm::vec3(1.0, 0.0, 0.0));
 
 	//instantiate (flush bindings, create pipeline)
 	mRenderSystem.instantiateRenderable(mWall);
@@ -278,6 +278,7 @@ void VkApp::updateMVPBuffer(const UBO& mvpBuffer,
 	mvp.view = camera.viewMat;
 	mvp.projection = camera.projMat;
 	mvp.normalMat = glm::transpose(glm::inverse(mvp.view * mvp.model));
+
 
 	mRenderSystem.updateUniformBuffer<MVPMatrices>(mvpBuffer, mvp);
 }

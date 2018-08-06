@@ -33,14 +33,16 @@ void VkApp::run()
 
 		mCamera->updateViewMat();
 
-		//update all of our buffers
+		//update MVP buffers
 		updateMVPBuffer(*mWallMVPBuffer, *mWall, mWallXForm, *mCamera);
 		
-		mLightIndicatorXForm.position = mLightPos;
+		mLightIndicatorXForm.position =  mLightXForm.position;
 		updateMVPBuffer(*mLightIndicatorMVPBuffer, *mLightIndicator, mLightIndicatorXForm, *mCamera);
 		
-		mRenderSystem.updateUniformBuffer<Light>(*mLightBuffer, mLight);
-		mRenderSystem.updateUniformBuffer<glm::vec3>(*mLightPosBuffer, mLightPos);
+		//other buffers
+		mRenderSystem.updateUniformBuffer<Light>(*mLightBuffer, mLight, 0);
+		mRenderSystem.updateUniformBuffer<LightTransform>(*mLightXFormBuffer, mLightXForm, 0);
+
 
 		mRenderSystem.drawFrame();
 
@@ -62,7 +64,7 @@ void VkApp::initialize()
 	mInputSystem.initialize(mWindow);
 	
 	setupCamera();
-	setupLight();
+	setupLights();
 	
 	createWall();
 	createLightIndicator();
@@ -111,6 +113,7 @@ void VkApp::handleInput()
 
 void VkApp::cameraControls()
 {
+
 	float transDist = cCamTranslateSpeed * mFrameTime;
 	float rotAmount = glm::radians(cCamRotateSpeed * mFrameTime);
 
@@ -135,7 +138,6 @@ void VkApp::cameraControls()
 	if (mInputSystem.isKeyDown(GLFW_KEY_E)) { //up
 		mCamera->position += mCamera->up * transDist;
 	}
-
 	if (mInputSystem.isKeyPressed(GLFW_KEY_P))
 	{
 		std::cout << mCamera->position << std::endl;
@@ -149,35 +151,33 @@ void VkApp::lightControls()
 	float wobbleSpeed = 4.0f;
 	float orbitWobble = 5.0f;
 	if (mLightOrbit) {
-		mLightPos = glm::vec4(orbitRadius * glm::sin(orbitSpeed * mElapsedTime),
+		mLightXForm.position = glm::vec4(orbitRadius * glm::sin(orbitSpeed * mElapsedTime),
 			orbitWobble * glm::cos(wobbleSpeed * mElapsedTime),
 			orbitRadius * glm::cos(orbitSpeed * mElapsedTime), 0.0f);
 	}
 	else
 	{
-
 		float transDist = cModelTranslateSpeed * mFrameTime;
 
 		if (mInputSystem.isKeyDown(GLFW_KEY_UP)) {	//negative z is away from pov
-			mLightPos += glm::vec3(0.0f, 0.0f, transDist);
+			mLightXForm.position += glm::vec4(0.0f, 0.0f, transDist, 1.0f);
 		}
 		if (mInputSystem.isKeyDown(GLFW_KEY_DOWN)) {
-			mLightPos -= glm::vec3(0.0f, 0.0f, transDist);// mCamera.forward * transDist;
+			mLightXForm.position -= glm::vec4(0.0f, 0.0f, transDist, 1.0f);
 		}
 		if (mInputSystem.isKeyDown(GLFW_KEY_LEFT)) {	//negative z is away from pov
-			mLightPos -= glm::vec3(transDist, 0.0f, 0.0f);
+			mLightXForm.position -= glm::vec4(transDist, 0.0f, 0.0f, 1.0f);
 		}
 		if (mInputSystem.isKeyDown(GLFW_KEY_RIGHT)) {
-			mLightPos += glm::vec3(transDist, 0.0f, 0.0f);// mCamera.forward * transDist;
+			mLightXForm.position += glm::vec4(transDist, 0.0f, 0.0f, 1.0f);
 		}
 		if (mInputSystem.isKeyDown(GLFW_KEY_LEFT_BRACKET)) {	//negative z is away from pov
-			mLightPos -= glm::vec3(0.0f, transDist, 0.0f);
+			mLightXForm.position -= glm::vec4(0.0f, transDist, 0.0f, 1.0f);
 		}
 		if (mInputSystem.isKeyDown(GLFW_KEY_RIGHT_BRACKET)) {
-			mLightPos += glm::vec3(0.0f, transDist, 0.0f);// mCamera.forward * transDist;
+			mLightXForm.position += glm::vec4(0.0f, transDist, 0.0f, 1.0f);
 		}
 	}
-
 }
 
 void VkApp::setupCamera()
@@ -186,16 +186,27 @@ void VkApp::setupCamera()
 	mCamera->position = glm::vec3(0.0f, -3.0f, 20.0f);
 }
 
-void VkApp::setupLight()
+void VkApp::setupLights()
 {
-	mRenderSystem.createUniformBuffer<Light>(mLightBuffer);
-	mRenderSystem.createUniformBuffer<glm::vec3>(mLightPosBuffer);
+	mRenderSystem.createUniformBuffer<Light>(mLightBuffer, 1);
+	mRenderSystem.createUniformBuffer<LightTransform>(mLightXFormBuffer, 1);
 
-	mLight.ambient = glm::vec4(0.2f, 0.2f, 0.2f, 0.1f);
-	mLight.diffuse = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
+	//setup light #0 (point light)
+	mLight.isEnabled = true;
+	mLight.isLocal = true;
+	mLight.isSpot = true;	
+	mLight.ambient = glm::vec4(0.0f, 0.1f, 0.0f, 1.0f);
+	mLight.diffuse = glm::vec4(0.0f, 0.0f, 1.0f, 1.0f);
 	mLight.specular = glm::vec4(1.0f, 0.0f, 0.0f, 1.0f);
+	mLight.spotCosCutoff = glm::cos(12.5);
+	mLight.spotExponent = 10.0;
+	mLight.constAtten = 1.0f;
+	mLight.linearAtten = 0.0f;
+	mLight.quadAtten = 0.0f;	
 
-	mLightPos = glm::vec4(0.0f, 5.0f, 0.0f, 0.0f);
+
+	mLightXForm.position = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);	//w = 1 for points
+	mLightXForm.direction = glm::vec4(0.0f, 0.0f, 1.0f, 0.0f);	//w = 0 for vectors
 }
 
 void VkApp::createLightIndicator()
@@ -204,7 +215,7 @@ void VkApp::createLightIndicator()
 	std::shared_ptr<Mesh> lightMesh;
 	mRenderSystem.createMesh(lightMesh, LIGHT_MODEL_PATH, false);
 
-	mRenderSystem.createUniformBuffer<MVPMatrices>(mLightIndicatorMVPBuffer);
+	mRenderSystem.createUniformBuffer<MVPMatrices>(mLightIndicatorMVPBuffer, 1);
 
 	ShaderSet lightIndicatorShaderSet;
 	mRenderSystem.createShader(lightIndicatorShaderSet.vertShader, LIGHT_VERT_SHADER_PATH, VK_SHADER_STAGE_VERTEX_BIT);
@@ -222,6 +233,8 @@ void VkApp::createLightIndicator()
 	mLightIndicator->bindUniformBuffer(mLightIndicatorMVPBuffer, 0);
 
 	mLightIndicatorXForm.scale = glm::vec3(0.1f);
+
+	std::cout << "Instantianting a light" << std::endl;
 	mRenderSystem.instantiateRenderable(mLightIndicator);
 
 }
@@ -237,7 +250,7 @@ void VkApp::createWall()
 	std::shared_ptr<Texture> wallNormalMap;
 	mRenderSystem.createTexture(wallNormalMap, WALL_NORM_MAP_PATH);
 
-	mRenderSystem.createUniformBuffer<MVPMatrices>(mWallMVPBuffer);
+	mRenderSystem.createUniformBuffer<MVPMatrices>(mWallMVPBuffer, 1);
 	
 	ShaderSet planeShaderSet;
 	mRenderSystem.createShader(planeShaderSet.vertShader, WALL_VERT_SHADER_PATH, VK_SHADER_STAGE_VERTEX_BIT);
@@ -250,7 +263,7 @@ void VkApp::createWall()
 	//Current restriction: one resource per binding (no arrays right now) 
 	mWall->applyShaderSet(planeShaderSet);	
 	mWall->addShaderBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT, 0, 1);				//MVP
-	mWall->addShaderBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT, 1, 1);				//light position
+	mWall->addShaderBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT, 1, 1);				//light transform
 	mWall->addShaderBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT, 2, 1);				//light
 	mWall->addShaderBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 3, 1);		//color texture
 	mWall->addShaderBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 4, 1);		//normal map
@@ -260,16 +273,18 @@ void VkApp::createWall()
 
 	//bind resources
 	mWall->bindUniformBuffer(mWallMVPBuffer, 0);
-	mWall->bindUniformBuffer(mLightPosBuffer, 1);
+	mWall->bindUniformBuffer(mLightXFormBuffer, 1);
 	mWall->bindUniformBuffer(mLightBuffer, 2);
 	mWall->bindTexture(wallTexture, 3);
 	mWall->bindTexture(wallNormalMap, 4);
 
+
 	//set some initial conditions
-	mWallXForm.scale = glm::vec3(4.0f);
-	mWallXForm.rotation *= glm::angleAxis(glm::radians(90.0f), glm::vec3(1.0, 0.0, 0.0));
+	mWallXForm.scale = glm::vec3(1.0f);
+	//mWallXForm.rotation *= glm::angleAxis(glm::radians(90.0f), glm::vec3(1.0, 0.0, 0.0));
 
 	//instantiate (flush bindings, create pipeline)
+	std::cout << "Instantianting a wall" << std::endl;
 	mRenderSystem.instantiateRenderable(mWall);
 }
 
@@ -284,5 +299,5 @@ void VkApp::updateMVPBuffer(const UBO& mvpBuffer,
 	mvp.projection = camera.projMat;
 	mvp.normalMat = glm::transpose(glm::inverse(mvp.view * mvp.model));
 
-	mRenderSystem.updateUniformBuffer<MVPMatrices>(mvpBuffer, mvp);
+	mRenderSystem.updateUniformBuffer<MVPMatrices>(mvpBuffer, mvp, 0);
 }

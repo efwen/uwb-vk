@@ -35,7 +35,9 @@
 
 
 const int MAX_CONCURRENT_FRAMES = 2;
-const int MAX_DESCRIPTOR_SETS = 4;
+const int MAX_DESCRIPTOR_SETS = 40;	// 5
+const int MAX_UNIFORM_BUFFERS = 40;// 8;
+const int MAX_IMAGE_SAMPLERS = 40;	// 4
 
 class RenderSystem
 {
@@ -55,32 +57,37 @@ public:
 	void instantiateRenderable(std::shared_ptr<Renderable>& renderable);
 
 	template<typename T>
-	void createUniformBuffer(std::shared_ptr<UBO>& ubo)
+	void createUniformBuffer(std::shared_ptr<UBO>& ubo, size_t count)
 	{
+		std::cout << "sizeof: " << sizeof(T) << std::endl;
 		ubo = std::make_shared<UBO>();
 		size_t swapchainSize = mSwapchain->size();
 
 		ubo->bufferSize = sizeof(T);
-		ubo->buffers.resize(swapchainSize);
-		ubo->buffersMemory.resize(swapchainSize);
 
-		for (size_t i = 0; i < swapchainSize; i++) {
+		ubo->buffers.resize(swapchainSize * count);
+		ubo->buffersMemory.resize(swapchainSize * count);
+		for (size_t i = 0; i < ubo->buffers.size(); i++) {
 			mBufferManager->createBuffer(ubo->bufferSize,
 				VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
 				VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
 				ubo->buffers[i],
 				ubo->buffersMemory[i]);
 		}
+
 		mUniformBuffers.push_back(ubo);
 	}
 
 	template<typename T>
-	void updateUniformBuffer(const UBO& ubo, T& uboData)
+	void updateUniformBuffer(const UBO& ubo, T& uboData, size_t bufIndex)
 	{
+		//the actual index, taking into account duplicates for the swapchain
+		size_t actualIndex = (ubo.buffersMemory.size() / MAX_CONCURRENT_FRAMES) * mCurrentFrame + bufIndex;
+
 		void* data;
-		vkMapMemory(mContext->device, ubo.buffersMemory[mCurrentFrame], 0, sizeof(T), 0, &data);
+		vkMapMemory(mContext->device, ubo.buffersMemory[actualIndex], 0, sizeof(T), 0, &data);
 		memcpy(data, &uboData, sizeof(T));
-		vkUnmapMemory(mContext->device, ubo.buffersMemory[mCurrentFrame]);
+		vkUnmapMemory(mContext->device, ubo.buffersMemory[actualIndex]);
 	}
 	
 	void setClearColor(VkClearValue clearColor);
@@ -99,6 +106,7 @@ private:
 	std::vector<std::shared_ptr<Shader>> mShaders;
 	std::vector<std::shared_ptr<Texture>> mTextures;
 	std::vector<std::shared_ptr<UBO>> mUniformBuffers;
+
 
 	//more closely attached to a renderpass than swapchain
 	std::vector<VkFramebuffer> mSwapchainFramebuffers;
@@ -133,7 +141,7 @@ private:
 	void createFramebuffers(VkRenderPass renderPass);
 
 	//Descriptors
-	void createDescriptorPool(uint32_t maxSets);
+	void createDescriptorPool(uint32_t maxSets, uint32_t maxUniformBuffers, uint32_t maxImageSamplers);
 
 	//Command Buffers
 	void createCommandBuffers();
