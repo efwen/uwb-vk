@@ -76,6 +76,7 @@ public:
 	glm::quat rotation = glm::quat(0.0f, 0.0f, 0.0f, 1.0f);
 	glm::mat4 viewMat = glm::mat4(1.0f);
 	glm::mat4 projMat = glm::mat4(1.0f);
+	const glm::mat4 worldOrientationBias = glm::toMat4(glm::angleAxis(glm::radians(180.0f), glm::vec3(1.0f, 0.0f, 0.0f)));	//a bias trasform that orients the world in a more friendly way (x to the right, y up, z away from the user)
 
 	glm::vec3 forward = glm::vec3(0.0f, 0.0f, 1.0f);
 	glm::vec3 right = glm::vec3(1.0f, 0.0f, 0.0f);
@@ -87,19 +88,19 @@ public:
 
 	Camera(uint32_t width, uint32_t height)
 	{
-		updateViewMat();
+		updateViewMatrix();
 		updateProjectionMat(width, height);
 	}
 
-	void updateViewMat() 
+	void updateViewMatrix() 
 	{		
-		glm::mat4 rotMat = glm::toMat4(rotation);
+		glm::mat4 rotMat = worldOrientationBias * glm::toMat4(rotation);
 		glm::mat4 transMat = glm::translate(glm::mat4(1.0f), -position);
 
 		viewMat = rotMat * transMat;
 
 		//update front, right, up
-		forward = rotation * glm::vec3(0.0f, 0.0f, -1.0f);
+		forward = rotation * glm::vec3(0.0f, 0.0f, 1.0f);
 		right = rotation * glm::vec3(1.0f, 0.0f, 0.0f);
 		up = glm::cross(forward, right);
 	};

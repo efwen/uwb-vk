@@ -150,6 +150,7 @@ void VkApp::createTesselatedPlane()
 
 	mRenderSystem.createRenderable(mTestPlane);
 
+
 	mTestPlane->applyShaderSet(planeShaderSet);
 	mTestPlane->addBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
 						   VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT, 
@@ -172,7 +173,7 @@ void VkApp::createTesselatedPlane()
 	mTestPlane->addTexture(texture);
 	
 
-	mTestPlaneXform.scale = glm::vec3(1.5f, 1.5f, 1.0f);
+	mTestPlaneXform.scale = glm::vec3(1.5f, 1.5f, 1.5f);
 	mRenderSystem.instantiateRenderable(mTestPlane);
 }
 

@@ -42,7 +42,7 @@ struct UniformBufferObject {
 const std::string VERT_SHADER_PATH = "shaders/square_vert.spv";
 const std::string FRAG_SHADER_PATH = "shaders/square_frag.spv";
 const int MAX_CONCURRENT_FRAMES = 2;
-const int MAX_MESH_COUNT = 4;
+const int MAX_MESH_COUNT = 40;
 
 class RenderSystem
 {

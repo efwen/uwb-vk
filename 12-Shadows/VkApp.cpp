@@ -31,18 +31,17 @@ void VkApp::run()
 		glfwPollEvents();
 		handleInput();
 
-		mCamera->updateViewMat();
+		mCamera->updateViewMatrix();
 
-		//update MVP buffers
+		//update transform buffers
 		updateMVPBuffer(*mWallMVPBuffer, *mWall, mWallXForm, *mCamera);
 		
 		mLightIndicatorXForm.position =  mLightXForm.position;
 		updateMVPBuffer(*mLightIndicatorMVPBuffer, *mLightIndicator, mLightIndicatorXForm, *mCamera);
 		
-		//other buffers
+		//light buffers
 		mRenderSystem.updateUniformBuffer<Light>(*mLightBuffer, mLight, 0);
 		mRenderSystem.updateUniformBuffer<LightTransform>(*mLightXFormBuffer, mLightXForm, 0);
-
 
 		mRenderSystem.drawFrame();
 
@@ -80,7 +79,7 @@ void VkApp::shutdown()
 void VkApp::createWindow()
 { 
 	glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-	mWindow = glfwCreateWindow(WIDTH, HEIGHT, "12-Shadows", nullptr, nullptr);
+	mWindow = glfwCreateWindow(WIDTH, HEIGHT, "12-MultipleLights", nullptr, nullptr);
 
 	if (mWindow == nullptr) throw std::runtime_error("Window creation failed!");
 }
@@ -117,9 +116,10 @@ void VkApp::cameraControls()
 	float transDist = cCamTranslateSpeed * mFrameTime;
 	float rotAmount = glm::radians(cCamRotateSpeed * mFrameTime);
 
+	const float cursorSensitivity = 2.0f;
 	glm::vec3 deltaCursor = mInputSystem.getMouseDelta();
-	mCamera->rotation *= glm::angleAxis(-deltaCursor.x * 4.0f * mFrameTime, mCamera->up);
-
+	mCamera->rotation *= glm::angleAxis(-deltaCursor.x * cursorSensitivity * mFrameTime, mCamera->up);	//rotation is ccw around axis
+	
 	if (mInputSystem.isKeyDown(GLFW_KEY_W)) {
 		mCamera->position += mCamera->forward * transDist;
 	}
@@ -138,6 +138,14 @@ void VkApp::cameraControls()
 	if (mInputSystem.isKeyDown(GLFW_KEY_E)) { //up
 		mCamera->position += mCamera->up * transDist;
 	}
+
+	if (mInputSystem.isKeyPressed(GLFW_KEY_C)) {
+		std::cout << "cam vectors:" << std::endl;
+		std::cout << "position: " << mCamera->position << std::endl;
+		std::cout << "forward:  " << mCamera->forward << std::endl;
+		std::cout << "right:    " << mCamera->right << std::endl;
+		std::cout << "up:       " << mCamera->up << std::endl;
+	}
 	if (mInputSystem.isKeyPressed(GLFW_KEY_P))
 	{
 		std::cout << mCamera->position << std::endl;
@@ -146,7 +154,7 @@ void VkApp::cameraControls()
 
 void VkApp::lightControls()
 {
-	float orbitRadius = 5.0f;
+	float orbitRadius = 13.0f;
 	float orbitSpeed = 0.5f;
 	float wobbleSpeed = 4.0f;
 	float orbitWobble = 5.0f;
@@ -183,7 +191,7 @@ void VkApp::lightControls()
 void VkApp::setupCamera()
 {
 	mCamera = std::make_unique<Camera>(Camera(WIDTH, HEIGHT));
-	mCamera->position = glm::vec3(0.0f, -3.0f, 20.0f);
+	mCamera->position = glm::vec3(0.0f, 3.0f, 20.0f);
 }
 
 void VkApp::setupLights()
@@ -198,15 +206,14 @@ void VkApp::setupLights()
 	mLight.ambient = glm::vec4(0.0f, 0.1f, 0.0f, 1.0f);
 	mLight.diffuse = glm::vec4(0.0f, 0.0f, 1.0f, 1.0f);
 	mLight.specular = glm::vec4(1.0f, 0.0f, 0.0f, 1.0f);
-	mLight.spotCosCutoff = glm::cos(12.5);
+	mLight.spotCosCutoff = glm::cos(glm::radians(12.5));
 	mLight.spotExponent = 10.0;
 	mLight.constAtten = 1.0f;
 	mLight.linearAtten = 0.0f;
 	mLight.quadAtten = 0.0f;	
 
-
 	mLightXForm.position = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);	//w = 1 for points
-	mLightXForm.direction = glm::vec4(0.0f, 0.0f, 1.0f, 0.0f);	//w = 0 for vectors
+	mLightXForm.direction = glm::vec4(0.0f, 0.0f, -1.0f, 0.0f);	//w = 0 for vectors
 }
 
 void VkApp::createLightIndicator()
@@ -280,7 +287,7 @@ void VkApp::createWall()
 
 
 	//set some initial conditions
-	mWallXForm.scale = glm::vec3(1.0f);
+	mWallXForm.scale = glm::vec3(5.0f);
 	//mWallXForm.rotation *= glm::angleAxis(glm::radians(90.0f), glm::vec3(1.0, 0.0, 0.0));
 
 	//instantiate (flush bindings, create pipeline)

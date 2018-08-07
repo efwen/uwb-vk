@@ -30,7 +30,7 @@ void main()
 			gl_TessCoord.z * inUV[2];
 
 	float displacement = texture(texDisplacement, outUV).x;
-	pos.z = displacement * ubo.dispMod;
+	pos.y = displacement * ubo.dispMod;
 
 	gl_Position = ubo.proj * ubo.view * ubo.model * pos;
 

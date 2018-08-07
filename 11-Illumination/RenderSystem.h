@@ -35,7 +35,9 @@
 
 
 const int MAX_CONCURRENT_FRAMES = 2;
-const int MAX_DESCRIPTOR_SETS = 4;
+const int MAX_DESCRIPTOR_SETS = 40;	// 5
+const int MAX_UNIFORM_BUFFERS = 40;// 8;
+const int MAX_IMAGE_SAMPLERS = 40;	// 4
 
 class RenderSystem
 {
@@ -133,7 +135,7 @@ private:
 	void createFramebuffers(VkRenderPass renderPass);
 
 	//Descriptors
-	void createDescriptorPool(uint32_t maxSets);
+	void createDescriptorPool(uint32_t maxSets, uint32_t maxUniformBuffers, uint32_t maxImageSamplers);
 
 	//Command Buffers
 	void createCommandBuffers();

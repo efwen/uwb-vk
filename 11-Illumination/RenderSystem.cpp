@@ -20,7 +20,7 @@ void RenderSystem::initialize(GLFWwindow * window)
 
 	createSwapchain();
 	createDepthBuffer();				//set up the depth buffer (must be before createRenderPass and after createSwapchain!)
-	createDescriptorPool(MAX_DESCRIPTOR_SETS);
+	createDescriptorPool(MAX_DESCRIPTOR_SETS, MAX_UNIFORM_BUFFERS, MAX_IMAGE_SAMPLERS);
 
 	//for synchronizing the rendering process
 	createSyncObjects();
@@ -425,13 +425,13 @@ void RenderSystem::createRenderPass()
 	}
 }
 
-void RenderSystem::createDescriptorPool(uint32_t maxSets)
+void RenderSystem::createDescriptorPool(uint32_t maxSets, uint32_t maxUniformBuffers, uint32_t maxImageSamplers)
 {
 	std::array<VkDescriptorPoolSize, 2> poolSizes = {};
 	poolSizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;			//#1: MVP matrices
-	poolSizes[0].descriptorCount = 6;
+	poolSizes[0].descriptorCount = maxUniformBuffers;
 	poolSizes[1].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;	//#2: image + sampler
-	poolSizes[1].descriptorCount = 4;
+	poolSizes[1].descriptorCount = maxImageSamplers;
 
 	VkDescriptorPoolCreateInfo poolInfo = {};
 	poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;

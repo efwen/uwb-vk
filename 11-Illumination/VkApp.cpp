@@ -26,7 +26,7 @@ void VkApp::run()
 		glfwPollEvents();
 		handleInput();
 
-		mCamera->updateViewMat();
+		mCamera->updateViewMatrix();
 
 		//update all of our buffers
 		updateMVPBuffer(*mWallMVPBuffer, *mWall, mWallXForm, *mCamera);
@@ -178,7 +178,7 @@ void VkApp::lightControls()
 void VkApp::setupCamera()
 {
 	mCamera = std::make_unique<Camera>(Camera(WIDTH, HEIGHT));
-	mCamera->position = glm::vec3(0.0f, -3.0f, 20.0f);
+	mCamera->position = glm::vec3(0.0f, 3.0f, -20.0f);
 }
 
 void VkApp::setupLight()
@@ -262,7 +262,6 @@ void VkApp::createWall()
 
 	//set some initial conditions
 	mWallXForm.scale = glm::vec3(1.0f);
-	//mWallXForm.rotation *= glm::angleAxis(glm::radians(90.0f), glm::vec3(1.0, 0.0, 0.0));
 
 	//instantiate (flush bindings, create pipeline)
 	mRenderSystem.instantiateRenderable(mWall);

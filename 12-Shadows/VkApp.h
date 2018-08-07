@@ -26,8 +26,8 @@ const int MAX_LIGHTS = 1;
 const std::string WALL_TEXTURE_PATH = "textures/brickWall/Brick_Wall_012_COLOR.jpg";
 const std::string WALL_NORM_MAP_PATH = "textures/brickWall/Brick_Wall_012_NORM.jpg";
 const std::string WALL_MODEL_PATH = "models/oldCube.mesh";
-const std::string WALL_VERT_SHADER_PATH = "shaders/spotlight_vert.spv";
-const std::string WALL_FRAG_SHADER_PATH = "shaders/spotlight_frag.spv";
+const std::string WALL_VERT_SHADER_PATH = "shaders/point_vert.spv";
+const std::string WALL_FRAG_SHADER_PATH = "shaders/point_frag.spv";
 
 
 //light indicator
@@ -68,8 +68,8 @@ struct MVPMatrices {
 
 struct Light
 {	
-	uint32_t isEnabled = false;
-	uint32_t isLocal = false;
+	uint32_t isEnabled = false;		//uint32_t so it will align properly when passed to the UBO
+	uint32_t isLocal = false;		//too lazy to make a method that aligns it for you
 	uint32_t isSpot = false;	
 	float spotCosCutoff = 45.0f;
 	float spotExponent = 1.0f;
@@ -99,8 +99,8 @@ struct Material
 class Camera
 {
 public:
-	glm::vec3 position = glm::vec3(0.0f, 0.0f, 0.0f);
-	glm::quat rotation = glm::quat(0.0f, 0.0f, 0.0f, 1.0f);
+	glm::vec3 position = glm::vec3(0.0f);
+	glm::quat rotation = glm::quat(1.0f, 0.0f, 0.0f, 0.0f);
 	glm::mat4 viewMat = glm::mat4(1.0f);
 	glm::mat4 projMat = glm::mat4(1.0f);
 
@@ -114,26 +114,31 @@ public:
 
 	Camera(uint32_t width, uint32_t height)
 	{
-		updateViewMat();
+		updateViewMatrix();
 		updateProjectionMat(width, height);
 	}
 
-	void updateViewMat() 
+	void updateViewMatrix() 
 	{		
-		glm::mat4 rotMat = glm::toMat4(rotation);
+		glm::mat4 rotMat = glm::toMat4(glm::inverse(rotation));
 		glm::mat4 transMat = glm::translate(glm::mat4(1.0f), -position);
 
-		viewMat = rotMat * transMat;
+		viewMat =  rotMat * transMat;
 
-		forward = rotation * glm::vec3(0.0f, 0.0f, -1.0f);
+		up = rotation * glm::vec3(0.0f, 1.0f, 0.0f);
 		right = rotation * glm::vec3(1.0f, 0.0f, 0.0f);
-		up = glm::cross(forward, right);
+		forward = glm::cross(up, right);
 	};
 
 	void updateProjectionMat(uint32_t width, uint32_t height)
 	{
-		projMat = glm::perspective(glm::radians(fov), (float)width / (float)height, nearPlane, farPlane);
-	    projMat[1][1] *= -1;
+		//To correct clip space (vulkan has inverted y, 1/2 z)
+		const glm::mat4 clip(1.0f,  0.0f,  0.0f,  0.0f,
+							 0.0f, -1.0f,  0.0f,  0.0f,
+							 0.0f,  0.0f,  0.5f,  0.0f,
+							 0.0f,  0.0f,  0.5f,  1.0f);
+
+		projMat = clip * glm::perspective(glm::radians(fov), (float)width / (float)height, nearPlane, farPlane);
 	};
 };
  
