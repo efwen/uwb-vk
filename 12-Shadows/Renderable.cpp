@@ -61,6 +61,8 @@ void Renderable::applyShaderSet(ShaderSet toApply)
 
 void Renderable::bindUniformBuffer(std::shared_ptr<UBO> bufferObject, uint32_t binding)
 {
+	assert(bufferObject != nullptr);
+
 	std::cout << "Binding ubo to " << binding << std::endl;
 	if (mLayoutBindings.count(binding) == 0)
 		throw std::runtime_error("Cannot bind UBO, descriptor set layout binding does not exist!");

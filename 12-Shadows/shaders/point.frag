@@ -2,73 +2,140 @@
 #extension GL_ARB_separate_shader_objects : enable
 #extension GL_ARB_shading_language_420pack : enable
 
+const int MAX_LIGHTS = 4;
 const float shininess = 32.0;
-const float strength = 4.0;
-//uniform bindings
-layout(binding = 2) uniform LightProperties
+
+struct Light
 {
-	bool isEnabled;
-	bool isLocal;
-	bool isSpot;	
-	float spotCosineCutoff;
-	float spotExponent;
-	float constant;
-	float linear;
-	float quadratic;
+	vec4 position;
+	vec4 direction;
+
 	vec4 ambient;
 	vec4 diffuse;
 	vec4 specular;
-} light;
 
-layout(binding = 3) uniform sampler2D textureMap;
-layout(binding = 4) uniform sampler2D normalMap;
+	bool isEnabled;
 
-layout(location = 0) in vec3 inFragPos;
-layout(location = 1) in vec3 inColor;
+	float constant;
+	float linear;
+	float quadratic;
+
+	float cutOff;
+    float outerCutOff;
+};
+
+layout(binding = 1) uniform UBO
+{	
+	vec4 viewPos;
+	Light lights[MAX_LIGHTS];
+} ubo;
+
+layout(binding = 2) uniform sampler2D textureMap;
+
+layout(location = 0) in vec3 inWorldPos;
+layout(location = 1) in vec4 inColor;
 layout(location = 2) in vec2 inUV;
-layout(location = 3) in mat3 inTBN;
-layout(location = 6) in vec3 inLightPos;
-layout(location = 7) in vec3 inLightDir;
+layout(location = 3) in vec3 inNormal;
 
 layout(location = 0) out vec4 outFragColor;
 
+vec3 processDirLight(Light directionalLight, vec3 worldNormal, vec3 worldFragPos, vec3 viewDir);
+vec3 processPointLight(Light pointLight, vec3 worldNormal, vec3 worldFragPos, vec3 viewDir);
+vec3 processSpotLight(Light spotLight, vec3 worldNormal, vec3 worldFragPos, vec3 viewDir);
+
 void main() 
 {	
-	float ambientStrength = 0.1;
-	float specularStrength = 0.5;
+	vec3 viewDir = normalize(ubo.viewPos.xyz - inWorldPos);
 
-	vec3 lightDirection = normalize(vec3(inLightPos - inFragPos));
+	vec3 result = vec3(0.0);
+	for(int i = 0; i < MAX_LIGHTS; i++)
+	{
+		if(!ubo.lights[i].isEnabled) continue;
 
-	//apply the normal map to our given normal	
-	vec3 normal = texture(normalMap, inUV).rgb;
-	normal = normalize(normal * 2.0 - 1.0);
-	normal = normalize(inTBN * normal);
-
-	//diffuse
-	//depends on the angle the light source makes with the normal
-	float diff = max(dot(lightDirection, normal), 0.0);
-	
-	//specularity
-	float spec = 0.0;
-	if(diff > 0.0)
-	{			
-		vec3 viewDirection = normalize(-inFragPos); //vector from the fragment to the POV
-		vec3 reflectDirection = reflect(-lightDirection, normal);
-
-		float specAngle = max(dot(reflectDirection, viewDirection), 0.0);
-		spec = pow(specAngle, 32.0);
+		result += processSpotLight(ubo.lights[i], inNormal, inWorldPos, viewDir);
 	}
 
-	//attenuation
-	/*float dist = length(vec3(inLightPos - inFragPos));
-	float attenuation = 1.0 / 
-	(light.constant + light.linear * dist + light.quadratic * (dist * dist));
-	*/
-	
-	vec3 ambient = ambientStrength * light.ambient.rgb;
-	vec3 diffuse = diff * light.diffuse.rgb;
-	vec3 specular = specularStrength * spec * light.specular.rgb;
-
-	vec3 result = (ambient + diffuse + specular) * texture(textureMap, inUV).rgb;
 	outFragColor = vec4(result, 1.0);
+}
+
+
+vec3 processDirLight(Light dirLight, vec3 worldNormal, vec3 worldFragPos, vec3 viewDir)
+{
+	vec3 lightDir = normalize(-dirLight.direction.xyz);
+
+	float diff = max(dot(lightDir, inNormal), 0.0);
+	float spec = 0.0;
+	if(diff > 0.0)
+	{
+		vec3 reflectDir = reflect(-lightDir, inNormal);
+		spec = pow(max(dot(viewDir, reflectDir), 0.0), shininess);
+	}
+
+	vec3 ambient  =  dirLight.ambient.rgb * texture(textureMap, inUV).rgb;
+	vec3 diffuse  =  dirLight.diffuse.rgb * diff * texture(textureMap, inUV).rgb;
+	vec3 specular =  dirLight.specular.rgb * spec * vec3(1.0, 1.0, 1.0);
+
+	return (ambient + diffuse + specular);
+}
+
+vec3 processPointLight(Light pointLight, vec3 worldNormal, vec3 worldFragPos, vec3 viewDir)
+{
+		vec3 lightDir = normalize(pointLight.position.xyz - inWorldPos);
+
+		float diff = max(dot(lightDir, inNormal), 0.0);
+
+		float spec = 0.0;
+		if(diff > 0.0)
+		{
+			vec3 reflectDir = reflect(-lightDir, inNormal);
+			spec = pow(max(dot(viewDir, reflectDir), 0.0), shininess);
+		}
+
+		float dist = length(pointLight.position.xyz - inWorldPos);
+		float attenuation = 1.0 / 
+			(pointLight.constant + 
+			 pointLight.linear * dist + 
+			 pointLight.quadratic * (dist * dist));    
+   
+		vec3 ambient  =  pointLight.ambient.rgb * texture(textureMap, inUV).rgb;
+		vec3 diffuse  =  pointLight.diffuse.rgb * diff * texture(textureMap, inUV).rgb;
+		vec3 specular =  pointLight.specular.rgb * spec * vec3(1.0, 1.0, 1.0); //texture(textureMap, inUV).rgb;
+
+		ambient *= attenuation;
+		diffuse *= attenuation;
+		specular *= attenuation;
+		return (ambient + diffuse + specular);
+}
+
+vec3 processSpotLight(Light spotLight, vec3 worldNormal, vec3 worldFragPos, vec3 viewDir)
+{
+		vec3 lightDir = normalize(spotLight.position.xyz - inWorldPos);
+
+		float diff = max(dot(lightDir, inNormal), 0.0);
+
+		float spec = 0.0;
+		if(diff > 0.0)
+		{
+			vec3 reflectDir = reflect(-lightDir, inNormal);
+			spec = pow(max(dot(viewDir, reflectDir), 0.0), shininess);
+		}
+
+		float dist = length(spotLight.position.xyz - inWorldPos);
+		float attenuation = 1.0 / 
+			(spotLight.constant + 
+			 spotLight.linear * dist + 
+			 spotLight.quadratic * (dist * dist));  
+
+		float theta = dot(lightDir, normalize(-spotLight.direction.xyz)); 
+    	float epsilon = spotLight.cutOff - spotLight.outerCutOff;
+    	float intensity = clamp((theta - spotLight.outerCutOff) / epsilon, 0.0, 1.0);  
+   
+		vec3 ambient  =  spotLight.ambient.rgb * texture(textureMap, inUV).rgb;
+		vec3 diffuse  =  spotLight.diffuse.rgb * diff * texture(textureMap, inUV).rgb;
+		vec3 specular =  spotLight.specular.rgb * spec * vec3(1.0, 1.0, 1.0); //texture(textureMap, inUV).rgb;
+
+		ambient *= attenuation * intensity;
+		diffuse *= attenuation * intensity;
+		specular *= attenuation * intensity;
+		return (ambient + diffuse + specular);
 }

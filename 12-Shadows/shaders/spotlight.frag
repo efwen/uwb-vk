@@ -21,14 +21,13 @@ layout(binding = 2) uniform LightProperties
 } light;
 
 layout(binding = 3) uniform sampler2D textureMap;
-layout(binding = 4) uniform sampler2D normalMap;
 
 layout(location = 0) in vec3 inFragPos;
 layout(location = 1) in vec3 inColor;
 layout(location = 2) in vec2 inUV;
-layout(location = 3) in mat3 inTBN;
-layout(location = 6) in vec3 inLightPos;
-layout(location = 7) in vec3 inLightDir;
+layout(location = 3) in vec3 inNormal;
+layout(location = 4) in vec3 inLightPos;
+layout(location = 5) in vec3 inLightDir;
 
 layout(location = 0) out vec4 outFragColor;
 
@@ -48,9 +47,7 @@ void main()
 		vec3 ambient = light.ambient.rgb * texture(textureMap, inUV).rgb;
 
 		//diffuse
-		vec3 normal = texture(normalMap, inUV).rgb;
-		normal = normalize(normal * 2.0 - 1.0);
-		normal = normalize(inTBN * normal);
+		vec3 normal = inNormal;
 
 		//depends on the angle the light source makes with the normal
 		float diff = max(dot(lightDirection, normal), 0.0);

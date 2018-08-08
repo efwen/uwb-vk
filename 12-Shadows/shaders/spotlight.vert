@@ -26,9 +26,9 @@ layout(location = 4) in vec3 inTangent;
 layout(location = 0) out vec3 outFragPos;
 layout(location = 1) out vec3 outColor;
 layout(location = 2) out vec2 outUV;
-layout(location = 3) out mat3 outTBN;
-layout(location = 6) out vec3 outLightPos;
-layout(location = 7) out vec3 outLightDir;
+layout(location = 3) out vec3 outNormal;
+layout(location = 4) out vec3 outLightPos;
+layout(location = 5) out vec3 outLightDir;
 
 out gl_PerVertex {
     vec4 gl_Position;
@@ -49,10 +49,7 @@ void main()
     outLightPos = vec3(mvp.view * light.position);
     outLightDir = vec3(mvp.view * light.direction);
 
-    vec3 T = normalize(vec3(mvp.normalMat * vec4(inTangent, 0.0)));
-    vec3 N = normalize(vec3(mvp.normalMat * vec4(inNormal, 0.0)));
-    vec3 B = cross(N, T);
-    outTBN = mat3(T, B, N);
+    outNormal = vec3(mvp.normalMat * vec4(inNormal, 0.0));
 
     gl_Position = mvp.projection * mvp.view * mvp.model * vec4(inPos, 1.0);
 }
