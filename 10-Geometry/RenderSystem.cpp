@@ -420,9 +420,9 @@ void RenderSystem::createDescriptorPool(uint32_t maxSets)
 {
 	std::array<VkDescriptorPoolSize, 2> poolSizes = {};
 	poolSizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;			//#1: MVP matrices
-	poolSizes[0].descriptorCount = mSwapchain->size();
+	poolSizes[0].descriptorCount = 10;
 	poolSizes[1].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;	//#2: image + sampler
-	poolSizes[1].descriptorCount = mSwapchain->size();
+	poolSizes[1].descriptorCount = 10;
 
 	VkDescriptorPoolCreateInfo poolInfo = {};
 	poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
