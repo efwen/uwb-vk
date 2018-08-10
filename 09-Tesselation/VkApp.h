@@ -19,17 +19,17 @@ const int WIDTH = 1280;
 const int HEIGHT = 720;
 
 //texture paths
-const std::string GROUND_TEXTURE_PATH = "textures/ground.jpg";
-const std::string DISPLACEMENT_MAP_PATH = "textures/displacement_map.jpg";
+const std::string GROUND_TEXTURE_PATH = "Resources/Textures/UrbanTexturePack/Ground_Dirt/Ground_Dirt_1k_d.tga";
+const std::string DISPLACEMENT_MAP_PATH = "Resources/Textures/displacementMap.jpg";
 
 //model paths
-const std::string GROUND_MODEL_PATH = "models/tessGround.obj";
+const std::string GROUND_MODEL_PATH = "Resources/Meshes/tessGround.mesh";
 
 //shader paths
-const std::string VERT_SHADER_PATH = "shaders/tessSquare_vert.spv";
-const std::string FRAG_SHADER_PATH = "shaders/tessSquare_frag.spv";
-const std::string TESS_CONTROL_SHADER_PATH = "shaders/tessSquare_tesc.spv";
-const std::string TESS_EVAL_SHADER_PATH = "shaders/tessSquare_tese.spv";
+const std::string VERT_SHADER_PATH = "Resources/Shaders/tessSquare_vert.spv";
+const std::string FRAG_SHADER_PATH = "Resources/Shaders/tessSquare_frag.spv";
+const std::string TESS_CONTROL_SHADER_PATH = "Resources/Shaders/tessSquare_tesc.spv";
+const std::string TESS_EVAL_SHADER_PATH = "Resources/Shaders/tessSquare_tese.spv";
 
 //controls speeds
 const float mCamTranslateSpeed = 10.0f;

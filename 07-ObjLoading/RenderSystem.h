@@ -39,10 +39,10 @@ struct UniformBufferObject {
 };
 
 const int MAX_CONCURRENT_FRAMES = 2;
-const std::string VERT_SHADER_PATH = "shaders/square_vert.spv";
-const std::string FRAG_SHADER_PATH = "shaders/square_frag.spv";
-const std::string TEXTURE_PATH = "textures/chalet.jpg";
-const std::string MODEL_PATH = "models/chalet.obj";
+const std::string VERT_SHADER_PATH = "Resources/Shaders/textureMapping_vert.spv";
+const std::string FRAG_SHADER_PATH = "Resources/Shaders/textureMapping_frag.spv";
+const std::string TEXTURE_PATH = "Resources/Textures/chalet.jpg";
+const std::string MODEL_PATH = "Resources/Meshes/chalet.mesh";
 
 class RenderSystem
 {

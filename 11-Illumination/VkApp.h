@@ -10,35 +10,36 @@
 #include <glm/vec3.hpp>
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtx/quaternion.hpp>
+#include <glm/gtc/matrix_inverse.hpp>
 
 #include "RenderSystem.h"
 #include "InputSystem.h"
 #include "Renderable.h"
 #include "Shader.h"
 #include "Texture.h"
+#include "Camera.h"
+#include "Lighting.h"
 
 const int WIDTH = 1280;
 const int HEIGHT = 720;
 
 //resource paths
-const std::string WALL_TEXTURE_PATH = "textures/brickWall/Brick_Wall_012_COLOR.jpg";
-const std::string WALL_NORM_MAP_PATH = "textures/brickWall/Brick_Wall_012_NORM.jpg";
-const std::string WALL_MODEL_PATH = "models/oldCube.mesh";
-const std::string WALL_VERT_SHADER_PATH = "shaders/phong_vert.spv";
-const std::string WALL_FRAG_SHADER_PATH = "shaders/phong_frag.spv";
+const std::string BOX_DIFFUSE_PATH		= "Resources/Textures/UrbanTexturePack/Brick_OldDestroyed/Brick_OldDestroyed_1k_d.tga";
+const std::string BOX_NORMAL_PATH		= "Resources/Textures/UrbanTexturePack/Brick_OldDestroyed/Brick_OldDestroyed_1k_n.tga";
+const std::string BOX_SPECULAR_PATH		= "Resources/Textures/UrbanTexturePack/Brick_OldDestroyed/Brick_OldDestroyed_1k_s.tga";
+const std::string BOX_MODEL_PATH		= "Resources/Meshes/cube.mesh";
+const std::string BOX_VERT_SHADER_PATH  = "Resources/Shaders/multipleLights_vert.spv";
+const std::string BOX_FRAG_SHADER_PATH  = "Resources/Shaders/multipleLights_frag.spv";
 
 //light indicator
-const std::string LIGHT_MODEL_PATH = "models/oldCube.mesh";
-const std::string LIGHT_VERT_SHADER_PATH = "shaders/lightObj_vert.spv";
-const std::string LIGHT_FRAG_SHADER_PATH = "shaders/lightObj_frag.spv";
+const std::string LIGHT_MODEL_PATH		 = "Resources/Meshes/cube.mesh";
+const std::string LIGHT_VERT_SHADER_PATH = "Resources/Shaders/lightObj_vert.spv";
+const std::string LIGHT_FRAG_SHADER_PATH = "Resources/Shaders/lightObj_frag.spv";
 
 //controls speeds
-const float cCamTranslateSpeed = 10.0f;
+const float cCamTranslateSpeed = 20.0f;
 const float cCamRotateSpeed = 100.0f;
-const float cModelTranslateSpeed = 5.0f;
-const float cModelRotateSpeed = 1.0f;
-const float cLightTranslateSpeed = 40.0f;
-const float cOptionsModSpeed = 10.0f;
+const float cLightTranslateSpeed = 5.0f;
 
 struct Transform {
 	glm::vec3 scale = glm::vec3(1.0f);
@@ -62,54 +63,10 @@ struct MVPMatrices {
 	glm::mat4 normalMat;	//equivalent to transpose(inverse(modelview))
 };
 
-
-struct Light {
-	glm::vec4 ambient;
-	glm::vec4 diffuse;
-	glm::vec4 specular;
-};
-
-class Camera
+struct Material
 {
-public:
-	glm::vec3 position = glm::vec3(0.0f, 0.0f, 0.0f);
-	glm::quat rotation = glm::quat(0.0f, 0.0f, 0.0f, 1.0f);
-	glm::mat4 viewMat = glm::mat4(1.0f);
-	glm::mat4 projMat = glm::mat4(1.0f);
-	const glm::mat4 worldOrientationBias = glm::toMat4(glm::angleAxis(glm::radians(180.0f), glm::vec3(1.0f, 0.0f, 0.0f)));	//a bias trasform that orients the world in a more friendly way (x to the right, y up, z away from the user)
 
-	glm::vec3 forward = glm::vec3(0.0f, 0.0f, 1.0f);
-	glm::vec3 right = glm::vec3(1.0f, 0.0f, 0.0f);
-	glm::vec3 up = glm::vec3(0.0f, 1.0f, 0.0f);
-
-	float fov = 45.0f;
-	float nearPlane = 0.1f;
-	float farPlane = 100.0f;
-
-	Camera(uint32_t width, uint32_t height)
-	{
-		updateViewMatrix();
-		updateProjectionMat(width, height);
-	}
-
-	void updateViewMatrix() 
-	{		
-		glm::mat4 rotMat = worldOrientationBias * glm::toMat4(rotation);
-		glm::mat4 transMat = glm::translate(glm::mat4(1.0f), -position);
-
-		viewMat = rotMat * transMat;
-
-		//update front, right, up
-		forward = rotation * glm::vec3(0.0f, 0.0f, 1.0f);
-		right = rotation * glm::vec3(1.0f, 0.0f, 0.0f);
-		up = glm::cross(forward, right);
-	};
-
-	void updateProjectionMat(uint32_t width, uint32_t height)
-	{
-		projMat = glm::perspective(glm::radians(fov), (float)width / (float)height, nearPlane, farPlane);
-	    projMat[1][1] *= -1;
-	};
+	float shininess;
 };
  
 class VkApp
@@ -118,36 +75,36 @@ private:
 	GLFWwindow* mWindow;
 	RenderSystem mRenderSystem;
 	InputSystem mInputSystem;
-	double mTime = 0.0;
-	double mPrevTime = 0.0;
-	double mFrameTime = 0.0;
+	float mElapsedTime = 0.0;
+	float mPrevTime = 0.0;
+	float mFrameTime = 0.0;
 
-
-	std::vector<VkClearValue> clearColors = {   {0.0f,   0.0f,   0.0f,   1.0f },
-												{0.937f, 0.749f, 0.376f, 1.0f},
-												{0.788f, 0.2f,   0.125f, 1.0f},
-												{0.176f, 0.11f,  0.114f, 1.0f} };		
+	std::vector<VkClearValue> clearColors = { {0.176f, 0.11f,  0.114f, 1.0f},
+											  {0.937f, 0.749f, 0.376f, 1.0f},
+											  {0.788f, 0.2f,   0.125f, 1.0f},
+											  {0.0f,   0.0f,   0.0f,   1.0f} };	
 	int clearColorIndex = 0;
 
-	std::shared_ptr<Renderable> mWall = nullptr;
-	std::shared_ptr<Renderable> mLightIndicator = nullptr;
+	std::unique_ptr<Camera> mCamera;
+	
+	//Lights UBO
+	std::shared_ptr<UBO> mLightUBOBuffer;
+	LightUBO mLightUBO;
 
-	//UBOs
+	std::shared_ptr<Renderable> mWall;
 	std::shared_ptr<UBO> mWallMVPBuffer;
 	Transform mWallXForm;
 
-	std::shared_ptr<UBO> mLightIndicatorMVPBuffer;
-	Transform mLightIndicatorXForm;
-	
-	//Lighting
-	std::shared_ptr<UBO> mLightBuffer;
-	std::shared_ptr<UBO> mLightPosBuffer;
-	Light mLight;
-	glm::vec3 mLightPos;
+	std::shared_ptr<Renderable> mLightIndicators[MAX_LIGHTS];
+	std::shared_ptr<UBO> mLightIndicatorMVPBuffer[MAX_LIGHTS];
+	Transform mLightIndicatorXForm[MAX_LIGHTS];
+	std::shared_ptr<UBO> mLightIndicatorLightBuffer[MAX_LIGHTS];
+	//implied mLightUBO.lights[index]
 
-	std::unique_ptr<Camera> mCamera;
 
 	bool mLightOrbit = true;
+	uint32_t mSelectedLight = 0;
+	uint32_t mTotalLights = 0;
 public:
 	VkApp();
 	void run();
@@ -161,9 +118,9 @@ private:
 	void lightControls();
 
 	void setupCamera();
-	void setupLight();
+	void setupLights();
 
-	void createLightIndicator();
+	void createLightIndicator(uint32_t lightIndex);
 	void createWall();
 	void updateMVPBuffer(const UBO& mvpBuffer, 
 						const Renderable& renderable, 

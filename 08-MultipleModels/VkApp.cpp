@@ -39,7 +39,7 @@ void VkApp::initialize()
 	mTestPlane = mRenderSystem.createModel(GROUND_MODEL_PATH, GROUND_TEXTURE_PATH);
 	mTestModel = mRenderSystem.createModel(CHALET_MODEL_PATH, CHALET_TEXTURE_PATH);
 
-	mTestPlane->mScale = glm::vec3(2.0f, 2.0f, 1.0f);
+	mTestPlane->mScale = glm::vec3(2.0f, 2.0f, 2.0f);
 }
 
 void VkApp::shutdown()

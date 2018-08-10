@@ -5,8 +5,6 @@ VisualStudioVersion = 15.0.27703.2026
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "10-Geometry", "10-Geometry\10-Geometry.vcxproj", "{D0774CF1-D37A-4C95-8D53-790F5A71B84C}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "11-Illumination", "11-Illumination\11-Illumination.vcxproj", "{47629DF0-0A13-4F00-8D79-E651C02B910C}"
-EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "01-SimpleSurface", "01-SimpleSurface\01-SimpleSurface.vcxproj", "{EA1FC855-8971-4236-BC96-D50948E810CA}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "02-RenderGeometry", "02-RenderGeometry\02-RenderGeometry.vcxproj", "{00BF2FC1-0971-4F65-9447-022743E8EFD4}"
@@ -25,7 +23,9 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "08-MultipleModels", "08-Mul
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "09-Tesselation", "09-Tesselation\09-Tesselation.vcxproj", "{2444B074-86C8-41DD-9005-7046C4DB75FC}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "12-Shadows", "12-Shadows\12-Shadows.vcxproj", "{54BDDC21-BF6A-4975-916E-BEF971C18B76}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "00-BuildShaders", "00-BuildShaders\00-BuildShaders.vcxproj", "{5AB79DE2-7B38-4D6C-A2A4-553A0775C897}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "11-Illumination", "11-Illumination\11-Illumination.vcxproj", "{54BDDC21-BF6A-4975-916E-BEF971C18B76}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -43,14 +43,6 @@ Global
 		{D0774CF1-D37A-4C95-8D53-790F5A71B84C}.Release|x64.Build.0 = Release|x64
 		{D0774CF1-D37A-4C95-8D53-790F5A71B84C}.Release|x86.ActiveCfg = Release|Win32
 		{D0774CF1-D37A-4C95-8D53-790F5A71B84C}.Release|x86.Build.0 = Release|Win32
-		{47629DF0-0A13-4F00-8D79-E651C02B910C}.Debug|x64.ActiveCfg = Debug|x64
-		{47629DF0-0A13-4F00-8D79-E651C02B910C}.Debug|x64.Build.0 = Debug|x64
-		{47629DF0-0A13-4F00-8D79-E651C02B910C}.Debug|x86.ActiveCfg = Debug|Win32
-		{47629DF0-0A13-4F00-8D79-E651C02B910C}.Debug|x86.Build.0 = Debug|Win32
-		{47629DF0-0A13-4F00-8D79-E651C02B910C}.Release|x64.ActiveCfg = Release|x64
-		{47629DF0-0A13-4F00-8D79-E651C02B910C}.Release|x64.Build.0 = Release|x64
-		{47629DF0-0A13-4F00-8D79-E651C02B910C}.Release|x86.ActiveCfg = Release|Win32
-		{47629DF0-0A13-4F00-8D79-E651C02B910C}.Release|x86.Build.0 = Release|Win32
 		{EA1FC855-8971-4236-BC96-D50948E810CA}.Debug|x64.ActiveCfg = Debug|x64
 		{EA1FC855-8971-4236-BC96-D50948E810CA}.Debug|x64.Build.0 = Debug|x64
 		{EA1FC855-8971-4236-BC96-D50948E810CA}.Debug|x86.ActiveCfg = Debug|Win32
@@ -123,6 +115,14 @@ Global
 		{2444B074-86C8-41DD-9005-7046C4DB75FC}.Release|x64.Build.0 = Release|x64
 		{2444B074-86C8-41DD-9005-7046C4DB75FC}.Release|x86.ActiveCfg = Release|Win32
 		{2444B074-86C8-41DD-9005-7046C4DB75FC}.Release|x86.Build.0 = Release|Win32
+		{5AB79DE2-7B38-4D6C-A2A4-553A0775C897}.Debug|x64.ActiveCfg = Debug|x64
+		{5AB79DE2-7B38-4D6C-A2A4-553A0775C897}.Debug|x64.Build.0 = Debug|x64
+		{5AB79DE2-7B38-4D6C-A2A4-553A0775C897}.Debug|x86.ActiveCfg = Debug|Win32
+		{5AB79DE2-7B38-4D6C-A2A4-553A0775C897}.Debug|x86.Build.0 = Debug|Win32
+		{5AB79DE2-7B38-4D6C-A2A4-553A0775C897}.Release|x64.ActiveCfg = Release|x64
+		{5AB79DE2-7B38-4D6C-A2A4-553A0775C897}.Release|x64.Build.0 = Release|x64
+		{5AB79DE2-7B38-4D6C-A2A4-553A0775C897}.Release|x86.ActiveCfg = Release|Win32
+		{5AB79DE2-7B38-4D6C-A2A4-553A0775C897}.Release|x86.Build.0 = Release|Win32
 		{54BDDC21-BF6A-4975-916E-BEF971C18B76}.Debug|x64.ActiveCfg = Debug|x64
 		{54BDDC21-BF6A-4975-916E-BEF971C18B76}.Debug|x64.Build.0 = Debug|x64
 		{54BDDC21-BF6A-4975-916E-BEF971C18B76}.Debug|x86.ActiveCfg = Debug|Win32

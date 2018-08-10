@@ -178,7 +178,7 @@ void RenderSystem::createInstance()
 
 	VkApplicationInfo appInfo = {};
 	appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
-	appInfo.pApplicationName = "3-MVP";
+	appInfo.pApplicationName = "4-TextureMapping";
 	appInfo.applicationVersion = 1;
 	appInfo.pEngineName = "uwb-vk";
 	appInfo.engineVersion = 1;
@@ -447,8 +447,8 @@ void RenderSystem::createGraphicsPipeline()
 	std::cout << "Creating Graphics pipeline" << std::endl;
 
 	//Set up the programmable stages of the pipeline
-	auto vertShaderCode = readShaderFile("shaders/square_vert.spv");
-	auto fragShaderCode = readShaderFile("shaders/square_frag.spv");
+	auto vertShaderCode = readShaderFile("Resources/Shaders/textureMapping_vert.spv");
+	auto fragShaderCode = readShaderFile("Resources/Shaders/textureMapping_frag.spv");
 
 	VkShaderModule vertShaderModule;
 	VkShaderModule fragShaderModule;
@@ -1277,7 +1277,7 @@ void RenderSystem::createTexture()
 {
 	std::cout << "Creating texture..." << std::endl;
 	int width, height, channels;
-	stbi_uc* pixels = stbi_load("textures/texture.jpg", &width, &height, &channels, STBI_rgb_alpha);
+	stbi_uc* pixels = stbi_load("Resources/Textures/UW Logo.png", &width, &height, &channels, STBI_rgb_alpha);
 
 	if (!pixels) {
 		throw std::runtime_error("Failed to load texture image");

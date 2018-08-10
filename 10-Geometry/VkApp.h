@@ -19,15 +19,15 @@ const int WIDTH = 1280;
 const int HEIGHT = 720;
 
 //texture paths
-const std::string CHALET_TEXTURE_PATH = "textures/ground.jpg";
+const std::string CHALET_TEXTURE_PATH = "Resources/Textures/UrbanTexturePack/Ground_Dirt/Ground_Dirt_1k_d.tga";
 
 //model paths
-const std::string CHALET_MODEL_PATH = "models/cube.obj";
+const std::string CHALET_MODEL_PATH = "Resources/Meshes/cube.mesh";
 
 //shader paths
-const std::string VERT_SHADER_PATH = "shaders/square_vert.spv";
-const std::string FRAG_SHADER_PATH = "shaders/square_frag.spv";
-const std::string GEOM_SHADER_PATH = "shaders/square_geom.spv";
+const std::string VERT_SHADER_PATH = "Resources/Shaders/geomCube_vert.spv";
+const std::string FRAG_SHADER_PATH = "Resources/Shaders/geomCube_frag.spv";
+const std::string GEOM_SHADER_PATH = "Resources/Shaders/geomCube_geom.spv";
 
 //controls speeds
 const float mCamTranslateSpeed = 10.0f;

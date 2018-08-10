@@ -636,6 +636,7 @@ void RenderSystem::createMesh(std::shared_ptr<Mesh>& mesh, const std::string & f
 		}
 	}
 
+
 	mesh = std::make_shared<Mesh>(Mesh(mContext, mBufferManager));
 	mesh->load(vertices, indices);
 

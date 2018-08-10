@@ -104,7 +104,8 @@
       <AdditionalLibraryDirectories>$(SolutionDir)Dependencies/GLFW/lib;$(SolutionDir)Dependencies/Vulkan/Lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
     <PostBuildEvent>
-      <Command>python $(SolutionDir)BuildTools\compileShaders.py $(ProjectDir)shaders</Command>
+      <Command>
+      </Command>
     </PostBuildEvent>
     <CustomBuildStep>
       <Command>

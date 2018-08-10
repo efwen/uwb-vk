@@ -13,10 +13,10 @@
 #include "InputSystem.h"
 #include "Model.h"
 
-const std::string CHALET_TEXTURE_PATH = "textures/chalet.jpg";
-const std::string GROUND_TEXTURE_PATH = "textures/ground.jpg";
-const std::string CHALET_MODEL_PATH = "models/chalet.obj";
-const std::string GROUND_MODEL_PATH = "models/ground.obj";
+const std::string CHALET_TEXTURE_PATH = "Resources/Textures/chalet.jpg";
+const std::string GROUND_TEXTURE_PATH = "Resources/Textures/UrbanTexturePack/Ground_Dirt/Ground_Dirt_1k_d.tga";
+const std::string CHALET_MODEL_PATH = "Resources/Meshes/chalet.mesh";
+const std::string GROUND_MODEL_PATH = "Resources/Meshes/plane.mesh";
 
 class VkApp
 {

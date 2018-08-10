@@ -14,10 +14,8 @@ void RenderSystem::initialize(GLFWwindow * window)
 	mCommandPool->initialize();
 	
 	mBufferManager = std::make_shared<BufferManager>(BufferManager(mContext, mCommandPool));
-	//mBufferManager->initialize();?
 
 	mImageManager = std::make_shared<ImageManager>(ImageManager(mContext, mCommandPool));
-	//mImageManager->initialize();?
 
 	createSwapchain();
 	createDepthBuffer();				//set up the depth buffer (must be before createRenderPass and after createSwapchain!)

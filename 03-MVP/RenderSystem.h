@@ -30,10 +30,9 @@ const std::vector<Vertex> squareVertices = {
 const std::vector<uint16_t> squareIndices = { 0, 1, 2, 2, 3, 0 };
 
 struct UniformBufferObject {
-	
+	glm::mat4 model;	
 	glm::mat4 view;
 	glm::mat4 proj;
-	glm::mat4 model;
 };
 
 struct QueueFamilyIndices {

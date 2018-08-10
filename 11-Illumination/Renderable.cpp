@@ -61,6 +61,8 @@ void Renderable::applyShaderSet(ShaderSet toApply)
 
 void Renderable::bindUniformBuffer(std::shared_ptr<UBO> bufferObject, uint32_t binding)
 {
+	assert(bufferObject != nullptr);
+
 	std::cout << "Binding ubo to " << binding << std::endl;
 	if (mLayoutBindings.count(binding) == 0)
 		throw std::runtime_error("Cannot bind UBO, descriptor set layout binding does not exist!");
@@ -129,25 +131,43 @@ void Renderable::createDescriptorSets(const VkDescriptorPool& descriptorPool, ui
 	for (size_t i = 0; i < swapchainSize; i++)
 	{	
 		std::vector <VkWriteDescriptorSet> descriptorWrites = {};
-		std::vector <std::pair<uint32_t, VkDescriptorBufferInfo>> bufferInfos = {};
-		std::vector <std::pair<uint32_t, VkDescriptorImageInfo>> textureInfos = {};
-		
-		for (const auto& binding : mBufferBindings) {
-			VkDescriptorBufferInfo bufferInfo = {};
-			bufferInfo.buffer = binding.second->buffers[i];
-			bufferInfo.offset = 0;
-			bufferInfo.range = binding.second->bufferSize;
+		using BufferInfoSet = std::pair<uint32_t, std::vector<VkDescriptorBufferInfo>>;		//each binding can have multiple infos associated (as in an array of buffers)
+		using ImageInfoSet = std::pair<uint32_t, std::vector<VkDescriptorImageInfo>>;
 
-			bufferInfos.push_back(std::make_pair(binding.first, bufferInfo));
+		std::vector <BufferInfoSet> bufferInfos = {};
+		std::vector <ImageInfoSet> textureInfos = {};
+		
+		for (const auto& bufBinding : mBufferBindings) {
+
+			BufferInfoSet infoSet;
+			infoSet.first = bufBinding.first;
+
+			uint32_t descCount = mLayoutBindings[bufBinding.first].descriptorCount;
+			for (uint32_t bufIdx = 0; bufIdx < descCount; bufIdx++)
+			{
+				VkDescriptorBufferInfo bufferInfo = {};
+				bufferInfo.buffer = bufBinding.second->buffers[descCount * i + bufIdx];
+				bufferInfo.offset = 0;
+				bufferInfo.range = bufBinding.second->bufferSize;
+				infoSet.second.push_back(bufferInfo);
+			}
+			bufferInfos.push_back(infoSet);
 		}
 		
 		for (const auto& texBinding : mTextureBindings) {
-			VkDescriptorImageInfo imageInfo = {};
-			imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-			imageInfo.imageView = texBinding.second->getImageView();
-			imageInfo.sampler = texBinding.second->getSampler();
 
-			textureInfos.push_back(std::make_pair(texBinding.first, imageInfo));
+			ImageInfoSet infoSet;
+			infoSet.first = texBinding.first;
+			for (uint32_t texIdx = 0; texIdx < mLayoutBindings[texBinding.first].descriptorCount; texIdx++)
+			{
+				VkDescriptorImageInfo imageInfo = {};
+				imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+				imageInfo.imageView = texBinding.second->getImageView();
+				imageInfo.sampler = texBinding.second->getSampler();
+				infoSet.second.push_back(imageInfo);
+			}
+
+			textureInfos.push_back(infoSet);
 		}
 
 
@@ -159,8 +179,8 @@ void Renderable::createDescriptorSets(const VkDescriptorPool& descriptorPool, ui
 			bufferDescriptorWrite.dstBinding = info.first;
 			bufferDescriptorWrite.dstArrayElement = 0;
 			bufferDescriptorWrite.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-			bufferDescriptorWrite.descriptorCount = 1;
-			bufferDescriptorWrite.pBufferInfo = &info.second;
+			bufferDescriptorWrite.descriptorCount = mLayoutBindings[info.first].descriptorCount;
+			bufferDescriptorWrite.pBufferInfo = info.second.data();
 			bufferDescriptorWrite.pImageInfo = nullptr;
 			bufferDescriptorWrite.pTexelBufferView = nullptr;
 			descriptorWrites.push_back(bufferDescriptorWrite);
@@ -174,9 +194,9 @@ void Renderable::createDescriptorSets(const VkDescriptorPool& descriptorPool, ui
 			textureDescriptorWrite.dstBinding = info.first;
 			textureDescriptorWrite.dstArrayElement = 0;
 			textureDescriptorWrite.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-			textureDescriptorWrite.descriptorCount = 1;
+			textureDescriptorWrite.descriptorCount = mLayoutBindings[info.first].descriptorCount;
 			textureDescriptorWrite.pBufferInfo = nullptr;
-			textureDescriptorWrite.pImageInfo = &info.second;
+			textureDescriptorWrite.pImageInfo = info.second.data();
 			textureDescriptorWrite.pTexelBufferView = nullptr;
 			descriptorWrites.push_back(textureDescriptorWrite);
 		}

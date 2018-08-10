@@ -39,8 +39,8 @@ struct UniformBufferObject {
 	glm::mat4 proj;
 };
 
-const std::string VERT_SHADER_PATH = "shaders/square_vert.spv";
-const std::string FRAG_SHADER_PATH = "shaders/square_frag.spv";
+const std::string VERT_SHADER_PATH = "Resources/Shaders/textureMapping_vert.spv";
+const std::string FRAG_SHADER_PATH = "Resources/Shaders/textureMapping_frag.spv";
 const int MAX_CONCURRENT_FRAMES = 2;
 const int MAX_MESH_COUNT = 40;
 

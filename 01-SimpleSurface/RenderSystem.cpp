@@ -488,8 +488,8 @@ void RenderSystem::createGraphicsPipeline()
 	std::cout << "Creating Graphics pipeline" << std::endl;
 
 	//Set up the programmable stages of the pipeline
-	auto vertShaderCode = readShaderFile("shaders/vert.spv");
-	auto fragShaderCode = readShaderFile("shaders/frag.spv");
+	auto vertShaderCode = readShaderFile("Resources/Shaders/triangle_vert.spv");
+	auto fragShaderCode = readShaderFile("Resources/Shaders/triangle_frag.spv");
 
 	VkShaderModule vertShaderModule;
 	VkShaderModule fragShaderModule;

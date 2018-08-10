@@ -115,8 +115,8 @@ void readObjFile(const std::string& filename, std::vector<Vertex>& vertices, std
 
 				//make a vertex object, and fill it with data
 				Vertex vertex;
-				vertex.pos = vertPositions[posIndex];
-				vertex.color = { 1.0f, 1.0f, 1.0f };
+				vertex.pos = glm::vec4(vertPositions[posIndex], 1.0);
+				vertex.color = { 1.0f, 1.0f, 1.0f , 1.0f };
 				vertex.tangent = { 0.0f, 0.0f, 0.0f };
 				if (texIndex > -1)
 					vertex.texCoord = texCoords[texIndex];
