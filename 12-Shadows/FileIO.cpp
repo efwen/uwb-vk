@@ -117,6 +117,7 @@ void readObjFile(const std::string& filename, std::vector<Vertex>& vertices, std
 				Vertex vertex;
 				vertex.pos = glm::vec4(vertPositions[posIndex], 1.0);
 				vertex.color = { 1.0f, 1.0f, 1.0f , 1.0f };
+				vertex.tangent = { 0.0f, 0.0f, 0.0f };
 				if (texIndex > -1)
 					vertex.texCoord = texCoords[texIndex];
 				if (normalIndex > -1)

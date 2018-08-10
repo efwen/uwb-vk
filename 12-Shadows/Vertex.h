@@ -14,6 +14,7 @@ struct Vertex {
 	glm::vec4 pos;
 	glm::vec4 color;
 	glm::vec3 normal;
+	glm::vec3 tangent;
 	glm::vec2 texCoord;
 
 	static VkVertexInputBindingDescription getBindingDescription() {
@@ -25,8 +26,8 @@ struct Vertex {
 		return bindingDescription;
 	}
 
-	static std::array<VkVertexInputAttributeDescription, 4> getAttributeDescriptions() {
-		std::array<VkVertexInputAttributeDescription, 4> attributeDescriptions = {};
+	static std::array<VkVertexInputAttributeDescription, 5> getAttributeDescriptions() {
+		std::array<VkVertexInputAttributeDescription, 5> attributeDescriptions = {};
 
 		//position attribute
 		attributeDescriptions[0].binding = 0;
@@ -46,11 +47,17 @@ struct Vertex {
 		attributeDescriptions[2].format = VK_FORMAT_R32G32B32_SFLOAT;
 		attributeDescriptions[2].offset = offsetof(Vertex, normal);
 
-		//texture coordinate attribute
+		//tangent attribute
 		attributeDescriptions[3].binding = 0;
 		attributeDescriptions[3].location = 3;
-		attributeDescriptions[3].format = VK_FORMAT_R32G32_SFLOAT;
-		attributeDescriptions[3].offset = offsetof(Vertex, texCoord);
+		attributeDescriptions[3].format = VK_FORMAT_R32G32B32_SFLOAT;
+		attributeDescriptions[3].offset = offsetof(Vertex, tangent);
+
+		//texture coordinate attribute
+		attributeDescriptions[4].binding = 0;
+		attributeDescriptions[4].location = 4;
+		attributeDescriptions[4].format = VK_FORMAT_R32G32_SFLOAT;
+		attributeDescriptions[4].offset = offsetof(Vertex, texCoord);
 
 		return attributeDescriptions;
 	}
@@ -58,9 +65,10 @@ struct Vertex {
 	bool operator== (const Vertex& other) const
 	{
 		return pos == other.pos &&
-			color == other.color &&
-			texCoord == other.texCoord &&
-			normal == other.normal;
+			   color == other.color &&
+			   normal == other.normal &&
+			   tangent == other.tangent &&
+			   texCoord == other.texCoord;
 	}
 
 	friend std::ostream& operator<<(std::ostream& os, const Vertex& v);
@@ -68,9 +76,10 @@ struct Vertex {
 
 inline std::ostream& operator<< (std::ostream& os, const Vertex& v)
 {
-	os << "[p(" << v.pos.x		 << ", " << v.pos.y		  << ", " << v.pos.z	<< v.pos.w	 << ")" << 
-		 " c("  << v.color.r     << ", " << v.color.g	  << ", " << v.color.b	<< v.color.a <<")" << 
-		 " n("  << v.normal.x    << ", " << v.normal.y    << ", " << v.normal.z << ")" <<
+	os << "[p(" << v.pos.x		 << ", " << v.pos.y		  << ", " << v.pos.z	 << v.pos.w	  << ")" << 
+		 " c("  << v.color.r     << ", " << v.color.g	  << ", " << v.color.b	 << v.color.a <<")" << 
+		 " n("  << v.normal.x    << ", " << v.normal.y    << ", " << v.normal.z  << ")" <<
+		 " t("  << v.tangent.x   << ", " << v.tangent.y   << ", " << v.tangent.z << ")" <<
 		 " uv(" << v.texCoord.x	 << ", " << v.texCoord.y  << ")]";
 	return os;
 }
@@ -80,9 +89,9 @@ namespace std {
 	{
 		size_t operator()(Vertex const& vertex) const
 		{
-			return ((hash<glm::vec3>()(vertex.pos) ^
-				(hash<glm::vec3>()(vertex.normal) << 1)) >> 1) ^
-				(hash<glm::vec2>()(vertex.texCoord) << 1);
+			return ((hash<glm::vec3>()(vertex.pos) ^ 
+					(hash<glm::vec3>()(vertex.normal) << 1)) >> 1) ^ 
+					(hash<glm::vec2>()(vertex.texCoord) << 1);
 		}
 	};
 }

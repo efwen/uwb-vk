@@ -2,6 +2,12 @@
 #extension GL_ARB_separate_shader_objects : enable
 #extension GL_ARB_shading_language_420pack : enable
 
+//Light type "enum"
+const uint eLightType_None = 0;
+const uint eLightType_Directional = 1;
+const uint eLightType_Point = 2;
+const uint eLightType_Spot = 3;
+
 layout(binding = 1) uniform AttachedLight
 {
 	vec4 position;
@@ -19,15 +25,14 @@ layout(binding = 1) uniform AttachedLight
 	
 	float cutOff;
     float outerCutOff;
+	uint  lightType;
 } light;
 
 layout(location = 0) out vec4 outFragColor;
 
 void main() 
 {
-	float modif = 1.0;
-	if(!light.isEnabled)	//dim the indicator if light is disabled
-		modif = 0.1; 
+	float modif = (light.isEnabled) ? 1.0 : 0.1;
 
 	outFragColor = modif * light.diffuse;
 }

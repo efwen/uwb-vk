@@ -148,12 +148,15 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="BufferManager.h" />
+    <ClInclude Include="Camera.h" />
     <ClInclude Include="CommandPool.h" />
     <ClInclude Include="Extensions.h" />
     <ClInclude Include="FileIO.h" />
     <ClInclude Include="ImageManager.h" />
     <ClInclude Include="InputSystem.h" />
+    <ClInclude Include="Lighting.h" />
     <ClInclude Include="Mesh.h" />
+    <ClInclude Include="PrintUtil.h" />
     <ClInclude Include="QueueFamilies.h" />
     <ClInclude Include="Renderable.h" />
     <ClInclude Include="RenderSystem.h" />

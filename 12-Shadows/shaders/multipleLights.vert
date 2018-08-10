@@ -13,12 +13,13 @@ layout(binding = 0) uniform Matrices
 layout(location = 0) in vec4 inPos;
 layout(location = 1) in vec3 inColor;
 layout(location = 2) in vec3 inNormal;
-layout(location = 3) in vec2 inUV;
+layout(location = 3) in vec3 inTangent;
+layout(location = 4) in vec2 inUV;
 
 layout(location = 0) out vec3 outWorldPos;
 layout(location = 1) out vec4 outColor;
 layout(location = 2) out vec2 outUV;
-layout(location = 3) out vec3 outWorldNormal;
+layout(location = 3) out mat3 outWorldTBN;
 
 out gl_PerVertex {
     vec4 gl_Position;
@@ -27,9 +28,11 @@ out gl_PerVertex {
 void main() 
 {
     outWorldPos = vec3(mvp.model * inPos);
-    mat3 mNormal = transpose(inverse(mat3(mvp.model)));
-    //outNormal = normalize(vec3(mvp.normalMat * vec4(inNormal, 0.0)));
-    outWorldNormal = mNormal * normalize(inNormal);
+
+    vec3 T = mat3(transpose(inverse(mvp.model))) * inTangent;
+    vec3 N = mat3(transpose(inverse(mvp.model))) * inNormal;
+    vec3 B = cross(N, T);
+    outWorldTBN = mat3(T, B, N);
 
     //pass-through texture coordinates & color
     outUV = inUV;
