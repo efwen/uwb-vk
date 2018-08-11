@@ -57,9 +57,9 @@ struct Transform {
 };
 
 struct MVPMatrices {
-	glm::mat4 projection;	//projection matrix from the camera
 	glm::mat4 model;
 	glm::mat4 view;
+	glm::mat4 projection;	//projection matrix from the camera
 	glm::mat4 normalMat;	//equivalent to transpose(inverse(modelview))
 };
 

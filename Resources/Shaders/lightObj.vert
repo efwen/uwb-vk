@@ -4,9 +4,9 @@
 
 
 layout(binding = 0) uniform MVP {
-    mat4 projection;
     mat4 model;
     mat4 view;
+    mat4 projection;
     mat4 normalMat;
 } mvp;
 

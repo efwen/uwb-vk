@@ -34,9 +34,10 @@
 
 
 const int MAX_CONCURRENT_FRAMES = 2;
-const int MAX_DESCRIPTOR_SETS = 40;	// 5
-const int MAX_UNIFORM_BUFFERS = 40;// 8;
-const int MAX_IMAGE_SAMPLERS = 40;	// 4
+const int MAX_DESCRIPTOR_SETS = 40;
+const int MAX_UNIFORM_BUFFERS = 40;
+const int MAX_IMAGE_SAMPLERS = 40;
+const std::string SHADOW_MAP_SHADER_VERT = "Resources/Shaders/shadowPass_vert.spv";
 
 class RenderSystem
 {
@@ -56,7 +57,7 @@ public:
 	void instantiateRenderable(std::shared_ptr<Renderable>& renderable);
 
 	template<typename T>
-	void createUniformBuffer(std::shared_ptr<UBO>& ubo, size_t count)
+	void createUniformBuffer(std::shared_ptr<UBO>& ubo, const size_t& count)
 	{
 		std::cout << "sizeof: " << sizeof(T) << std::endl;
 		ubo = std::make_shared<UBO>();
@@ -78,7 +79,7 @@ public:
 	}
 
 	template<typename T>
-	void updateUniformBuffer(const UBO& ubo, T& uboData, size_t bufIndex)
+	void updateUniformBuffer(const UBO& ubo, const T& uboData, size_t bufIndex)
 	{
 		//the actual index, taking into account duplicates for the swapchain
 		size_t actualIndex = (ubo.buffersMemory.size() / MAX_CONCURRENT_FRAMES) * mCurrentFrame + bufIndex;
@@ -90,6 +91,7 @@ public:
 	}
 	
 	void setClearColor(VkClearValue clearColor);
+	void setLightMVPBuffer(const glm::mat4& mvp);
 
 	std::vector<std::shared_ptr<Renderable>> mRenderables;
 private:
@@ -109,7 +111,8 @@ private:
 
 	//more closely attached to a renderpass than swapchain
 	std::vector<VkFramebuffer> mSwapchainFramebuffers;
-	VkRenderPass mRenderPass;
+	VkRenderPass mColorPass;
+	VkRenderPass mShadowRenderPass;
 	VkDescriptorPool mDescriptorPool;
 
 #pragma region DepthBuffer
@@ -118,6 +121,20 @@ private:
 	VkFormat mDepthImageFormat;
 	VkDeviceMemory mDepthImageMemory;
 	VkImageView mDepthImageView;
+#pragma endregion
+
+#pragma region ShadowMapping
+	VkImage mShadowImage;
+	VkFormat mShadowImageFormat;
+	VkDeviceMemory mShadowImageMemory;
+	VkImageView mShadowImageView;
+	std::vector<VkFramebuffer> mShadowFramebuffers;
+	VkPipeline mShadowMapPipeline;
+	VkPipelineLayout mShadowMapPipelineLayout;
+	ShaderSet mShadowMapShaderSet;
+	VkDescriptorSetLayout mShadowMapDescriptorSetLayout;
+	std::vector<VkDescriptorSet> mShadowMapDescriptorSets;
+	std::shared_ptr<UBO> mShadowCasterUBO;
 #pragma endregion
 
 #pragma region Synchronization
@@ -136,11 +153,15 @@ private:
 
 	//Pipeline
 	void createPipeline(VkPipeline& pipeline, VkPipelineLayout& pipelineLayout, VkDescriptorSetLayout& descriptorSetLayout, const std::vector<VkPipelineShaderStageCreateInfo>& shaderStages, VkRenderPass& renderPass);
-	void createRenderPass();
+
+	void createColorRenderPass();
+	
 	void createFramebuffers(VkRenderPass renderPass);
 
 	//Descriptors
 	void createDescriptorPool(uint32_t maxSets, uint32_t maxUniformBuffers, uint32_t maxImageSamplers);
+	void createShadowMapDescriptorSetLayout();
+	void createShadowMapDescriptorSets();
 
 	//Command Buffers
 	void createCommandBuffers();
@@ -148,4 +169,10 @@ private:
 
 	void createDepthBuffer();
 	void createSyncObjects();
+
+	//ShadowMap	
+	void createShadowImage();
+	void createShadowMapPipeline();
+	void createShadowRenderPass();
+	void createShadowFramebuffers(VkRenderPass shadowRenderPass, VkImageView shadowImageView);
 };

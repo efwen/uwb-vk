@@ -19,18 +19,24 @@ void RenderSystem::initialize(GLFWwindow * window)
 	mImageManager = std::make_shared<ImageManager>(ImageManager(mContext, mCommandPool));
 
 	createSwapchain();
-	createDepthBuffer();				//set up the depth buffer (must be before createRenderPass and after createSwapchain!)
 	createDescriptorPool(MAX_DESCRIPTOR_SETS, MAX_UNIFORM_BUFFERS, MAX_IMAGE_SAMPLERS);
+	
+	createShadowImage();
+	createShadowRenderPass();
+	createShadowFramebuffers(mShadowRenderPass, mShadowImageView);
+	createShadowMapPipeline();
+	
+	
+	//color pass creation
+	createDepthBuffer();
+	createColorRenderPass();								//assumes swapchain & attachments?
+	createFramebuffers(mColorPass);				//needs swapchain, attachments
+	
 
-	//for synchronizing the rendering process
+
+	
+	createCommandBuffers();		//create a basic set of command buffers (doesn't render anything at this point)
 	createSyncObjects();
-
-	createRenderPass();								//assumes swapchain & attachments?
-	createFramebuffers(mRenderPass);				//needs swapchain, attachments
-	createCommandBuffers();							//create a basic set of command buffers (doesn't render anything at this point)
-
-
-
 }
 
 void RenderSystem::cleanup()
@@ -154,14 +160,21 @@ void RenderSystem::recreateSwapchain()
 	vkDeviceWaitIdle(mContext->device);
 
 	cleanupSwapchain();
-
 	createSwapchain();
-	createRenderPass();
+
+	//Set up the shadowMap renderpass
+	createShadowImage();
+	createShadowRenderPass();
+	createShadowFramebuffers(mShadowRenderPass, mShadowImageView);
+	createShadowMapPipeline();
+
+	createColorRenderPass();
 	for (auto model : mRenderables) {
-		createPipeline(model->mPipeline, model->mPipelineLayout, model->mDescriptorSetLayout, model->mShaderSet.createShaderInfoSet(), mRenderPass);
+		createPipeline(model->mPipeline, model->mPipelineLayout, model->mDescriptorSetLayout, model->mShaderSet.createShaderInfoSet(), mColorPass);
 	}
 	createDepthBuffer();
-	createFramebuffers(mRenderPass);
+
+	createFramebuffers(mColorPass);
 	createCommandBuffers();
 }
 
@@ -181,7 +194,23 @@ void RenderSystem::cleanupSwapchain()
 		vkDestroyPipeline(mContext->device, renderable->mPipeline, nullptr);
 		vkDestroyPipelineLayout(mContext->device, renderable->mPipelineLayout, nullptr);
 	}
-	vkDestroyRenderPass(mContext->device, mRenderPass, nullptr);
+	vkDestroyRenderPass(mContext->device, mColorPass, nullptr);
+
+
+	//cleanup the ShadowMap resources
+	vkDestroyImageView(mContext->device, mShadowImageView, nullptr);
+	vkDestroyImage(mContext->device, mShadowImage, nullptr);
+	vkFreeMemory(mContext->device, mShadowImageMemory, nullptr);
+
+	for (auto framebuffer : mShadowFramebuffers) {
+		vkDestroyFramebuffer(mContext->device, framebuffer, nullptr);
+	}
+
+	vkDestroyPipeline(mContext->device, mShadowMapPipeline, nullptr);
+	vkDestroyPipelineLayout(mContext->device, mShadowMapPipelineLayout, nullptr);
+	vkDestroyDescriptorSetLayout(mContext->device, mShadowMapDescriptorSetLayout, nullptr);
+
+	vkDestroyRenderPass(mContext->device, mShadowRenderPass, nullptr);
 
 	mSwapchain->cleanup();
 }
@@ -360,7 +389,27 @@ void RenderSystem::createPipeline(VkPipeline& pipeline, VkPipelineLayout& pipeli
 	}
 }
 
-void RenderSystem::createRenderPass()
+void RenderSystem::createShadowMapPipeline()
+{
+	mShadowMapShaderSet.vertShader = std::make_shared<Shader>(Shader(mContext));
+	createShader(mShadowMapShaderSet.vertShader, SHADOW_MAP_SHADER_VERT, VK_SHADER_STAGE_VERTEX_BIT);
+
+	createShadowMapDescriptorSetLayout();	//just one light for now
+	
+
+	//create the UBOs for shadow mapping
+	createUniformBuffer<glm::mat4>(mShadowCasterUBO, 1);
+
+	createShadowMapDescriptorSets();
+	
+	createPipeline(mShadowMapPipeline, 
+					mShadowMapPipelineLayout, 
+					mShadowMapDescriptorSetLayout, 
+					mShadowMapShaderSet.createShaderInfoSet(), 
+					mShadowRenderPass);
+}
+
+void RenderSystem::createColorRenderPass()
 {
 	//color attachment
 	VkAttachmentDescription colorAttachment = {};
@@ -372,7 +421,7 @@ void RenderSystem::createRenderPass()
 	colorAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
 	colorAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 	colorAttachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
-
+	
 	VkAttachmentReference colorAttachmentRef = {};
 	colorAttachmentRef.attachment = 0;
 	colorAttachmentRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
@@ -420,13 +469,60 @@ void RenderSystem::createRenderPass()
 	renderPassInfo.pDependencies = &dependency;
 
 
-	if (vkCreateRenderPass(mContext->device, &renderPassInfo, nullptr, &mRenderPass) != VK_SUCCESS) {
+	if (vkCreateRenderPass(mContext->device, &renderPassInfo, nullptr, &mColorPass) != VK_SUCCESS) {
 		throw std::runtime_error("Failed to create render pass!");
+	}
+}
+
+void RenderSystem::createShadowRenderPass()
+{
+	VkAttachmentDescription shadowAttachment = {};
+	shadowAttachment.format = mShadowImageFormat;
+	shadowAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
+	shadowAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;					//clear to constant at start
+	shadowAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;				//store for use in the next pass
+	shadowAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+	shadowAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+	shadowAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+	shadowAttachment.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+	shadowAttachment.flags = 0;
+
+	VkAttachmentReference shadowAttachmentRef = {};
+	shadowAttachmentRef.attachment = 0;
+	shadowAttachmentRef.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+
+	VkSubpassDescription subpass = {};
+	subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
+	subpass.flags = 0;
+	subpass.inputAttachmentCount = 0;
+	subpass.pInputAttachments = nullptr;
+	subpass.colorAttachmentCount = 0;
+	subpass.pColorAttachments = nullptr;
+	subpass.pResolveAttachments = nullptr;
+	subpass.pDepthStencilAttachment = &shadowAttachmentRef;
+	subpass.preserveAttachmentCount = 0;
+	subpass.pPreserveAttachments = nullptr;
+
+	VkRenderPassCreateInfo renderPassInfo = {};
+	renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
+	renderPassInfo.pNext = nullptr;
+	renderPassInfo.attachmentCount = 1;
+	renderPassInfo.pAttachments = &shadowAttachment;
+	renderPassInfo.subpassCount = 1;
+	renderPassInfo.pSubpasses = &subpass;
+	renderPassInfo.dependencyCount = 0;
+	renderPassInfo.pDependencies = nullptr;
+	renderPassInfo.flags = 0;
+
+	if (vkCreateRenderPass(mContext->device, &renderPassInfo, nullptr, &mShadowRenderPass) != VK_SUCCESS) {
+		throw std::runtime_error("Failed to create shadow render pass!");
 	}
 }
 
 void RenderSystem::createDescriptorPool(uint32_t maxSets, uint32_t maxUniformBuffers, uint32_t maxImageSamplers)
 {
+	assert(mSwapchain != nullptr);
+
 	std::array<VkDescriptorPoolSize, 2> poolSizes = {};
 	poolSizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;			//#1: MVP matrices
 	poolSizes[0].descriptorCount = maxUniformBuffers;
@@ -444,12 +540,69 @@ void RenderSystem::createDescriptorPool(uint32_t maxSets, uint32_t maxUniformBuf
 	}
 }
 
+void RenderSystem::createShadowMapDescriptorSetLayout()
+{
+	//Set up a descriptorsetlayout/descriptorset for the shadowMap
+	VkDescriptorSetLayoutBinding layoutBinding = {};
+	layoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;		//we're taking in a UBO w/ a MVP matrix
+	layoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+	layoutBinding.binding = 0;
+	layoutBinding.descriptorCount = 1;
+	layoutBinding.pImmutableSamplers = nullptr;
+
+	VkDescriptorSetLayoutCreateInfo layoutInfo = {};
+	layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+	layoutInfo.bindingCount = 1;
+	layoutInfo.pBindings = &layoutBinding;
+
+	if (vkCreateDescriptorSetLayout(mContext->device, &layoutInfo, nullptr, &mShadowMapDescriptorSetLayout) != VK_SUCCESS) {
+		throw std::runtime_error("Failed to create descriptor set layout!");
+	}
+}
+
+void RenderSystem::createShadowMapDescriptorSets()
+{
+	std::vector<VkDescriptorSetLayout> layouts(mSwapchain->size(), mShadowMapDescriptorSetLayout);
+	VkDescriptorSetAllocateInfo allocInfo = {};
+	allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+	allocInfo.descriptorPool = mDescriptorPool;
+	allocInfo.descriptorSetCount = mSwapchain->size();
+	allocInfo.pSetLayouts = layouts.data();
+
+	mShadowMapDescriptorSets.resize(mSwapchain->size());
+	VkResult result = vkAllocateDescriptorSets(mContext->device, &allocInfo, &mShadowMapDescriptorSets[0]);
+	if (result != VK_SUCCESS) {
+		throw std::runtime_error("Failed to allocate shadow map descriptor set!");
+	}
+
+
+	//assign a UBO to this descriptor (just one for now)
+	for (size_t i = 0; i < mSwapchain->size(); i++) {
+		VkDescriptorBufferInfo bufferInfo;
+		bufferInfo.buffer = mShadowCasterUBO->buffers[i];
+		bufferInfo.offset = 0;
+		bufferInfo.range = mShadowCasterUBO->bufferSize;
+
+		VkWriteDescriptorSet bufferDescriptorWrite = {};
+		bufferDescriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+		bufferDescriptorWrite.dstSet = mShadowMapDescriptorSets[i];
+		bufferDescriptorWrite.dstBinding = 0;									//bind to location 0
+		bufferDescriptorWrite.dstArrayElement = 0;
+		bufferDescriptorWrite.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+		bufferDescriptorWrite.descriptorCount = 1;
+		bufferDescriptorWrite.pBufferInfo = &bufferInfo;
+		bufferDescriptorWrite.pImageInfo = nullptr;
+		bufferDescriptorWrite.pTexelBufferView = nullptr;
+
+		vkUpdateDescriptorSets(mContext->device, 1, &bufferDescriptorWrite, 0, nullptr);
+	}
+}
+
 void RenderSystem::createFramebuffers(VkRenderPass renderPass)
 {
 	std::vector<VkImageView> swapchainImageViews = mSwapchain->getImageViews();
 
 	mSwapchainFramebuffers.resize(swapchainImageViews.size());
-
 	for (size_t i = 0; i < swapchainImageViews.size(); i++) {
 		std::array<VkImageView, 2> attachments = {
 			swapchainImageViews[i],
@@ -458,17 +611,48 @@ void RenderSystem::createFramebuffers(VkRenderPass renderPass)
 
 		VkFramebufferCreateInfo framebufferInfo = {};
 		framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+		framebufferInfo.pNext = nullptr;
 		framebufferInfo.renderPass = renderPass;
 		framebufferInfo.attachmentCount = static_cast<uint32_t>(attachments.size());
 		framebufferInfo.pAttachments = attachments.data();
 		framebufferInfo.width = mSwapchain->getExtent().width;
 		framebufferInfo.height = mSwapchain->getExtent().height;
 		framebufferInfo.layers = 1;
+		framebufferInfo.flags = 0;
 
 		if (vkCreateFramebuffer(mContext->device, &framebufferInfo, nullptr, &mSwapchainFramebuffers[i]) != VK_SUCCESS) {
 			throw std::runtime_error("failed to create framebuffer!");
 		}
 	}
+}
+
+void RenderSystem::createShadowFramebuffers(VkRenderPass shadowRenderPass, VkImageView shadowImageView)
+{
+	std::cout << "Creating Shadow Framebuffer" << std::endl;
+
+	mShadowFramebuffers.resize(mSwapchain->size());
+	for (size_t i = 0; i < mShadowFramebuffers.size(); i++)
+	{
+		VkFramebufferCreateInfo framebufferInfo = {};
+		framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+		framebufferInfo.pNext = nullptr;
+		framebufferInfo.renderPass = shadowRenderPass;
+		framebufferInfo.attachmentCount = 1;
+		framebufferInfo.pAttachments = &shadowImageView;
+		framebufferInfo.width = mSwapchain->getExtent().width;
+		framebufferInfo.height = mSwapchain->getExtent().height;
+		framebufferInfo.layers = 1;
+		framebufferInfo.flags = 0;
+
+		if (vkCreateFramebuffer(mContext->device, &framebufferInfo, nullptr, &mShadowFramebuffers[i]) != VK_SUCCESS) {
+			throw std::runtime_error("Failed to create shadow framebuffer!");
+		}
+	}
+}
+
+void RenderSystem::setLightMVPBuffer(const glm::mat4 & mvp)
+{
+	updateUniformBuffer<glm::mat4>(*mShadowCasterUBO, mvp, 0);
 }
 
 void RenderSystem::createCommandBuffers()
@@ -490,7 +674,7 @@ void RenderSystem::createCommandBuffers()
 
 		VkRenderPassBeginInfo renderPassInfo = {};
 		renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-		renderPassInfo.renderPass = mRenderPass;
+		renderPassInfo.renderPass = mColorPass;
 		renderPassInfo.framebuffer = mSwapchainFramebuffers[i];
 		renderPassInfo.renderArea.offset = { 0, 0 };
 		renderPassInfo.renderArea.extent = mSwapchain->getExtent();
@@ -573,7 +757,7 @@ void RenderSystem::instantiateRenderable(std::shared_ptr<Renderable>& renderable
 	createPipeline(renderable->mPipeline, renderable->mPipelineLayout,
 		renderable->mDescriptorSetLayout,
 		renderable->mShaderSet.createShaderInfoSet(),
-		mRenderPass);
+		mColorPass);
 
 	mRenderables.push_back(renderable);
 
@@ -685,6 +869,26 @@ void RenderSystem::createDepthBuffer()
 									mDepthImageFormat,
 									VK_IMAGE_LAYOUT_UNDEFINED,
 									VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
+}
+
+void RenderSystem::createShadowImage()
+{
+	std::cout << "Creating Shadow Map resources" << std::endl;
+	mShadowImageFormat = VK_FORMAT_D32_SFLOAT;
+	std::cout << "Creating shadow image" << std::endl;
+	mImageManager->createImage(mSwapchain->getExtent().width,
+		mSwapchain->getExtent().height,
+		mShadowImageFormat,
+		VK_IMAGE_TILING_OPTIMAL,
+		VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT |
+		VK_IMAGE_USAGE_SAMPLED_BIT,
+		VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+		mShadowImage,
+		mShadowImageMemory);
+
+
+	std::cout << "Creatring shadow imageview" << std::endl;
+	mShadowImageView = mImageManager->createImageView(mShadowImage, mShadowImageFormat, VK_IMAGE_ASPECT_DEPTH_BIT);
 }
 
 void RenderSystem::setClearColor(VkClearValue clearColor)

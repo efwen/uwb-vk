@@ -31,6 +31,14 @@ const std::string BOX_MODEL_PATH		= "Resources/Meshes/cube.mesh";
 const std::string BOX_VERT_SHADER_PATH  = "Resources/Shaders/multipleLights_vert.spv";
 const std::string BOX_FRAG_SHADER_PATH  = "Resources/Shaders/multipleLights_frag.spv";
 
+//ground
+const std::string GROUND_DIFFUSE_PATH		= "Resources/Textures/UrbanTexturePack/Ground_Dirt/Ground_Dirt_1k_d.tga";
+const std::string GROUND_NORMAL_PATH		= "Resources/Textures/UrbanTexturePack/Ground_Dirt/Ground_Dirt_1k_n.tga";
+const std::string GROUND_SPECULAR_PATH		= "Resources/Textures/UrbanTexturePack/Ground_Dirt/Ground_Dirt_1k_s.tga";
+const std::string GROUND_MESH_PATH			= "Resources/Meshes/ground.mesh";
+const std::string GROUND_VERT_SHADER_PATH	= "Resources/Shaders/multipleLights_vert.spv";
+const std::string GROUND_FRAG_SHADER_PATH	= "Resources/Shaders/multipleLights_frag.spv";
+
 //light indicator
 const std::string LIGHT_MODEL_PATH		 = "Resources/Meshes/cube.mesh";
 const std::string LIGHT_VERT_SHADER_PATH = "Resources/Shaders/lightObj_vert.spv";
@@ -57,15 +65,14 @@ struct Transform {
 };
 
 struct MVPMatrices {
-	glm::mat4 projection;	//projection matrix from the camera
 	glm::mat4 model;
 	glm::mat4 view;
+	glm::mat4 projection;	//projection matrix from the camera
 	glm::mat4 normalMat;	//equivalent to transpose(inverse(modelview))
 };
 
 struct Material
 {
-
 	float shininess;
 };
  
@@ -91,9 +98,13 @@ private:
 	std::shared_ptr<UBO> mLightUBOBuffer;
 	LightUBO mLightUBO;
 
-	std::shared_ptr<Renderable> mWall;
-	std::shared_ptr<UBO> mWallMVPBuffer;
-	Transform mWallXForm;
+	std::shared_ptr<Renderable> mCube;
+	std::shared_ptr<UBO> mCubeMVPBuffer;
+	Transform mCubeXForm;
+
+	std::shared_ptr<Renderable> mGround;
+	std::shared_ptr<UBO> mGroundMVPBuffer;
+	Transform mGroundXForm;
 
 	std::shared_ptr<Renderable> mLightIndicators[MAX_LIGHTS];
 	std::shared_ptr<UBO> mLightIndicatorMVPBuffer[MAX_LIGHTS];
@@ -121,9 +132,11 @@ private:
 	void setupLights();
 
 	void createLightIndicator(uint32_t lightIndex);
-	void createWall();
+	void createCube();
+	void createGround();
 	void updateMVPBuffer(const UBO& mvpBuffer, 
 						const Renderable& renderable, 
 						const Transform& renderableXform, 
 						const Camera& cam);
+	void updateShadowMVP(const Light& light);
 };

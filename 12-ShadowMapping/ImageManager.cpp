@@ -1,4 +1,5 @@
 #include "ImageManager.h"
+#include <assert.h>
 
 ImageManager::ImageManager(std::shared_ptr<VulkanContext> context, std::shared_ptr<CommandPool> commandPool) :
 	mContext(context),

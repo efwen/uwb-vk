@@ -14,6 +14,7 @@ void VkApp::run()
 		glfwPollEvents();
 		handleInput();
 
+		//mRenderSystem.setLightMVPBuffer()
 		mCamera->updateViewMatrix();
 		
 		//light buffers
@@ -21,7 +22,8 @@ void VkApp::run()
 		mRenderSystem.updateUniformBuffer<LightUBO>(*mLightUBOBuffer, mLightUBO, 0);
 		
 		//update transform buffers
-		updateMVPBuffer(*mWallMVPBuffer, *mWall, mWallXForm, *mCamera);
+		updateMVPBuffer(*mCubeMVPBuffer, *mCube, mCubeXForm, *mCamera);
+		updateMVPBuffer(*mGroundMVPBuffer, *mGround, mGroundXForm, *mCamera);
 		
 		//update light indicators
 		for (uint32_t lightIndex = 0; lightIndex < mTotalLights; lightIndex++) {
@@ -54,9 +56,14 @@ void VkApp::initialize()
 	setupCamera();
 	setupLights();
 	
-	createWall();
-	mWallXForm.scale = glm::vec3(15.0f);
+	createCube();
+	mCubeXForm.scale = glm::vec3(4.0f);
+	mCubeXForm.position += glm::vec3(0.0f, 2.0f, 0.0f);
 
+	createGround();
+	mGroundXForm.scale = glm::vec3(40.0f);
+	mGroundXForm.rotation *= glm::angleAxis(glm::radians(180.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+	
 	for(uint32_t lightIndex = 0; lightIndex < mTotalLights; lightIndex++)
 		createLightIndicator(lightIndex);
 }
@@ -143,7 +150,7 @@ void VkApp::cameraControls()
 
 void VkApp::lightControls()
 {
-	float orbitRadius = 13.0f;
+	float orbitRadius = 30.0f;
 	float orbitSpeed = 0.5f;
 	float wobbleSpeed = 4.0f;
 	float orbitWobble = 5.0f;
@@ -153,8 +160,10 @@ void VkApp::lightControls()
 	//in orbit mode, all of the lights orbit around the ori
 	if (mLightOrbit) {
 		mLightUBO.lights[0].position = glm::vec4(orbitRadius * glm::sin(orbitSpeed * mElapsedTime),
-				orbitWobble * glm::cos(wobbleSpeed * mElapsedTime),
-				orbitRadius * glm::cos(orbitSpeed * mElapsedTime), 1.0f);
+												6.0f,
+												orbitRadius * glm::cos(orbitSpeed * mElapsedTime), 1.0f);
+
+		mLightUBO.lights[0].direction = -glm::normalize(mLightUBO.lights[0].position);
 
 		for (uint32_t lightIndex = 1; lightIndex < mTotalLights; lightIndex++) {
 			glm::quat rot = glm::angleAxis(glm::radians(360.0f / mTotalLights * lightIndex), glm::vec3(0.0f, 1.0f, 0.0f));
@@ -162,17 +171,6 @@ void VkApp::lightControls()
 		}
 	}
 	else {	//if we're not in orbit mode, we can manipulate individual lights
-
-		//switch the selected light	
-		for (int lightIndex = 0; lightIndex < mTotalLights; lightIndex++)
-		{
-			if (mInputSystem.isKeyPressed(GLFW_KEY_0 + lightIndex)) {
-				std::cout << " selecting light " << lightIndex << std::endl;
-				mSelectedLight = lightIndex;
-			}
-		}
-
-
 		//move the selected light
 		
 		if (mInputSystem.isKeyDown(GLFW_KEY_UP)) {	//negative z is away from pov
@@ -207,7 +205,7 @@ void VkApp::lightControls()
 
 
 	if (mInputSystem.isKeyDown(GLFW_KEY_G)) {
-		mWallXForm.position += glm::vec3(1.0, 0.0, 0.0) * transDist;
+		mCubeXForm.position += glm::vec3(1.0, 0.0, 0.0) * transDist;
 	}
 
 }
@@ -221,44 +219,19 @@ void VkApp::setupCamera()
 void VkApp::setupLights()
 {
 	mRenderSystem.createUniformBuffer<LightUBO>(mLightUBOBuffer, 1);
-	mTotalLights = 4;
+	mTotalLights = 1;
 
-	//setup light #0 (point light)
+	//setup spotlight
 	mLightUBO.lights[0].isEnabled	= true;
-	mLightUBO.lights[0].lightType	= LightType::Directional;
-	mLightUBO.lights[0].direction	= glm::vec4(1.0f, -1.0f, 0.333f, 1.0f);
-	mLightUBO.lights[0].ambient		= glm::vec4(0.1, 0.1, 0.1, 1.0);
-	mLightUBO.lights[0].diffuse		= glm::vec4(0.0f, 1.0f, 1.0f, 1.0f);		//cyan light
-	mLightUBO.lights[0].specular	= glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
-
-	//setup light #1 (point light)
-	mLightUBO.lights[1].isEnabled	= true;
-	mLightUBO.lights[1].lightType	= LightType::Point;
-	mLightUBO.lights[1].ambient		= glm::vec4(0.1, 0.1, 0.1, 1.0);
-	mLightUBO.lights[1].diffuse		= glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);		//white light
-	mLightUBO.lights[1].specular	= glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);		
-	
-	//setup light #2 (point light)
-	mLightUBO.lights[2].isEnabled	= true;
-	mLightUBO.lights[2].lightType	= LightType::Point;
-	mLightUBO.lights[2].ambient		= glm::vec4(0.1, 0.1, 0.1, 1.0);
-	mLightUBO.lights[2].diffuse		= glm::vec4(1.0f, 1.0f, 0.0f, 1.0f);		//yellow light
-	mLightUBO.lights[2].specular	= glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);		
-
-	//setup light #3 (spot light)
-	mLightUBO.lights[3].isEnabled	= true;
-	mLightUBO.lights[3].lightType   = LightType::Spot;
-	mLightUBO.lights[3].ambient     = glm::vec4(0.1, 0.1, 0.1, 1.0);
-	mLightUBO.lights[3].diffuse     = glm::vec4(1.0f, 0.0f, 0.0f, 1.0f);		//red light
-	mLightUBO.lights[3].specular    = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);		
-	mLightUBO.lights[3].cutOff		= glm::cos(glm::radians(12.5f));
-	mLightUBO.lights[3].outerCutOff = glm::cos(glm::radians(15.0f));
-
-	for (uint32_t light = 0; light < mTotalLights; light++) {
-		mLightUBO.lights[light].constant = 1.0f;
-		mLightUBO.lights[light].linear = 0.09f;
-		mLightUBO.lights[light].quadratic = 0.032f;
-	}
+	mLightUBO.lights[0].lightType   = LightType::Spot;
+	mLightUBO.lights[0].ambient     = glm::vec4(0.1, 0.1, 0.1, 1.0);
+	mLightUBO.lights[0].diffuse     = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);		//red light
+	mLightUBO.lights[0].specular    = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);		
+	mLightUBO.lights[0].cutOff		= glm::cos(glm::radians(12.5f));
+	mLightUBO.lights[0].outerCutOff = glm::cos(glm::radians(15.0f));
+	mLightUBO.lights[0].constant = 0.25f;// 1.0f
+	mLightUBO.lights[0].linear = 0.0f;// 0.09f;
+	mLightUBO.lights[0].quadratic = 0.0f;// 0.032f;
 }
 
 void VkApp::createLightIndicator(uint32_t lightIndex)
@@ -292,51 +265,98 @@ void VkApp::createLightIndicator(uint32_t lightIndex)
 	mRenderSystem.instantiateRenderable(mLightIndicators[lightIndex]);
 }
 
-void VkApp::createWall()
+void VkApp::createCube()
 {
 	//start by creating the component resources
-	std::shared_ptr<Mesh> wallMesh;
-	mRenderSystem.createMesh(wallMesh, BOX_MODEL_PATH, true);
+	std::shared_ptr<Mesh> cubeMesh;
+	mRenderSystem.createMesh(cubeMesh, BOX_MODEL_PATH, true);
 
-	std::shared_ptr<Texture> wallDiffuseMap;
-	mRenderSystem.createTexture(wallDiffuseMap, BOX_DIFFUSE_PATH);
+	std::shared_ptr<Texture> cubeDiffuseMap;
+	mRenderSystem.createTexture(cubeDiffuseMap, BOX_DIFFUSE_PATH);
 
-	std::shared_ptr<Texture> wallNormalMap;
-	mRenderSystem.createTexture(wallNormalMap, BOX_NORMAL_PATH);
+	std::shared_ptr<Texture> cubeNormalMap;
+	mRenderSystem.createTexture(cubeNormalMap, BOX_NORMAL_PATH);
 
-	std::shared_ptr<Texture> wallSpecularMap;
-	mRenderSystem.createTexture(wallSpecularMap, BOX_SPECULAR_PATH);
+	std::shared_ptr<Texture> cubeSpecularMap;
+	mRenderSystem.createTexture(cubeSpecularMap, BOX_SPECULAR_PATH);
 
-	ShaderSet planeShaderSet;
-	mRenderSystem.createShader(planeShaderSet.vertShader, BOX_VERT_SHADER_PATH, VK_SHADER_STAGE_VERTEX_BIT);
-	mRenderSystem.createShader(planeShaderSet.fragShader, BOX_FRAG_SHADER_PATH, VK_SHADER_STAGE_FRAGMENT_BIT);
+	ShaderSet cubeShaderSet;
+	mRenderSystem.createShader(cubeShaderSet.vertShader, BOX_VERT_SHADER_PATH, VK_SHADER_STAGE_VERTEX_BIT);
+	mRenderSystem.createShader(cubeShaderSet.fragShader, BOX_FRAG_SHADER_PATH, VK_SHADER_STAGE_FRAGMENT_BIT);
 	
-	mRenderSystem.createUniformBuffer<MVPMatrices>(mWallMVPBuffer, 1);
+	mRenderSystem.createUniformBuffer<MVPMatrices>(mCubeMVPBuffer, 1);
 
 	//create a renderable and make the appropriate attachments
-	mRenderSystem.createRenderable(mWall);
+	mRenderSystem.createRenderable(mCube);
 
 	//setup the shaders and note the bindings they will use
 	//Current restriction: one resource per binding (no arrays right now) 
-	mWall->applyShaderSet(planeShaderSet);	
-	mWall->addShaderBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT, 0, 1);				//MVP
-	mWall->addShaderBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT, 1, 1);				//lights
-	mWall->addShaderBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 2, 1);		//diffuse map
-	mWall->addShaderBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 3, 1);		//normal map
-	mWall->addShaderBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 4, 1);		//specular map
+	mCube->applyShaderSet(cubeShaderSet);	
+	mCube->addShaderBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT, 0, 1);				//MVP
+	mCube->addShaderBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT, 1, 1);				//lights
+	mCube->addShaderBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 2, 1);		//diffuse map
+	mCube->addShaderBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 3, 1);		//normal map
+	mCube->addShaderBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 4, 1);		//specular map
 
-	mWall->setMesh(wallMesh);
+	mCube->setMesh(cubeMesh);
 
 	//bind resources
-	mWall->bindUniformBuffer(mWallMVPBuffer, 0);
-	mWall->bindUniformBuffer(mLightUBOBuffer, 1);
-	mWall->bindTexture(wallDiffuseMap, 2);
-	mWall->bindTexture(wallNormalMap, 3);
-	mWall->bindTexture(wallSpecularMap, 4);
+	mCube->bindUniformBuffer(mCubeMVPBuffer, 0);
+	mCube->bindUniformBuffer(mLightUBOBuffer, 1);
+	mCube->bindTexture(cubeDiffuseMap, 2);
+	mCube->bindTexture(cubeNormalMap, 3);
+	mCube->bindTexture(cubeSpecularMap, 4);
 
 	//instantiate (flush bindings, create pipeline)
 	std::cout << "Instantianting a wall" << std::endl;
-	mRenderSystem.instantiateRenderable(mWall);
+	mRenderSystem.instantiateRenderable(mCube);
+}
+
+void VkApp::createGround()
+{
+	//start by creating the component resources
+	std::shared_ptr<Mesh> groundMesh;
+	mRenderSystem.createMesh(groundMesh, GROUND_MESH_PATH, true);
+
+	std::shared_ptr<Texture> groundDiffuseMap;
+	mRenderSystem.createTexture(groundDiffuseMap, GROUND_DIFFUSE_PATH);
+
+	std::shared_ptr<Texture> groundNormalMap;
+	mRenderSystem.createTexture(groundNormalMap, GROUND_NORMAL_PATH);
+
+	std::shared_ptr<Texture> groundSpecularMap;
+	mRenderSystem.createTexture(groundSpecularMap, GROUND_SPECULAR_PATH);
+
+	ShaderSet groundShaderSet;
+	mRenderSystem.createShader(groundShaderSet.vertShader, GROUND_VERT_SHADER_PATH, VK_SHADER_STAGE_VERTEX_BIT);
+	mRenderSystem.createShader(groundShaderSet.fragShader, GROUND_FRAG_SHADER_PATH, VK_SHADER_STAGE_FRAGMENT_BIT);
+
+	mRenderSystem.createUniformBuffer<MVPMatrices>(mGroundMVPBuffer, 1);
+
+	//create a renderable and make the appropriate attachments
+	mRenderSystem.createRenderable(mGround);
+
+	//setup the shaders and note the bindings they will use
+	//Current restriction: one resource per binding (no arrays right now) 
+	mGround->applyShaderSet(groundShaderSet);
+	mGround->addShaderBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT, 0, 1);				//MVP
+	mGround->addShaderBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT, 1, 1);				//lights
+	mGround->addShaderBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 2, 1);		//diffuse map
+	mGround->addShaderBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 3, 1);		//normal map
+	mGround->addShaderBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 4, 1);		//specular map
+
+	mGround->setMesh(groundMesh);
+
+	//bind resources
+	mGround->bindUniformBuffer(mGroundMVPBuffer, 0);
+	mGround->bindUniformBuffer(mLightUBOBuffer, 1);
+	mGround->bindTexture(groundDiffuseMap, 2);
+	mGround->bindTexture(groundNormalMap, 3);
+	mGround->bindTexture(groundSpecularMap, 4);
+
+	//instantiate (flush bindings, create pipeline)
+	std::cout << "Instantianting a wall" << std::endl;
+	mRenderSystem.instantiateRenderable(mGround);
 }
 
 void VkApp::updateMVPBuffer(const UBO& mvpBuffer,
@@ -351,4 +371,12 @@ void VkApp::updateMVPBuffer(const UBO& mvpBuffer,
 	mvp.normalMat = glm::transpose(glm::inverse(mvp.view * mvp.model));
 
 	mRenderSystem.updateUniformBuffer<MVPMatrices>(mvpBuffer, mvp, 0);
+}
+
+void VkApp::updateShadowMVP(const Light & light)
+{
+	glm::mat4 lightMVP = glm::mat4(1.0);
+	lightMVP = glm::translate(lightMVP, -glm::vec3(light.position));
+	lightMVP = glm::lookAt(glm::vec3(light.position), glm::vec3(light.position + light.direction), glm::vec3(0.0, 1.0, 0.0));
+	mRenderSystem.setLightMVPBuffer(lightMVP);
 }

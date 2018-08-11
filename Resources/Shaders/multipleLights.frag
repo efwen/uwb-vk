@@ -163,7 +163,7 @@ vec3 processSpotLight(Light spotLight, vec3 worldNormal, vec3 worldFragPos, vec3
 		vec3 diffuse  =  spotLight.diffuse.rgb * diff * diffuseColor;
 		vec3 specular =  spotLight.specular.rgb * spec * specularColor;
 
-		ambient *= attenuation * intensity;
+		//ambient *= attenuation;
 		diffuse *= attenuation * intensity;
 		specular *= attenuation * intensity;
 		return (ambient + diffuse + specular);
