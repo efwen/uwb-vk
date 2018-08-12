@@ -1,2 +1,2 @@
 # uwb-vk
-A Vulkan Framework and Tutorial for UW Bothell
+UWB CSS Capstone Project - Explorations in using the Vulkan API as a 3D Graphics Learning Tool
