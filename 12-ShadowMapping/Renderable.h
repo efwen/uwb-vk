@@ -18,6 +18,7 @@
 #include "Shader.h"
 #include "Mesh.h"
 #include "UBO.h"
+#include "ShadowMap.h"
 
 //Model: a renderable object
 class Renderable
@@ -33,6 +34,7 @@ public:
 	std::map<uint32_t, VkDescriptorSetLayoutBinding> mLayoutBindings;
 	std::map<uint32_t, std::shared_ptr<UBO>> mBufferBindings;
 	std::map<uint32_t, std::shared_ptr<Texture>> mTextureBindings;
+	std::map<uint32_t, ShadowMap> mShadowMapBindings;
 
 	//Descriptor Sets
 	VkDescriptorSetLayout mDescriptorSetLayout;
@@ -47,6 +49,7 @@ public:
 	void applyShaderSet(ShaderSet toApply);
 	void bindTexture(std::shared_ptr<Texture> texture, uint32_t binding);
 	void bindUniformBuffer(std::shared_ptr<UBO> bufferObject, uint32_t binding);
+	void bindShadowMap(const ShadowMap& shadowMap, uint32_t binding);
 	void addShaderBinding(VkDescriptorType descriptorType, VkShaderStageFlagBits stage, uint32_t bindingNum, uint32_t count);
 
 	void createDescriptorSetLayout();

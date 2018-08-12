@@ -31,6 +31,7 @@
 #include "Renderable.h"
 #include "Shader.h"
 #include "Mesh.h"
+#include "ShadowMap.h"
 
 
 const int MAX_CONCURRENT_FRAMES = 2;
@@ -93,6 +94,8 @@ public:
 	void setClearColor(VkClearValue clearColor);
 	void setLightMVPBuffer(const glm::mat4& mvp);
 
+	ShadowMap getShadowMap() { return mShadowMap; };
+
 	std::vector<std::shared_ptr<Renderable>> mRenderables;
 private:
 	std::shared_ptr<VulkanContext> mContext;
@@ -122,12 +125,11 @@ private:
 	VkDeviceMemory mDepthImageMemory;
 	VkImageView mDepthImageView;
 #pragma endregion
+	
 
 #pragma region ShadowMapping
-	VkImage mShadowImage;
-	VkFormat mShadowImageFormat;
-	VkDeviceMemory mShadowImageMemory;
-	VkImageView mShadowImageView;
+	ShadowMap mShadowMap;
+
 	std::vector<VkFramebuffer> mShadowFramebuffers;
 	VkPipeline mShadowMapPipeline;
 	VkPipelineLayout mShadowMapPipelineLayout;
@@ -135,10 +137,12 @@ private:
 	VkDescriptorSetLayout mShadowMapDescriptorSetLayout;
 	std::vector<VkDescriptorSet> mShadowMapDescriptorSets;
 	std::shared_ptr<UBO> mShadowCasterUBO;
+	std::vector<VkCommandBuffer> mShadowCommandBuffers;
 #pragma endregion
 
 #pragma region Synchronization
 	std::vector<VkSemaphore> mImageAvailableSemaphores;
+	std::vector<VkSemaphore> mShadowMapAvailableSemaphores;
 	std::vector<VkSemaphore> mRenderFinishedSemaphores;
 	std::vector<VkFence> mFrameFences;
 	size_t mCurrentFrame = 0;
@@ -153,9 +157,7 @@ private:
 
 	//Pipeline
 	void createPipeline(VkPipeline& pipeline, VkPipelineLayout& pipelineLayout, VkDescriptorSetLayout& descriptorSetLayout, const std::vector<VkPipelineShaderStageCreateInfo>& shaderStages, VkRenderPass& renderPass);
-
 	void createColorRenderPass();
-	
 	void createFramebuffers(VkRenderPass renderPass);
 
 	//Descriptors
@@ -165,14 +167,15 @@ private:
 
 	//Command Buffers
 	void createCommandBuffers();
+	void createShadowCommandBuffers();
 	void drawRenderable(VkCommandBuffer commandBuffer, std::shared_ptr<Renderable> model, VkDescriptorSet& descriptorSet);
 
 	void createDepthBuffer();
 	void createSyncObjects();
 
 	//ShadowMap	
-	void createShadowImage();
+	void createShadowMap();
 	void createShadowMapPipeline();
-	void createShadowRenderPass();
+	void createShadowRenderPass(const ShadowMap& shadowMap);
 	void createShadowFramebuffers(VkRenderPass shadowRenderPass, VkImageView shadowImageView);
 };

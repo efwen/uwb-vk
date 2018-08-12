@@ -154,6 +154,7 @@
     <ClInclude Include="Renderable.h" />
     <ClInclude Include="RenderSystem.h" />
     <ClInclude Include="Shader.h" />
+    <ClInclude Include="ShadowMap.h" />
     <ClInclude Include="Swapchain.h" />
     <ClInclude Include="Texture.h" />
     <ClInclude Include="UBO.h" />

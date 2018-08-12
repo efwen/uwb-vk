@@ -14,7 +14,7 @@ void VkApp::run()
 		glfwPollEvents();
 		handleInput();
 
-		//mRenderSystem.setLightMVPBuffer()
+		updateShadowMVP(mLightUBO.lights[0]);
 		mCamera->updateViewMatrix();
 		
 		//light buffers
@@ -147,22 +147,22 @@ void VkApp::cameraControls()
 	}
 }
 
-
 void VkApp::lightControls()
 {
-	float orbitRadius = 30.0f;
+	float orbitRadius = 10.0f;
 	float orbitSpeed = 0.5f;
 	float wobbleSpeed = 4.0f;
 	float orbitWobble = 5.0f;
 	float offConst = 0.5f;
 	float transDist = cLightTranslateSpeed * mFrameTime;
-
-	//in orbit mode, all of the lights orbit around the ori
+	
+	//in orbit mode, all of the lights orbit around the origin
 	if (mLightOrbit) {
 		mLightUBO.lights[0].position = glm::vec4(orbitRadius * glm::sin(orbitSpeed * mElapsedTime),
-												6.0f,
+												orbitWobble * glm::sin(orbitSpeed * mElapsedTime) + 8.0f,
 												orbitRadius * glm::cos(orbitSpeed * mElapsedTime), 1.0f);
 
+		//point at the center
 		mLightUBO.lights[0].direction = -glm::normalize(mLightUBO.lights[0].position);
 
 		for (uint32_t lightIndex = 1; lightIndex < mTotalLights; lightIndex++) {
@@ -227,11 +227,13 @@ void VkApp::setupLights()
 	mLightUBO.lights[0].ambient     = glm::vec4(0.1, 0.1, 0.1, 1.0);
 	mLightUBO.lights[0].diffuse     = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);		//red light
 	mLightUBO.lights[0].specular    = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);		
-	mLightUBO.lights[0].cutOff		= glm::cos(glm::radians(12.5f));
-	mLightUBO.lights[0].outerCutOff = glm::cos(glm::radians(15.0f));
+	mLightUBO.lights[0].cutOff		= glm::cos(glm::radians(45.0f));			//12.5f
+	mLightUBO.lights[0].outerCutOff = glm::cos(glm::radians(50.0f));			//15.0f
 	mLightUBO.lights[0].constant = 0.25f;// 1.0f
 	mLightUBO.lights[0].linear = 0.0f;// 0.09f;
 	mLightUBO.lights[0].quadratic = 0.0f;// 0.032f;
+
+	mRenderSystem.createUniformBuffer<glm::mat4>(mShadowVPBuffer, 1);
 }
 
 void VkApp::createLightIndicator(uint32_t lightIndex)
@@ -327,6 +329,8 @@ void VkApp::createGround()
 	std::shared_ptr<Texture> groundSpecularMap;
 	mRenderSystem.createTexture(groundSpecularMap, GROUND_SPECULAR_PATH);
 
+	
+
 	ShaderSet groundShaderSet;
 	mRenderSystem.createShader(groundShaderSet.vertShader, GROUND_VERT_SHADER_PATH, VK_SHADER_STAGE_VERTEX_BIT);
 	mRenderSystem.createShader(groundShaderSet.fragShader, GROUND_FRAG_SHADER_PATH, VK_SHADER_STAGE_FRAGMENT_BIT);
@@ -340,19 +344,27 @@ void VkApp::createGround()
 	//Current restriction: one resource per binding (no arrays right now) 
 	mGround->applyShaderSet(groundShaderSet);
 	mGround->addShaderBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT, 0, 1);				//MVP
-	mGround->addShaderBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT, 1, 1);				//lights
-	mGround->addShaderBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 2, 1);		//diffuse map
-	mGround->addShaderBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 3, 1);		//normal map
-	mGround->addShaderBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 4, 1);		//specular map
+	mGround->addShaderBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT, 1, 1);				//shadow VP matrix
+
+
+	mGround->addShaderBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT, 2, 1);				//lights
+	mGround->addShaderBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 3, 1);		//shadow map
+	mGround->addShaderBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 4, 1);		//diffuse map
+	mGround->addShaderBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 5, 1);		//normal map
+	mGround->addShaderBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 6, 1);		//specular map
 
 	mGround->setMesh(groundMesh);
 
 	//bind resources
 	mGround->bindUniformBuffer(mGroundMVPBuffer, 0);
-	mGround->bindUniformBuffer(mLightUBOBuffer, 1);
-	mGround->bindTexture(groundDiffuseMap, 2);
-	mGround->bindTexture(groundNormalMap, 3);
-	mGround->bindTexture(groundSpecularMap, 4);
+	mGround->bindUniformBuffer(mShadowVPBuffer, 1);
+	
+
+	mGround->bindUniformBuffer(mLightUBOBuffer, 2);
+	mGround->bindShadowMap(mRenderSystem.getShadowMap(), 3);
+	mGround->bindTexture(groundDiffuseMap, 4);
+	mGround->bindTexture(groundNormalMap, 5);
+	mGround->bindTexture(groundSpecularMap, 6);
 
 	//instantiate (flush bindings, create pipeline)
 	std::cout << "Instantianting a wall" << std::endl;
@@ -375,8 +387,21 @@ void VkApp::updateMVPBuffer(const UBO& mvpBuffer,
 
 void VkApp::updateShadowMVP(const Light & light)
 {
-	glm::mat4 lightMVP = glm::mat4(1.0);
-	lightMVP = glm::translate(lightMVP, -glm::vec3(light.position));
-	lightMVP = glm::lookAt(glm::vec3(light.position), glm::vec3(light.position + light.direction), glm::vec3(0.0, 1.0, 0.0));
-	mRenderSystem.setLightMVPBuffer(lightMVP);
+	glm::mat4 model = mCubeXForm.getModelMatrix();
+	glm::mat4 view = glm::lookAt(glm::vec3(light.position), glm::vec3(light.position + light.direction), glm::vec3(0.0, 1.0, 0.0));
+
+	//To correct clip space (vulkan has inverted y, 1/2 z)
+	const glm::mat4 clipFix(1.0f, 0.0f, 0.0f, 0.0f,
+						0.0f, -1.0f, 0.0f, 0.0f,
+						0.0f, 0.0f, 0.5f, 0.0f,
+						0.0f, 0.0f, 0.5f, 1.0f);
+
+	glm::mat4 projection = clipFix * glm::perspective(glm::radians(45.0f), (float)WIDTH / (float)HEIGHT, 0.1f, 100.0f);
+	glm::mat4 mvp = projection * view * model;
+
+	mRenderSystem.setLightMVPBuffer(mvp);
+
+
+	mShadowVP = projection * view;
+	mRenderSystem.updateUniformBuffer(*mShadowVPBuffer, mShadowVP, 0);
 }

@@ -36,8 +36,8 @@ const std::string GROUND_DIFFUSE_PATH		= "Resources/Textures/UrbanTexturePack/Gr
 const std::string GROUND_NORMAL_PATH		= "Resources/Textures/UrbanTexturePack/Ground_Dirt/Ground_Dirt_1k_n.tga";
 const std::string GROUND_SPECULAR_PATH		= "Resources/Textures/UrbanTexturePack/Ground_Dirt/Ground_Dirt_1k_s.tga";
 const std::string GROUND_MESH_PATH			= "Resources/Meshes/ground.mesh";
-const std::string GROUND_VERT_SHADER_PATH	= "Resources/Shaders/multipleLights_vert.spv";
-const std::string GROUND_FRAG_SHADER_PATH	= "Resources/Shaders/multipleLights_frag.spv";
+const std::string GROUND_VERT_SHADER_PATH	= "Resources/Shaders/shadowReceive_vert.spv";
+const std::string GROUND_FRAG_SHADER_PATH	= "Resources/Shaders/shadowReceive_frag.spv";
 
 //light indicator
 const std::string LIGHT_MODEL_PATH		 = "Resources/Meshes/cube.mesh";
@@ -105,6 +105,9 @@ private:
 	std::shared_ptr<Renderable> mGround;
 	std::shared_ptr<UBO> mGroundMVPBuffer;
 	Transform mGroundXForm;
+
+	std::shared_ptr<UBO> mShadowVPBuffer;
+	glm::mat4 mShadowVP;
 
 	std::shared_ptr<Renderable> mLightIndicators[MAX_LIGHTS];
 	std::shared_ptr<UBO> mLightIndicatorMVPBuffer[MAX_LIGHTS];

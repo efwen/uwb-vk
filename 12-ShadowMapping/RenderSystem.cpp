@@ -21,21 +21,18 @@ void RenderSystem::initialize(GLFWwindow * window)
 	createSwapchain();
 	createDescriptorPool(MAX_DESCRIPTOR_SETS, MAX_UNIFORM_BUFFERS, MAX_IMAGE_SAMPLERS);
 	
-	createShadowImage();
-	createShadowRenderPass();
-	createShadowFramebuffers(mShadowRenderPass, mShadowImageView);
+	createShadowMap();
+	createShadowRenderPass(mShadowMap);
+	createShadowFramebuffers(mShadowRenderPass, mShadowMap.imageView);
 	createShadowMapPipeline();
-	
+	createShadowCommandBuffers();
 	
 	//color pass creation
 	createDepthBuffer();
-	createColorRenderPass();								//assumes swapchain & attachments?
+	createColorRenderPass();					//assumes swapchain & attachments?
 	createFramebuffers(mColorPass);				//needs swapchain, attachments
-	
+	createCommandBuffers();						//create a basic set of command buffers (doesn't render anything at this point)
 
-
-	
-	createCommandBuffers();		//create a basic set of command buffers (doesn't render anything at this point)
 	createSyncObjects();
 }
 
@@ -60,7 +57,7 @@ void RenderSystem::cleanup()
 		auto& texture = mTextures.back();
 		texture->free();
 		mTextures.pop_back();
-	}
+	}	
 
 	while (!mUniformBuffers.empty()) {
 		auto& ubo = mUniformBuffers.back();
@@ -84,6 +81,7 @@ void RenderSystem::cleanup()
 	//clean up synchronization constructs
 	for (size_t i = 0; i < MAX_CONCURRENT_FRAMES; i++) {
 		vkDestroySemaphore(mContext->device, mRenderFinishedSemaphores[i], nullptr);
+		vkDestroySemaphore(mContext->device, mShadowMapAvailableSemaphores[i], nullptr);
 		vkDestroySemaphore(mContext->device, mImageAvailableSemaphores[i], nullptr);
 		vkDestroyFence(mContext->device, mFrameFences[i], nullptr);
 	}
@@ -101,16 +99,48 @@ void RenderSystem::drawFrame()
 	uint32_t imageIndex;
 	vkAcquireNextImageKHR(mContext->device, mSwapchain->getVkSwapchain(), std::numeric_limits<uint64_t>::max(), mImageAvailableSemaphores[mCurrentFrame], VK_NULL_HANDLE, &imageIndex);
 
+	/*
+	Pass 1: Shadows
+	*/
+
+	VkSubmitInfo shadowSubmitInfo = {};
+	shadowSubmitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+	shadowSubmitInfo.pNext = nullptr;
+
+	//semaphores to wait on last run of this frame ending
+	VkSemaphore shadowWaitSemaphores[] = { mImageAvailableSemaphores[mCurrentFrame] };
+	VkPipelineStageFlags shadowWaitStages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };	//wait for the final output of the last frame
+	shadowSubmitInfo.waitSemaphoreCount = 1;
+	shadowSubmitInfo.pWaitSemaphores = shadowWaitSemaphores;
+	shadowSubmitInfo.pWaitDstStageMask = shadowWaitStages;
+	
+	//shadow command buffer to submit
+	shadowSubmitInfo.commandBufferCount = 1;
+	shadowSubmitInfo.pCommandBuffers = &mShadowCommandBuffers[imageIndex];
+
+	//Semaphore to signal when done
+	VkSemaphore shadowSignalSemaphores[] = { mShadowMapAvailableSemaphores[mCurrentFrame] };
+	shadowSubmitInfo.signalSemaphoreCount = 1;
+	shadowSubmitInfo.pSignalSemaphores = shadowSignalSemaphores;
+
+	if (vkQueueSubmit(mContext->graphicsQueue, 1, &shadowSubmitInfo, mFrameFences[mCurrentFrame]) != VK_SUCCESS) {
+		throw std::runtime_error("failed to submit draw command buffer!");
+	}
+
+
+	/*
+		Pass 2: Color Pass
+	*/
 	VkSubmitInfo submitInfo = {};
 	submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 
 	//Semaphores for waiting to submit
-	VkSemaphore waitSemaphores[] = { mImageAvailableSemaphores[mCurrentFrame] };
 	VkPipelineStageFlags waitStages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
 	submitInfo.waitSemaphoreCount = 1;
-	submitInfo.pWaitSemaphores = waitSemaphores;
+	submitInfo.pWaitSemaphores = shadowSignalSemaphores;
 	submitInfo.pWaitDstStageMask = waitStages;
 
+	//Draw Command Buffer
 	submitInfo.commandBufferCount = 1;
 	submitInfo.pCommandBuffers = &mCommandBuffers[imageIndex];
 
@@ -119,7 +149,7 @@ void RenderSystem::drawFrame()
 	submitInfo.signalSemaphoreCount = 1;
 	submitInfo.pSignalSemaphores = signalSemaphores;
 
-	if (vkQueueSubmit(mContext->graphicsQueue, 1, &submitInfo, mFrameFences[mCurrentFrame]) != VK_SUCCESS) {
+	if (vkQueueSubmit(mContext->graphicsQueue, 1, &submitInfo, /*mFrameFences[mCurrentFrame]*/ NULL) != VK_SUCCESS) {
 		throw std::runtime_error("failed to submit draw command buffer!");
 	}
 
@@ -163,10 +193,11 @@ void RenderSystem::recreateSwapchain()
 	createSwapchain();
 
 	//Set up the shadowMap renderpass
-	createShadowImage();
-	createShadowRenderPass();
-	createShadowFramebuffers(mShadowRenderPass, mShadowImageView);
+	createShadowMap();
+	createShadowRenderPass(mShadowMap);
+	createShadowFramebuffers(mShadowRenderPass, mShadowMap.imageView);
 	createShadowMapPipeline();
+	createShadowCommandBuffers();
 
 	createColorRenderPass();
 	for (auto model : mRenderables) {
@@ -198,13 +229,16 @@ void RenderSystem::cleanupSwapchain()
 
 
 	//cleanup the ShadowMap resources
-	vkDestroyImageView(mContext->device, mShadowImageView, nullptr);
-	vkDestroyImage(mContext->device, mShadowImage, nullptr);
-	vkFreeMemory(mContext->device, mShadowImageMemory, nullptr);
+	vkDestroySampler(mContext->device, mShadowMap.imageSampler, nullptr);
+	vkDestroyImageView(mContext->device, mShadowMap.imageView, nullptr);
+	vkDestroyImage(mContext->device, mShadowMap.image, nullptr);
+	vkFreeMemory(mContext->device, mShadowMap.imageMemory, nullptr);
 
 	for (auto framebuffer : mShadowFramebuffers) {
 		vkDestroyFramebuffer(mContext->device, framebuffer, nullptr);
 	}
+
+	mCommandPool->freeCommandBuffers(mShadowCommandBuffers);
 
 	vkDestroyPipeline(mContext->device, mShadowMapPipeline, nullptr);
 	vkDestroyPipelineLayout(mContext->device, mShadowMapPipelineLayout, nullptr);
@@ -474,10 +508,10 @@ void RenderSystem::createColorRenderPass()
 	}
 }
 
-void RenderSystem::createShadowRenderPass()
+void RenderSystem::createShadowRenderPass(const ShadowMap& shadowMap)
 {
 	VkAttachmentDescription shadowAttachment = {};
-	shadowAttachment.format = mShadowImageFormat;
+	shadowAttachment.format = shadowMap.imageFormat;
 	shadowAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
 	shadowAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;					//clear to constant at start
 	shadowAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;				//store for use in the next pass
@@ -672,23 +706,24 @@ void RenderSystem::createCommandBuffers()
 			throw std::runtime_error("failed to begin recording command buffer!");
 		}
 
-		VkRenderPassBeginInfo renderPassInfo = {};
-		renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-		renderPassInfo.renderPass = mColorPass;
-		renderPassInfo.framebuffer = mSwapchainFramebuffers[i];
-		renderPassInfo.renderArea.offset = { 0, 0 };
-		renderPassInfo.renderArea.extent = mSwapchain->getExtent();
+		VkRenderPassBeginInfo colorPassInfo = {};
+		colorPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+		colorPassInfo.pNext = nullptr;
+		colorPassInfo.renderPass = mColorPass;
+		colorPassInfo.framebuffer = mSwapchainFramebuffers[i];
+		colorPassInfo.renderArea.offset = { 0, 0 };
+		colorPassInfo.renderArea.extent = mSwapchain->getExtent();
 		
 		//set up clear values as part of renderPassInfo
 		std::array<VkClearValue, 2> clearValues = {};
 		clearValues[0].color = mClearColor.color;
 		clearValues[1].depthStencil = { 1.0f, 0 };
 
-		renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
-		renderPassInfo.pClearValues = clearValues.data();
+		colorPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
+		colorPassInfo.pClearValues = clearValues.data();
 
 		//begin the render pass
-		vkCmdBeginRenderPass(mCommandBuffers[i], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+		vkCmdBeginRenderPass(mCommandBuffers[i], &colorPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 
 		for (auto& renderable : mRenderables) {
 			vkCmdBindPipeline(mCommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, renderable->mPipeline);
@@ -699,6 +734,91 @@ void RenderSystem::createCommandBuffers()
 
 		if (vkEndCommandBuffer(mCommandBuffers[i]) != VK_SUCCESS) {
 			throw std::runtime_error("failed to record command buffer!");
+		}
+	}
+}
+
+void RenderSystem::createShadowCommandBuffers()
+{
+	mShadowCommandBuffers.resize(mShadowFramebuffers.size());
+	mCommandPool->allocateCommandBuffers(mShadowCommandBuffers, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+
+	//record into the command buffers
+	for (size_t i = 0; i < mShadowCommandBuffers.size(); i++) {
+		VkCommandBufferBeginInfo beginInfo = {};
+		beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+		beginInfo.flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT;
+
+		if (vkBeginCommandBuffer(mShadowCommandBuffers[i], &beginInfo) != VK_SUCCESS) {
+			throw std::runtime_error("failed to begin recording shadow command buffer!");
+		}
+
+		/*
+		Shadow Pass
+		*/
+		VkClearValue shadowClearValues[1];
+		shadowClearValues[0].depthStencil.depth = 1.0f;
+		shadowClearValues[0].depthStencil.stencil = 0;
+
+		VkRenderPassBeginInfo shadowPassInfo = {};
+		shadowPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+		shadowPassInfo.pNext = nullptr;
+		shadowPassInfo.renderPass = mShadowRenderPass;
+		shadowPassInfo.framebuffer = mShadowFramebuffers[i];
+		shadowPassInfo.renderArea.offset = { 0, 0 };
+		shadowPassInfo.renderArea.extent = mSwapchain->getExtent();		//may be too big
+		shadowPassInfo.clearValueCount = 1;
+		shadowPassInfo.pClearValues = shadowClearValues;
+
+		vkCmdBeginRenderPass(mShadowCommandBuffers[i], &shadowPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+
+		/*
+		VkViewport viewport;
+		viewport.height = SHADOW_MAP_HEIGHT;
+		viewport.width = SHADOW_MAP_WIDTH;
+		viewport.minDepth = 0.0f;
+		viewport.maxDepth = 1.0f;
+		viewport.x = 0;
+		viewport.y = 0;
+		vkCmdSetViewport(shadow_map_cmd_buf, 0, 1, &viewport);
+
+		VkRect2D scissor;
+		scissor.extent.width = SHADOW_MAP_WIDTH;
+		scissor.extent.height = SHADOW_MAP_HEIGHT;
+		scissor.offset.x = 0;
+		scissor.offset.y = 0;
+		vkCmdSetScissor(shadow_map_cmd_buf, 0, 1, &scissor);
+		*/
+
+		vkCmdBindPipeline(mShadowCommandBuffers[i],
+			VK_PIPELINE_BIND_POINT_GRAPHICS,
+			mShadowMapPipeline);
+
+		for (auto& renderable : mRenderables) {
+			VkBuffer vertexBuffers[1] = { renderable->mMesh->getVertexBuffer() };
+			VkDeviceSize offsets[] = { 0 };
+
+			vkCmdBindVertexBuffers(mShadowCommandBuffers[i], 0, 1, vertexBuffers, offsets);
+
+			vkCmdBindIndexBuffer(mShadowCommandBuffers[i],
+				renderable->mMesh->getIndexBuffer(),
+				0, VK_INDEX_TYPE_UINT32);
+
+			vkCmdBindDescriptorSets(mShadowCommandBuffers[i],
+				VK_PIPELINE_BIND_POINT_GRAPHICS,
+				mShadowMapPipelineLayout,
+				0, 1,
+				&mShadowMapDescriptorSets[i],
+				0, nullptr);
+
+			//Draw our model
+			vkCmdDrawIndexed(mShadowCommandBuffers[i], renderable->mMesh->getIndexCount(), 1, 0, 0, 0);
+		}
+
+		vkCmdEndRenderPass(mShadowCommandBuffers[i]);
+
+		if (vkEndCommandBuffer(mShadowCommandBuffers[i]) != VK_SUCCESS) {
+			throw std::runtime_error("failed to record shadow command buffer!");
 		}
 	}
 }
@@ -720,6 +840,7 @@ void RenderSystem::createSyncObjects()
 {
 	std::cout << "Creating semaphores" << std::endl;
 	mImageAvailableSemaphores.resize(MAX_CONCURRENT_FRAMES);
+	mShadowMapAvailableSemaphores.resize(MAX_CONCURRENT_FRAMES);
 	mRenderFinishedSemaphores.resize(MAX_CONCURRENT_FRAMES);
 	mFrameFences.resize(MAX_CONCURRENT_FRAMES);
 	
@@ -733,6 +854,7 @@ void RenderSystem::createSyncObjects()
 	for (size_t i = 0; i < MAX_CONCURRENT_FRAMES; i++)
 	{
 		if(vkCreateSemaphore(mContext->device, &semaphoreInfo, nullptr, &mImageAvailableSemaphores[i]) != VK_SUCCESS ||
+		   vkCreateSemaphore(mContext->device, &semaphoreInfo, nullptr, &mShadowMapAvailableSemaphores[i]) != VK_SUCCESS ||
 		   vkCreateSemaphore(mContext->device, &semaphoreInfo, nullptr, &mRenderFinishedSemaphores[i]) != VK_SUCCESS ||
 			vkCreateFence(mContext->device, &fenceInfo, nullptr, &mFrameFences[i]) != VK_SUCCESS) 
 		{
@@ -762,6 +884,7 @@ void RenderSystem::instantiateRenderable(std::shared_ptr<Renderable>& renderable
 	mRenderables.push_back(renderable);
 
 	//recreate the command buffers to include the new model
+	createShadowCommandBuffers();
 	createCommandBuffers();
 }
 
@@ -869,26 +992,60 @@ void RenderSystem::createDepthBuffer()
 									mDepthImageFormat,
 									VK_IMAGE_LAYOUT_UNDEFINED,
 									VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
+
+	//make the sampler
+
 }
 
-void RenderSystem::createShadowImage()
+void RenderSystem::createShadowMap()
 {
 	std::cout << "Creating Shadow Map resources" << std::endl;
-	mShadowImageFormat = VK_FORMAT_D32_SFLOAT;
+	mShadowMap.imageFormat = VK_FORMAT_D32_SFLOAT;
+
 	std::cout << "Creating shadow image" << std::endl;
 	mImageManager->createImage(mSwapchain->getExtent().width,
 		mSwapchain->getExtent().height,
-		mShadowImageFormat,
+		mShadowMap.imageFormat,
 		VK_IMAGE_TILING_OPTIMAL,
 		VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT |
 		VK_IMAGE_USAGE_SAMPLED_BIT,
 		VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-		mShadowImage,
-		mShadowImageMemory);
+		mShadowMap.image,
+		mShadowMap.imageMemory);
 
 
 	std::cout << "Creatring shadow imageview" << std::endl;
-	mShadowImageView = mImageManager->createImageView(mShadowImage, mShadowImageFormat, VK_IMAGE_ASPECT_DEPTH_BIT);
+	mShadowMap.imageView = mImageManager->createImageView(mShadowMap.image, mShadowMap.imageFormat, VK_IMAGE_ASPECT_DEPTH_BIT);
+
+	//create a sampler so we can access it in other shaders
+	VkSamplerCreateInfo samplerInfo = {};
+	samplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
+	samplerInfo.magFilter = VK_FILTER_LINEAR;
+	samplerInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+	samplerInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+	samplerInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+
+	//anisotropic filtering
+	samplerInfo.anisotropyEnable = VK_FALSE;
+	samplerInfo.maxAnisotropy = 1.0f;
+
+	//what color to return when sampling beyond image in clamp address mode
+	samplerInfo.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
+
+	//use texel values from [0, 1)
+	samplerInfo.unnormalizedCoordinates = VK_FALSE;
+
+	samplerInfo.compareEnable = VK_FALSE;
+	samplerInfo.compareOp = VK_COMPARE_OP_ALWAYS;
+
+	samplerInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_NEAREST;
+	samplerInfo.mipLodBias = 0.0f;
+	samplerInfo.minLod = 0.0f;
+	samplerInfo.maxLod = 100.0f;
+
+	if (vkCreateSampler(mContext->device, &samplerInfo, nullptr, &mShadowMap.imageSampler) != VK_SUCCESS) {
+		throw std::runtime_error("Failed to create texture sampler!");
+	}
 }
 
 void RenderSystem::setClearColor(VkClearValue clearColor)
@@ -896,5 +1053,6 @@ void RenderSystem::setClearColor(VkClearValue clearColor)
 	//wait for the device to be idle, then recreate the command buffers with the new clear color
 	vkDeviceWaitIdle(mContext->device);
 	mClearColor = clearColor;
+	createShadowCommandBuffers();
 	createCommandBuffers();
 }

@@ -72,6 +72,17 @@ void Renderable::bindUniformBuffer(std::shared_ptr<UBO> bufferObject, uint32_t b
 	mBufferBindings[binding] = bufferObject;
 }
 
+void Renderable::bindShadowMap(const ShadowMap& shadowMap, uint32_t binding)
+{
+	std::cout << "Binding shadowMap to " << binding << std::endl;
+	if (mLayoutBindings.count(binding) == 0)
+		throw std::runtime_error("Cannot bind Texture, descriptor set layout binding does not exist!");
+	if (mLayoutBindings[binding].descriptorType != VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER)
+		throw std::runtime_error("Cannot bind texture, binding.descriptorType != VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER!");
+
+	mShadowMapBindings[binding] = shadowMap;
+}
+
 //Add a binding a particular shader is expecting to an std::map
 //This map will be referenced when binding resources to the renderable
 //	to check if the binding make sense
@@ -110,7 +121,9 @@ void Renderable::createDescriptorSetLayout()
 
 void Renderable::createDescriptorSets(const VkDescriptorPool& descriptorPool, uint32_t swapchainSize)
 {
-	if (mBufferBindings.size() + mTextureBindings.size() != mLayoutBindings.size()) {
+	if (mBufferBindings.size() + 
+		mTextureBindings.size() + 
+		mShadowMapBindings.size() != mLayoutBindings.size()) {
 		throw std::runtime_error("Binding count mismatch!");
 	}
 
@@ -136,15 +149,14 @@ void Renderable::createDescriptorSets(const VkDescriptorPool& descriptorPool, ui
 
 		std::vector <BufferInfoSet> bufferInfos = {};
 		std::vector <ImageInfoSet> textureInfos = {};
-		
-		for (const auto& bufBinding : mBufferBindings) {
+		std::vector <ImageInfoSet> shadowMapInfos = {};
 
+		for (const auto& bufBinding : mBufferBindings) {
 			BufferInfoSet infoSet;
 			infoSet.first = bufBinding.first;
 
 			uint32_t descCount = mLayoutBindings[bufBinding.first].descriptorCount;
-			for (uint32_t bufIdx = 0; bufIdx < descCount; bufIdx++)
-			{
+			for (uint32_t bufIdx = 0; bufIdx < descCount; bufIdx++) {
 				VkDescriptorBufferInfo bufferInfo = {};
 				bufferInfo.buffer = bufBinding.second->buffers[descCount * i + bufIdx];
 				bufferInfo.offset = 0;
@@ -155,11 +167,11 @@ void Renderable::createDescriptorSets(const VkDescriptorPool& descriptorPool, ui
 		}
 		
 		for (const auto& texBinding : mTextureBindings) {
-
 			ImageInfoSet infoSet;
 			infoSet.first = texBinding.first;
-			for (uint32_t texIdx = 0; texIdx < mLayoutBindings[texBinding.first].descriptorCount; texIdx++)
-			{
+
+			uint32_t descCount = mLayoutBindings[texBinding.first].descriptorCount;
+			for (uint32_t texIdx = 0; texIdx < descCount; texIdx++) {
 				VkDescriptorImageInfo imageInfo = {};
 				imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 				imageInfo.imageView = texBinding.second->getImageView();
@@ -168,6 +180,23 @@ void Renderable::createDescriptorSets(const VkDescriptorPool& descriptorPool, ui
 			}
 
 			textureInfos.push_back(infoSet);
+		}
+
+		//shadowmap info
+		for (const auto& shadowMapBinding : mShadowMapBindings) {
+			ImageInfoSet infoSet;
+			infoSet.first = shadowMapBinding.first;
+
+			uint32_t descCount = mLayoutBindings[shadowMapBinding.first].descriptorCount;
+			for(uint32_t shadowIndex = 0; shadowIndex < descCount; shadowIndex++) {
+				VkDescriptorImageInfo shadowMapInfo;
+				shadowMapInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+				shadowMapInfo.imageView = shadowMapBinding.second.imageView;
+				shadowMapInfo.sampler = shadowMapBinding.second.imageSampler;
+				infoSet.second.push_back(shadowMapInfo);
+			}
+
+			shadowMapInfos.push_back(infoSet);
 		}
 
 
@@ -199,6 +228,21 @@ void Renderable::createDescriptorSets(const VkDescriptorPool& descriptorPool, ui
 			textureDescriptorWrite.pImageInfo = info.second.data();
 			textureDescriptorWrite.pTexelBufferView = nullptr;
 			descriptorWrites.push_back(textureDescriptorWrite);
+		}
+
+		//make descriptor for shadowmap
+		for(const auto& info : shadowMapInfos) {
+			VkWriteDescriptorSet shadowDescriptorWrite = {};
+			shadowDescriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+			shadowDescriptorWrite.dstSet = mDescriptorSets[i];
+			shadowDescriptorWrite.dstBinding = info.first;
+			shadowDescriptorWrite.dstArrayElement = 0;
+			shadowDescriptorWrite.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+			shadowDescriptorWrite.descriptorCount = mLayoutBindings[info.first].descriptorCount;
+			shadowDescriptorWrite.pBufferInfo = nullptr;
+			shadowDescriptorWrite.pImageInfo = info.second.data();
+			shadowDescriptorWrite.pTexelBufferView = nullptr;
+			descriptorWrites.push_back(shadowDescriptorWrite);
 		}
 
 		vkUpdateDescriptorSets(mContext->device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
