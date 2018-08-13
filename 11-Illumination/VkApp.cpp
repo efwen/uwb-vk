@@ -227,32 +227,32 @@ void VkApp::setupLights()
 	mLightUBO.lights[0].isEnabled	= true;
 	mLightUBO.lights[0].lightType	= LightType::Directional;
 	mLightUBO.lights[0].direction	= glm::vec4(1.0f, -1.0f, 0.333f, 1.0f);
-	mLightUBO.lights[0].ambient		= glm::vec4(0.1, 0.1, 0.1, 1.0);
-	mLightUBO.lights[0].diffuse		= glm::vec4(0.0f, 1.0f, 1.0f, 1.0f);		//cyan light
-	mLightUBO.lights[0].specular	= glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
+	mLightUBO.lights[0].ambient		= glm::vec4(0.05, 0.05, 0.05, 1.0);
+	mLightUBO.lights[0].diffuse		= glm::vec4(0.0f, 16.0f, 16.0f, 1.0f);		//cyan light
+	mLightUBO.lights[0].specular	= glm::vec4(16.0f, 16.0f, 16.0f, 1.0f);
 
 	//setup light #1 (point light)
 	mLightUBO.lights[1].isEnabled	= true;
 	mLightUBO.lights[1].lightType	= LightType::Point;
-	mLightUBO.lights[1].ambient		= glm::vec4(0.1, 0.1, 0.1, 1.0);
-	mLightUBO.lights[1].diffuse		= glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);		//white light
-	mLightUBO.lights[1].specular	= glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);		
+	mLightUBO.lights[1].ambient		= glm::vec4(0.05, 0.05, 0.05, 1.0);
+	mLightUBO.lights[1].diffuse		= glm::vec4(16.0f, 16.0f, 16.0f, 1.0f);		//white light
+	mLightUBO.lights[1].specular	= glm::vec4(16.0f, 16.0f, 16.0f, 1.0f);		
 	
 	//setup light #2 (point light)
 	mLightUBO.lights[2].isEnabled	= true;
 	mLightUBO.lights[2].lightType	= LightType::Point;
-	mLightUBO.lights[2].ambient		= glm::vec4(0.1, 0.1, 0.1, 1.0);
-	mLightUBO.lights[2].diffuse		= glm::vec4(1.0f, 1.0f, 0.0f, 1.0f);		//yellow light
-	mLightUBO.lights[2].specular	= glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);		
+	mLightUBO.lights[2].ambient		= glm::vec4(0.05, 0.05, 0.05, 1.0);
+	mLightUBO.lights[2].diffuse		= glm::vec4(16.0f, 16.0f, 0.0f, 1.0f);		//yellow light
+	mLightUBO.lights[2].specular	= glm::vec4(16.0f, 16.0f, 16.0f, 1.0f);		
 
 	//setup light #3 (spot light)
 	mLightUBO.lights[3].isEnabled	= true;
 	mLightUBO.lights[3].lightType   = LightType::Spot;
-	mLightUBO.lights[3].ambient     = glm::vec4(0.1, 0.1, 0.1, 1.0);
-	mLightUBO.lights[3].diffuse     = glm::vec4(1.0f, 0.0f, 0.0f, 1.0f);		//red light
-	mLightUBO.lights[3].specular    = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);		
-	mLightUBO.lights[3].cutOff		= glm::cos(glm::radians(12.5f));
-	mLightUBO.lights[3].outerCutOff = glm::cos(glm::radians(15.0f));
+	mLightUBO.lights[3].ambient     = glm::vec4(0.05, 0.05, 0.05, 1.0);
+	mLightUBO.lights[3].diffuse     = glm::vec4(16.0f, 0.0f, 0.0f, 1.0f);		//red light
+	mLightUBO.lights[3].specular    = glm::vec4(16.0f, 16.0f, 16.0f, 1.0f);		
+	mLightUBO.lights[3].cutOff		= glm::cos(glm::radians(45.0f));
+	mLightUBO.lights[3].outerCutOff = glm::cos(glm::radians(50.0f));
 
 	for (uint32_t light = 0; light < mTotalLights; light++) {
 		mLightUBO.lights[light].constant = 1.0f;

@@ -124,7 +124,7 @@ public:
 	void run();
 
 private:
-	void initialize();
+	void initialize(const std::string& appName);
 	void shutdown();
 	void createWindow();
 	void handleInput();

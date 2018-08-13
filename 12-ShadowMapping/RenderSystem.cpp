@@ -6,10 +6,10 @@
 #include <stb_image.h>
 
 
-void RenderSystem::initialize(GLFWwindow * window)
+void RenderSystem::initialize(GLFWwindow * window, const std::string& appName)
 {
 	mContext = std::make_shared<VulkanContext>(VulkanContext());
-	mContext->initialize(window);
+	mContext->initialize(window, appName);
 
 	mCommandPool = std::make_shared<CommandPool>(CommandPool(mContext));
 	mCommandPool->initialize();

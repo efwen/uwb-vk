@@ -25,7 +25,7 @@ public:
 
 	VulkanContext();
 
-	void initialize(GLFWwindow *window);
+	void initialize(GLFWwindow *window, const std::string& appName);
 	void cleanup();
 	uint32_t findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties);
 
@@ -33,7 +33,7 @@ private:
 	VkInstance mInstance;
 	VkDebugReportCallbackEXT mCallback;
 
-	void createInstance();
+	void createInstance(const std::string& appName);
 	void createDevice(VkInstance instance);
 	void createSurface(VkInstance instance, GLFWwindow* window);
 	void printPhysicalDeviceDetails(VkPhysicalDevice device);

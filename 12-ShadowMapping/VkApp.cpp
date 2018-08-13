@@ -5,7 +5,7 @@ VkApp::VkApp() : mWindow(nullptr) {}
 
 void VkApp::run()
 {
-	initialize();
+	initialize("12-ShadowMapping");
 	
 	glfwSetTime(0.0);
 	std::cout << "Starting loop..." << std::endl;
@@ -46,11 +46,11 @@ void VkApp::run()
 	shutdown();
 }
 
-void VkApp::initialize()
+void VkApp::initialize(const std::string& appName)
 {
 	glfwInit();
 	createWindow();
-	mRenderSystem.initialize(mWindow);
+	mRenderSystem.initialize(mWindow, appName);
 	mInputSystem.initialize(mWindow);
 	
 	setupCamera();
@@ -224,9 +224,9 @@ void VkApp::setupLights()
 	//setup spotlight
 	mLightUBO.lights[0].isEnabled	= true;
 	mLightUBO.lights[0].lightType   = LightType::Spot;
-	mLightUBO.lights[0].ambient     = glm::vec4(0.1, 0.1, 0.1, 1.0);
-	mLightUBO.lights[0].diffuse     = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);		//red light
-	mLightUBO.lights[0].specular    = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);		
+	mLightUBO.lights[0].ambient     = glm::vec4(0.2, 0.2, 0.2, 1.0);
+	mLightUBO.lights[0].diffuse     = glm::vec4(4.0f, 4.0f, 4.0f, 1.0f);		//red light
+	mLightUBO.lights[0].specular    = glm::vec4(4.0f, 4.0f, 4.0f, 1.0f);		
 	mLightUBO.lights[0].cutOff		= glm::cos(glm::radians(45.0f));			//12.5f
 	mLightUBO.lights[0].outerCutOff = glm::cos(glm::radians(50.0f));			//15.0f
 	mLightUBO.lights[0].constant = 0.25f;// 1.0f

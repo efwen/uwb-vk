@@ -46,7 +46,7 @@ public:
 	RenderSystem() {}
 	~RenderSystem() {}
 
-	void initialize(GLFWwindow *window);
+	void initialize(GLFWwindow *window, const std::string& appName);
 	void drawFrame();
 	void cleanup();
 
