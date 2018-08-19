@@ -10,10 +10,10 @@ VulkanContext::VulkanContext() :
 	surface(VK_NULL_HANDLE)
 {}
 
-void VulkanContext::initialize(GLFWwindow *window)
+void VulkanContext::initialize(GLFWwindow *window, const std::string& appName)
 {
 	std::cout << "Initializing Vulkan Context" << std::endl;
-	createInstance();
+	createInstance(appName);
 	
 	if (enableValidationLayers) {
 		setupDebugCallback();
@@ -52,11 +52,11 @@ uint32_t VulkanContext::findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlag
 	throw std::runtime_error("Failed to find a suitable memory type!");
 }
 
-void VulkanContext::createInstance()
+void VulkanContext::createInstance(const std::string& appName)
 {
 	VkApplicationInfo appInfo = {};
 	appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
-	appInfo.pApplicationName = "8-MultipleModels";
+	appInfo.pApplicationName = appName.c_str();
 	appInfo.applicationVersion = 1;
 	appInfo.pEngineName = "uwb-vk";
 	appInfo.engineVersion = 1;
