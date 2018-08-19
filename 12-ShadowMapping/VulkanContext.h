@@ -10,33 +10,79 @@
 #include "Extensions.h"
 #include "QueueFamilies.h"
 
-//this data frequently gets used together, so i am putting them
-//together in a convenient struct
+/**
+	@class VulkanContext
+
+	@brief Contains primary Vulkan constructs that remain constant throughout the
+		a uwb-vk application.
+	
+	Initialization of the Vulkan Instance, acquisition of a device, creation
+	of a surface to render to, and setting up the validation layers is handled
+	here. This is the first Object to be made in RenderSystem, and the last to
+	be destroyed.
+
+	@author Nicholas Carpenetti
+
+	@created 
+ */
 class VulkanContext
 {
 public:
-	GLFWwindow * window;
-	VkPhysicalDevice physicalDevice;
-	VkDevice device;
-	QueueFamilyIndices selectedIndices;
-	VkQueue graphicsQueue;
-	VkQueue presentQueue;
-	VkSurfaceKHR surface;
+	GLFWwindow * window;				///< GLFW window the application renders to
+	VkPhysicalDevice physicalDevice;	///< Selected physical device
+	VkDevice device;					///< Device used for all Vulkan operations
+	QueueFamilyIndices selectedIndices;	///< Indices of the selected device queues
+	VkQueue graphicsQueue;				///< Queue used for drawing
+	VkQueue presentQueue;				///< Queue used for presentation
+	VkSurfaceKHR surface;				///< Surface to be drawn to
 
 	VulkanContext();
 
+	/** @brief Initializes the VulkanContext
+		@param window the window to be rendered to
+	*/
 	void initialize(GLFWwindow *window);
+
+	/** @brief Cleans up all allocated resources 
+	*/
 	void cleanup();
+
+	/** @brief Find an the best available memory type
+		@param typeFilter A bitmask representing the memory types that are requested.
+			Found in VkMemoryRequirements.memoryTypeBits
+		
+		@param properties Properties required of the memory type
+	*/
 	uint32_t findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties);
 
 private:
-	VkInstance mInstance;
-	VkDebugReportCallbackEXT mCallback;
+	VkInstance mInstance;				///< Vulkan Instance
+	VkDebugReportCallbackEXT mCallback;	///< Callback used for validation
 
+	/** @brief Create the VkInstance Object
+	*/
 	void createInstance();
+
+	/** @brief Create the VkDevice Object
+	*/
 	void createDevice(VkInstance instance);
+	
+	/** @brief Create the VkSurfaceKHR Object
+		@param instance The Vulkan Instance
+
+		@param window the GLFW window being used
+	*/
 	void createSurface(VkInstance instance, GLFWwindow* window);
+	
+	/** @brief Print the details of a given VkPhysicalDevice to the console
+		@param the physical device
+	*/
 	void printPhysicalDeviceDetails(VkPhysicalDevice device);
+	
+	/** @brief Get a list of extensions required to run the application
+	*/
 	std::vector<const char*> getRequiredExtensions();
+	
+	/// Set up a callback for Validation Layers
 	void setupDebugCallback();
 };

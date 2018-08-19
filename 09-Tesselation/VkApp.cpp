@@ -50,7 +50,7 @@ void VkApp::shutdown()
 void VkApp::createWindow()
 { 
 	glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-	mWindow = glfwCreateWindow(WIDTH, HEIGHT, "9-Tessellation", nullptr, nullptr);
+	mWindow = glfwCreateWindow(WIDTH, HEIGHT, "9-Tessellation", glfwGetPrimaryMonitor(), nullptr);
 
 	if (mWindow == nullptr) {
 		throw std::runtime_error("Window creation failed!");

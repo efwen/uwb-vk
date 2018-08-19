@@ -5,6 +5,8 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
 
+#include <chrono>
+#include <unordered_map>
 
 void RenderSystem::initialize(GLFWwindow * window)
 {
@@ -908,6 +910,7 @@ void RenderSystem::createTexture(std::shared_ptr<Texture>& texture, const std::s
 void RenderSystem::createMesh(std::shared_ptr<Mesh>& mesh, const std::string & filename, bool calculateTangents)
 {
 	std::cout << "creating mesh \"" << filename << "\"" << std::endl;
+
 	std::vector<Vertex> vertices;
 	std::vector<uint32_t> indices;
 	readObjFile(filename, vertices, indices, VK_FRONT_FACE_CLOCKWISE);

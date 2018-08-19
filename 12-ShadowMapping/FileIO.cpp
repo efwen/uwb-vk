@@ -32,13 +32,12 @@ std::vector<char> readShaderFile(const std::string& filename) {
 //Triangles only
 void readObjFile(const std::string& filename, std::vector<Vertex>& vertices, std::vector<uint32_t>& indices, VkFrontFace frontFace)
 {
-	std::ifstream file(filename);
+	std::ifstream file(filename, std::ifstream::in);
 
 	if (!file.is_open()) {
 		throw std::runtime_error("Unable to open .obj file!");
 	}
 	std::cout << "Reading obj file \"" << filename << "\"" << std::endl;
-
 
 	std::unordered_map<Vertex, uint32_t> vertexMap = {};	//to help take advantage of the index buffer
 	std::vector<glm::vec3> vertPositions;
@@ -133,8 +132,9 @@ void readObjFile(const std::string& filename, std::vector<Vertex>& vertices, std
 			}
 		}
 	}
-	std::cout << "done loading! (" << vertices.size() << " vertices, " << indices.size() << " indices)" << std::endl;
 
+	file.close();
+	std::cout << "done loading! (" << vertices.size() << " vertices, " << indices.size() << " indices)" << std::endl;
 }
 
 std::vector<std::string> getVertexDetails(const std::string& vertexString)

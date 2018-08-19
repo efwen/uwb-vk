@@ -47,7 +47,7 @@ void VkApp::shutdown()
 void VkApp::createWindow()
 { 
 	glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-	mWindow = glfwCreateWindow(800, 600, "1-SimpleSurface", nullptr, nullptr);
+	mWindow = glfwCreateWindow(1920, 1080, "1-SimpleSurface", glfwGetPrimaryMonitor(), nullptr);
 
 	if (mWindow == nullptr) {
 		throw std::runtime_error("Window creation failed!");

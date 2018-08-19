@@ -20,8 +20,8 @@
 #include "Camera.h"
 #include "Lighting.h"
 
-const int WIDTH = 1280;
-const int HEIGHT = 720;
+const int WIDTH = 1920;
+const int HEIGHT = 1080;
 
 //resource paths
 const std::string BOX_DIFFUSE_PATH		= "Resources/Textures/UrbanTexturePack/Brick_OldDestroyed/Brick_OldDestroyed_1k_d.tga";
