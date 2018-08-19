@@ -23,7 +23,7 @@
 
 	@author Nicholas Carpenetti
 
-	@created 
+	@date 8 July 2018
  */
 class VulkanContext
 {
@@ -40,14 +40,15 @@ public:
 
 	/** @brief Initializes the VulkanContext
 		@param window the window to be rendered to
+		@param appName the name of the application
 	*/
-	void initialize(GLFWwindow *window);
+	void initialize(GLFWwindow *window, const std::string& appName);
 
 	/** @brief Cleans up all allocated resources 
 	*/
 	void cleanup();
 
-	/** @brief Find an the best available memory type
+	/** @brief Finds the best available memory type
 		@param typeFilter A bitmask representing the memory types that are requested.
 			Found in VkMemoryRequirements.memoryTypeBits
 		
@@ -59,30 +60,31 @@ private:
 	VkInstance mInstance;				///< Vulkan Instance
 	VkDebugReportCallbackEXT mCallback;	///< Callback used for validation
 
-	/** @brief Create the VkInstance Object
+	/** @brief Creates the VkInstance Object
+		@param appName The name of the application
 	*/
-	void createInstance();
+	void createInstance(const std::string& appName);
 
-	/** @brief Create the VkDevice Object
+	/** Creates the VkDevice Object
 	*/
 	void createDevice(VkInstance instance);
 	
-	/** @brief Create the VkSurfaceKHR Object
+	/** @brief Creates the VkSurfaceKHR Object
 		@param instance The Vulkan Instance
 
-		@param window the GLFW window being used
+		@param window The GLFW window being used
 	*/
 	void createSurface(VkInstance instance, GLFWwindow* window);
 	
-	/** @brief Print the details of a given VkPhysicalDevice to the console
-		@param the physical device
+	/** @brief Prints the details of a given VkPhysicalDevice to the console
+		@param device The physical device
 	*/
 	void printPhysicalDeviceDetails(VkPhysicalDevice device);
 	
-	/** @brief Get a list of extensions required to run the application
+	/** @brief Gets a list of extensions required to run the application
 	*/
 	std::vector<const char*> getRequiredExtensions();
 	
-	/// Set up a callback for Validation Layers
+	/** @brief Sets up a callback for Validation Layers */
 	void setupDebugCallback();
 };
