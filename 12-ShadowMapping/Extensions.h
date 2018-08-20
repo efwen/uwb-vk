@@ -1,6 +1,6 @@
 #pragma once
 
-//Instance Extensions
+/// Instance Extensions
 const std::vector<const char*> instanceExtensions = {
 	VK_KHR_SURFACE_EXTENSION_NAME
 #ifdef _DEBUG
@@ -8,7 +8,7 @@ const std::vector<const char*> instanceExtensions = {
 #endif
 };
 
-//Device Extensions
+/// Device Extensions
 const std::vector<const char*> deviceExtensions = {
 	VK_KHR_SWAPCHAIN_EXTENSION_NAME
 };

@@ -27,7 +27,7 @@ void CommandPool::allocateCommandBuffers(std::vector<VkCommandBuffer> &commandBu
 	VkCommandBufferAllocateInfo allocInfo = {};
 	allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
 	allocInfo.commandPool = mCommandPool;
-	allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+	allocInfo.level = level;
 	allocInfo.commandBufferCount = (uint32_t)commandBuffers.size();
 
 	if (vkAllocateCommandBuffers(mContext->device, &allocInfo, commandBuffers.data()) != VK_SUCCESS) {
