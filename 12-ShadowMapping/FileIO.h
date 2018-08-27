@@ -14,7 +14,7 @@ std::vector<char> readShaderFile(const std::string& filename);
 	@param filename The filename of the .obj file to be loaded
 	@param vertices Vertices to load from the .obj file
 	@param indices Indices to load the .obj file
-	@param frontFace The face the engine considers to be front face (clockwise or counter-clockwise)
+	@param frontFace The order of vertices the engine considers to be front face (clockwise or counter-clockwise)
 */
 void readObjFile(const std::string& filename, std::vector<Vertex>& vertices, std::vector<uint32_t>& indices, VkFrontFace frontFace);
 

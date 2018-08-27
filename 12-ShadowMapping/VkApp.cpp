@@ -22,7 +22,7 @@ void VkApp::run()
 		mRenderSystem.updateUniformBuffer<LightUBO>(*mLightUBOBuffer, mLightUBO, 0);
 		
 		//update transform buffers
-		updateMVPBuffer(*mCubeMVPBuffer, *mCube, mCubeXForm, *mCamera);
+		updateMVPBuffer(*mBoxMVPBuffer, *mCube, mCubeXForm, *mCamera);
 		updateMVPBuffer(*mGroundMVPBuffer, *mGround, mGroundXForm, *mCamera);
 		
 		//update light indicators
@@ -273,44 +273,43 @@ void VkApp::createCube()
 	std::shared_ptr<Mesh> cubeMesh;
 	mRenderSystem.createMesh(cubeMesh, BOX_MODEL_PATH, true);
 
-	std::shared_ptr<Texture> cubeDiffuseMap;
-	mRenderSystem.createTexture(cubeDiffuseMap, BOX_DIFFUSE_PATH);
+	std::shared_ptr<Texture> boxDiffuseMap;
+	mRenderSystem.createTexture(boxDiffuseMap, BOX_DIFFUSE_PATH);
 
-	std::shared_ptr<Texture> cubeNormalMap;
-	mRenderSystem.createTexture(cubeNormalMap, BOX_NORMAL_PATH);
+	std::shared_ptr<Texture> boxNormalMap;
+	mRenderSystem.createTexture(boxNormalMap, BOX_NORMAL_PATH);
 
-	std::shared_ptr<Texture> cubeSpecularMap;
-	mRenderSystem.createTexture(cubeSpecularMap, BOX_SPECULAR_PATH);
+	std::shared_ptr<Texture> boxSpecularMap;
+	mRenderSystem.createTexture(boxSpecularMap, BOX_SPECULAR_PATH);
 
-	ShaderSet cubeShaderSet;
-	mRenderSystem.createShader(cubeShaderSet.vertShader, BOX_VERT_SHADER_PATH, VK_SHADER_STAGE_VERTEX_BIT);
-	mRenderSystem.createShader(cubeShaderSet.fragShader, BOX_FRAG_SHADER_PATH, VK_SHADER_STAGE_FRAGMENT_BIT);
+	ShaderSet boxShaderSet;
+	mRenderSystem.createShader(boxShaderSet.vertShader, BOX_VERT_SHADER_PATH, VK_SHADER_STAGE_VERTEX_BIT);
+	mRenderSystem.createShader(boxShaderSet.fragShader, BOX_FRAG_SHADER_PATH, VK_SHADER_STAGE_FRAGMENT_BIT);
 	
-	mRenderSystem.createUniformBuffer<MVPMatrices>(mCubeMVPBuffer, 1);
+	mRenderSystem.createUniformBuffer<MVPMatrices>(mBoxMVPBuffer, 1);
 
 	//create a renderable and make the appropriate attachments
 	mRenderSystem.createRenderable(mCube);
 
 	//setup the shaders and note the bindings they will use
-	//Current restriction: one resource per binding (no arrays right now) 
-	mCube->applyShaderSet(cubeShaderSet);	
+	mCube->applyShaderSet(boxShaderSet);	
 	mCube->addShaderBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT, 0, 1);				//MVP
 	mCube->addShaderBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT, 1, 1);				//lights
 	mCube->addShaderBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 2, 1);		//diffuse map
 	mCube->addShaderBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 3, 1);		//normal map
 	mCube->addShaderBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 4, 1);		//specular map
 
+	//set the mesh we will use
 	mCube->setMesh(cubeMesh);
 
 	//bind resources
-	mCube->bindUniformBuffer(mCubeMVPBuffer, 0);
+	mCube->bindUniformBuffer(mBoxMVPBuffer, 0);
 	mCube->bindUniformBuffer(mLightUBOBuffer, 1);
-	mCube->bindTexture(cubeDiffuseMap, 2);
-	mCube->bindTexture(cubeNormalMap, 3);
-	mCube->bindTexture(cubeSpecularMap, 4);
+	mCube->bindTexture(boxDiffuseMap, 2);
+	mCube->bindTexture(boxNormalMap, 3);
+	mCube->bindTexture(boxSpecularMap, 4);
 
-	//instantiate (flush bindings, create pipeline)
-	std::cout << "Instantianting a wall" << std::endl;
+	//finally, instantiate
 	mRenderSystem.instantiateRenderable(mCube);
 }
 
@@ -373,8 +372,8 @@ void VkApp::createGround()
 
 void VkApp::updateMVPBuffer(const UBO& mvpBuffer,
 							const Renderable& renderable,    
-							  const Transform& renderableXForm, 
-							  const Camera& camera)
+							const Transform& renderableXForm, 
+							const Camera& camera)
 {
 	MVPMatrices mvp = {};	
 	mvp.model = renderableXForm.getModelMatrix();

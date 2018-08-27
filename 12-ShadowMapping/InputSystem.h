@@ -3,6 +3,14 @@
 	
 #include <glm/glm.hpp>
 
+/** @class InputSystem
+	
+	@brief Input handling using GLFW
+
+	@author Nicholas Carpenetti
+
+	@date 
+*/
 class InputSystem 
 {
 private:

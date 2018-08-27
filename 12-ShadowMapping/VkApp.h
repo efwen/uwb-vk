@@ -99,7 +99,7 @@ private:
 	LightUBO mLightUBO;
 
 	std::shared_ptr<Renderable> mCube;
-	std::shared_ptr<UBO> mCubeMVPBuffer;
+	std::shared_ptr<UBO> mBoxMVPBuffer;
 	Transform mCubeXForm;
 
 	std::shared_ptr<Renderable> mGround;
