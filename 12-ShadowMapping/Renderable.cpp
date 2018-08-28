@@ -54,7 +54,7 @@ void Renderable::setShader(std::shared_ptr<Shader> shader, VkShaderStageFlagBits
 	}
 }
 
-void Renderable::applyShaderSet(ShaderSet toApply)
+void Renderable::applyShaderSet(const ShaderSet& toApply)
 {
 	mShaderSet = toApply;
 }
