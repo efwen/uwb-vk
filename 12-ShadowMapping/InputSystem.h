@@ -57,23 +57,23 @@ public:
 	*/
 	bool isKeyDown(int key);
 	/** @brief Check if a particular key has been pressed
-		@param key to query (glfw key name convention is GLFW_KEY_<key name>)
+		@param key Key to query (glfw key name convention is GLFW_KEY_<key name>)
 	*/
 	bool isKeyPressed(int key);
 	/** @brief Check if a particular key has been released
-		@param key to query (glfw key name convention is GLFW_KEY_<key name>)
+		@param key Key to query (glfw key name convention is GLFW_KEY_<key name>)
 	*/
 	bool isKeyReleased(int key);
 	/** @brief Check if a particular mouse button is down
-		@param key to query (glfw key name convention is GLFW_KEY_<key name>)
+		@param button Button to query (glfw key name convention is GLFW_KEY_<key name>)
 	*/
 	bool isMouseDown(int button);
 	/** @brief Check if a particular mouse button has been presssed
-		@param key to query (glfw key name convention is GLFW_KEY_<key name>)
+		@param button Button to query (glfw key name convention is GLFW_KEY_<key name>)
 	*/
 	bool isMousePressed(int button);
 	/** @brief Check if a particular mouse button has been released
-		@param key to query (glfw key name convention is GLFW_KEY_<key name>)
+		@param button Button to query (glfw key name convention is GLFW_KEY_<key name>)
 	*/
 	bool isMouseReleased(int button);
 	

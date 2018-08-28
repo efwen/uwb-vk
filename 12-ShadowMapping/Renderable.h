@@ -34,6 +34,7 @@ public:
 		@param context The Render System's Vulkan Context object
 	*/
 	Renderable(std::shared_ptr<VulkanContext> context);
+
 	/** @brief clean up resources allocated by the Renderable
 	*/
 	void cleanup();
@@ -48,13 +49,15 @@ public:
 		@param mesh The mesh This Renderable will use
 	*/
 	void setMesh(std::shared_ptr<Mesh> mesh);
+
 	/** @brief Set a specific Shader to be used by this Renderable
 		@param shader The shader being applied
 		@param shaderStage The pipeline stage the shader will be used at
 	*/
 	void setShader(std::shared_ptr<Shader> shader, VkShaderStageFlagBits shaderStage);
+
 	/** @brief Apply an entire ShaderSet to this renderable
-		@toApply The Shader taht is going to be applied
+		@param toApply The Shader taht is going to be applied
 	*/
 	void applyShaderSet(const ShaderSet& toApply);
 
@@ -78,18 +81,21 @@ public:
 		@param count			The number of resources of that type to bind to the given bindingNum
 	*/
 	void addShaderBinding(VkDescriptorType descriptorType, VkShaderStageFlagBits stage, uint32_t bindingNum, uint32_t count);
+
 	/** @brief Bind a texture to be used by the renderable
 		
 		@param texture			The texture to bind
 		@param binding			The value to bind the texture
 	*/
 	void bindTexture(std::shared_ptr<Texture> texture, uint32_t binding);
+
 	/** @brief Bind a Uniform Buffer to be used by the renderable
 	
 		@param bufferObject		The UBO to be bound to the pipeline
 		@param binding			The value at which to bind the UBO
 	*/
 	void bindUniformBuffer(std::shared_ptr<UBO> bufferObject, uint32_t binding);
+
 	/** @brief Bind a ShadowMap to be used by the renderable
 		
 		@param shadowMap		The shadowMap to bind
@@ -106,6 +112,7 @@ public:
 	/** @brief Create the VkDescriptorSetLayout this Renderable uses
 	*/
 	void createDescriptorSetLayout();
+
 	/** @brief Create and write the VkDescriptorSets that will by used by this Renderable
 		
 		This method checks against the shader Bindings for missing resources. Then,

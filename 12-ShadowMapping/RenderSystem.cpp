@@ -202,7 +202,7 @@ void RenderSystem::recreateSwapchain()
 	createShadowCommandBuffers();
 
 	createColorRenderPass();
-	for (auto model : mRenderables) {
+	for (auto& model : mRenderables) {
 		createPipeline(model->mPipeline, model->mPipelineLayout, model->mDescriptorSetLayout, model->mShaderSet.createShaderInfoSet(), mColorPass);
 	}
 	createDepthBuffer();
