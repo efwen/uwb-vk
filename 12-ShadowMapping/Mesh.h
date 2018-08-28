@@ -12,7 +12,9 @@
 #include "BufferManager.h"
 #include "Vertex.h"
 
-/** @brief A Mesh composed of vertex and index buffers
+/** @class Mesh
+	
+	@brief A Mesh composed of vertex and index buffers
 
 	@author Nicholas Carpenetti
 
