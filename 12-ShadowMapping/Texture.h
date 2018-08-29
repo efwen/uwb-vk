@@ -42,8 +42,12 @@ public:
 	//-------------
 	// Accessors
 	//-------------
-	VkImageView getImageView() const { return mImageView; };	///< Get the VkImageView object for this texture
-	VkSampler getSampler() const { return mSampler; };			///< Get the VkSampler object for this texture
+	
+	/** Get the VkImageView object for this texture */
+	VkImageView getImageView() const { return mImageView; };	
+	
+	/** Get the VkSampler object for this texture */
+	VkSampler getSampler() const { return mSampler; };			
 protected:
 	//Primary system pointers
 	std::shared_ptr<VulkanContext> mContext;			///< A shared pointer to the RenderSystem's VulkanContext

@@ -34,11 +34,11 @@
 #include "ShadowMap.h"
 
 
-const int MAX_CONCURRENT_FRAMES = 2;
-const int MAX_DESCRIPTOR_SETS = 40;
-const int MAX_UNIFORM_BUFFERS = 40;
-const int MAX_IMAGE_SAMPLERS = 40;
-const std::string SHADOW_MAP_SHADER_VERT = "Resources/Shaders/shadowPass_vert.spv";
+const int MAX_CONCURRENT_FRAMES = 2;	///< The number of frames in flight (2 = double buffering, etc.)
+const int MAX_DESCRIPTOR_SETS = 40;		///< Maximum number of descriptor sets
+const int MAX_UNIFORM_BUFFERS = 40;		///< Maximum number of UBOS
+const int MAX_IMAGE_SAMPLERS = 40;		///< Maximum number of Image Samplers
+const std::string SHADOW_MAP_SHADER_VERT = "Resources/Shaders/shadowPass_vert.spv";	///< Vertex Shader for the ShadowMap
 
 /** @class RenderSystem
 
@@ -103,6 +103,7 @@ public:
 
 		@param shader			The shader object to create
 		@param filename			The shader file to load (must a *.spv file)
+		@param stage			The shader stage the shader will run in
 	*/
 	void createShader(std::shared_ptr<Shader>& shader, const std::string& filename, VkShaderStageFlagBits stage);
 

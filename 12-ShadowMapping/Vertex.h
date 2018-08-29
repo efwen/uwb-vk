@@ -9,14 +9,22 @@
 
 #include <array>
 
+/** @class Vertex
+	
+	@brief A Vertex used in a Mesh
 
+	@author Nicholas Carpenetti
+
+	@date 28 June 2018
+*/
 struct Vertex {
-	glm::vec4 pos;
-	glm::vec4 color;
-	glm::vec3 normal;
-	glm::vec3 tangent;
-	glm::vec2 texCoord;
+	glm::vec4 pos;			///< Position of the vertex
+	glm::vec4 color;		///< Color of the
+	glm::vec3 normal;		///< Normal of the vertex
+	glm::vec3 tangent;		///< Optional tangent to the normal
+	glm::vec2 texCoord;		///< Texture Coordinate
 
+	/** @brief Get a Binding Description for pipeline creation */
 	static VkVertexInputBindingDescription getBindingDescription() {
 		VkVertexInputBindingDescription bindingDescription = {};
 		bindingDescription.binding = 0;
@@ -26,6 +34,10 @@ struct Vertex {
 		return bindingDescription;
 	}
 
+	/** @brief Get a description of all the Vertex attributes for pipeline creation 
+		Describes each attribute, binding number, locations of each attribute,
+		attribute formats, and offsets.
+	*/
 	static std::array<VkVertexInputAttributeDescription, 5> getAttributeDescriptions() {
 		std::array<VkVertexInputAttributeDescription, 5> attributeDescriptions = {};
 
@@ -62,6 +74,9 @@ struct Vertex {
 		return attributeDescriptions;
 	}
 
+	/** @brief equality operator used by std::unordered_map
+		@param other A vertex to compare to
+	*/
 	bool operator== (const Vertex& other) const
 	{
 		return pos == other.pos &&
@@ -74,6 +89,10 @@ struct Vertex {
 	friend std::ostream& operator<<(std::ostream& os, const Vertex& v);
 };
 
+/** @brief << print operator for Vertices
+	@param os Stream object to print to
+	@param v  The vertex to print
+*/
 inline std::ostream& operator<< (std::ostream& os, const Vertex& v)
 {
 	os << "[p(" << v.pos.x		 << ", " << v.pos.y		  << ", " << v.pos.z	 << v.pos.w	  << ")" << 
@@ -85,6 +104,9 @@ inline std::ostream& operator<< (std::ostream& os, const Vertex& v)
 }
 
 namespace std {
+	/** @brief Get a hash value for a vertex 
+		Needs improvement to include more attributes
+	*/
 	template<> struct hash<Vertex>
 	{
 		size_t operator()(Vertex const& vertex) const
