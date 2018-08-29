@@ -10,6 +10,14 @@
 #include "BufferManager.h"
 #include "ImageManager.h"
 
+/** @class Texture
+
+	@brief
+
+	@author Nicholas Carpenetti
+
+	@date 
+*/
 class Texture
 {
 public:
@@ -21,9 +29,9 @@ public:
 	VkImageView getImageView() const { return mImageView; };
 	VkSampler getSampler() const { return mSampler; };
 protected:
-	int mWidth;
-	int mHeight;
-	int mChannels;
+	int mWidth;						///< The resolution width of the texture
+	int mHeight;					///< The resolution height of the texture
+	int mChannels;					///< The number of color channels
 	VkDeviceSize mImageSize;
 
 	//Vulkan handles
@@ -36,6 +44,7 @@ protected:
 	std::shared_ptr<BufferManager> mBufferManager;
 	std::shared_ptr<ImageManager> mImageManager;
 
+protected:
 	void createTextureImage(unsigned char* pixelData);
 	void createTextureImageView();
 	void createTextureSampler();

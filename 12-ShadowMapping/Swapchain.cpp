@@ -1,17 +1,20 @@
 #include "Swapchain.h"
 
 Swapchain::Swapchain(std::shared_ptr<VulkanContext> context, std::shared_ptr<ImageManager> imageManager) :
+	mContext(context),
+	mImageManager(imageManager),
 	mSwapchain(VK_NULL_HANDLE),
 	mImageFormat(VK_FORMAT_UNDEFINED),
-	mExtent{ 0, 0 },
-	mContext(context),
-	mImageManager(imageManager)
+	mExtent{ 0, 0 }
+	
 {}
 
 Swapchain::~Swapchain() {}
 
 void Swapchain::initialize(VkSurfaceKHR surface, uint32_t imageCount) 
 {
+	std::cout << "Initializing Swapchain..." << std::endl;
+
 	VkSurfaceCapabilitiesKHR capabilities;
 	vkGetPhysicalDeviceSurfaceCapabilitiesKHR(mContext->physicalDevice, surface, &capabilities);
 
@@ -24,15 +27,15 @@ void Swapchain::initialize(VkSurfaceKHR surface, uint32_t imageCount)
 	swapchainCreateInfo.pNext = nullptr;
 	swapchainCreateInfo.flags = 0;
 	swapchainCreateInfo.surface = surface;
-	swapchainCreateInfo.minImageCount = imageCount;		//Double buffered
+	swapchainCreateInfo.minImageCount = imageCount;
 	swapchainCreateInfo.imageFormat = surfaceFormat.format;
 	swapchainCreateInfo.imageColorSpace = surfaceFormat.colorSpace;
 	swapchainCreateInfo.imageExtent = extent;
 	swapchainCreateInfo.imageArrayLayers = 1;
 	swapchainCreateInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;	//rendering directly to these images
 
-																			//if the queue families are different, they need to be able to share the images
-																			//otherwise use exclusive mode
+	//if the queue families are different, they need to be able to share the images
+	//otherwise use exclusive mode
 	if (mContext->selectedIndices.graphicsFamily != mContext->selectedIndices.presentFamily)
 	{
 		uint32_t queueFamilyIndices[] = { (uint32_t)mContext->selectedIndices.graphicsFamily,
@@ -73,21 +76,22 @@ void Swapchain::initialize(VkSurfaceKHR surface, uint32_t imageCount)
 
 void Swapchain::cleanup()
 {
+	//Cleanup all of the image views
 	for (auto imageView : mImageViews) {
 		vkDestroyImageView(mContext->device, imageView, nullptr);
 	}
 
-	//Images automatically cleaned up
+	//Images automatically cleaned up when you cleanup the swapchain object
 	vkDestroySwapchainKHR(mContext->device, mSwapchain, nullptr);
 }
 
 VkSurfaceFormatKHR Swapchain::chooseSurfaceFormat(VkSurfaceKHR surface)
 {
-	//Choose a swapchain format
 	uint32_t formatCount;
 	std::vector<VkSurfaceFormatKHR> availableFormats;
 	vkGetPhysicalDeviceSurfaceFormatsKHR(mContext->physicalDevice, surface, &formatCount, nullptr);
 
+	//Get a list of all the available formats
 	if (formatCount != 0) {
 		availableFormats.resize(formatCount);
 		vkGetPhysicalDeviceSurfaceFormatsKHR(mContext->physicalDevice, surface, &formatCount, availableFormats.data());
@@ -96,6 +100,8 @@ VkSurfaceFormatKHR Swapchain::chooseSurfaceFormat(VkSurfaceKHR surface)
 		throw std::runtime_error("no available formats for swapchain!");
 	}
 
+
+	//If there's only one format, and its undefined, the surface doesn't care
 	if (availableFormats.size() == 1 && availableFormats[0].format == VK_FORMAT_UNDEFINED) {
 
 		return { VK_FORMAT_B8G8R8A8_UNORM, VK_COLOR_SPACE_SRGB_NONLINEAR_KHR };
@@ -143,10 +149,11 @@ VkPresentModeKHR Swapchain::choosePresentMode(VkSurfaceKHR surface)
 
 VkExtent2D Swapchain::chooseExtent(const VkSurfaceCapabilitiesKHR & capabilities)
 {
+	//if the extents are given, use them
 	if (capabilities.currentExtent.width != std::numeric_limits<uint32_t>::max()) {
 		return capabilities.currentExtent;
 	}
-	else {
+	else {	//otherwise use the window resolution
 		int width, height;
 		glfwGetFramebufferSize(mContext->window, &width, &height);
 		std::cout << "window size: (" << width << ", " << height << ")" << std::endl;
@@ -162,11 +169,9 @@ VkExtent2D Swapchain::chooseExtent(const VkSurfaceCapabilitiesKHR & capabilities
 
 void Swapchain::createImageViews()
 {
-	std::cout << "Creating swapchain image views" << std::endl;
 	mImageViews.resize(mImages.size());
-	for (size_t i = 0; i < mImages.size(); i++) {
+	for (size_t i = 0; i < mImages.size(); i++)
 		mImageViews[i] = mImageManager->createImageView(mImages[i], mImageFormat, VK_IMAGE_ASPECT_COLOR_BIT);
-	}
 }
 
 std::vector<VkFramebuffer> Swapchain::createFramebuffers(VkRenderPass renderPass)
