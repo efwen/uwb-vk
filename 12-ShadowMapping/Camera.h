@@ -38,7 +38,7 @@ public:
 		updateProjectionMatrix(width, height);
 	}
 
-	/** @brief update the the camera's View matrix, 
+	/** @brief Update the the camera's View matrix, 
 			as well as the up, right and forward vectors
 	*/
 	void updateViewMatrix()
@@ -53,7 +53,7 @@ public:
 		forward = rotation * glm::vec3(0.0f, 0.0f, -1.0f);
 	};
 
-	/** @Update the Camera's Projection Matrix
+	/** @brief Update the Camera's Projection Matrix
 		@param width Viewport width
 		@param height Viewport height
 	*/

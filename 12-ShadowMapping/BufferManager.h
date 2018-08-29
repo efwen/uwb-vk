@@ -43,9 +43,9 @@ public:
 	void createVertexBuffer(const std::vector<Vertex>& vertices, VkBuffer& vertexBuffer, VkDeviceMemory& vertexBufferMemory);
 
 	/** @brief Creates a buffer for holding index information
-		@param vertices Vector of indices to be placed in the buffer
-		@param vertexBuffer Handle to the buffer to be set
-		@param vertexBufferMemory handle to the buffer memory to be set
+		@param indices Vector of indices to be placed in the buffer
+		@param indexBuffer Handle to the buffer to be set
+		@param indexBufferMemory handle to the buffer memory to be set
 	*/
 	void createIndexBuffer(const std::vector<uint32_t>& indices, VkBuffer& indexBuffer, VkDeviceMemory& indexBufferMemory);
 

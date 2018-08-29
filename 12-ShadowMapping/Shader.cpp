@@ -25,7 +25,7 @@ void Shader::free()
 	mStage = VK_SHADER_STAGE_ALL;
 }
 
-VkPipelineShaderStageCreateInfo Shader::getShaderStageInfo()
+VkPipelineShaderStageCreateInfo Shader::getShaderStageInfo() const
 {
 	VkPipelineShaderStageCreateInfo createInfo = {};
 	createInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
@@ -36,7 +36,7 @@ VkPipelineShaderStageCreateInfo Shader::getShaderStageInfo()
 	return createInfo;
 }
 
-VkShaderStageFlagBits Shader::getStage()
+VkShaderStageFlagBits Shader::getStage() const
 {
 	return mStage;
 }

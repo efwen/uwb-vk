@@ -90,9 +90,9 @@ public:
 		Creates a Mesh object with std::make_shared and keeps a copy
 		to properly cleanup at the end
 		
-		@param mesh				The mesh object to create
-		@param filename			The file to create the mesh from (must be a *.mesh file)
-		@param calculate		Whether to calculate tangents for all of the vertices (used for normal mapping)
+		@param mesh				 The mesh object to create
+		@param filename			 The file to create the mesh from (must be a *.mesh file)
+		@param calculateTangents Whether to calculate tangents for all of the vertices (used for normal mapping)
 	*/
 	void createMesh(std::shared_ptr<Mesh>& mesh, const std::string& filename, bool calculateTangents);
 
@@ -220,7 +220,6 @@ private:
 	VkDescriptorPool mDescriptorPool;						///< The Descriptor Pool DescriptorSets allocate from
 
 #pragma region DepthBuffer
-	//depth buffer
 	VkImage mDepthImage;									///< The image the depth buffer writes to
 	VkFormat mDepthImageFormat;								///< The format of the depth buffer
 	VkDeviceMemory mDepthImageMemory;						///< The memory the depth buffer is allocated from
@@ -267,9 +266,13 @@ private:
 	*/
 	void cleanupSwapchain();
 
+
+
+
 	//-------------
 	//Pipeline
 	//-------------
+
 	/** @brief Create a new pipeline
 		
 		@param pipeline				The pipeline to create
@@ -279,18 +282,29 @@ private:
 		@param shaderStages			The shaders that the pipline will use
 		@param renderPass			The renderPass the pipeline will use
 	*/
-	void createPipeline(VkPipeline& pipeline, VkPipelineLayout& pipelineLayout, VkDescriptorSetLayout& descriptorSetLayout, const std::vector<VkPipelineShaderStageCreateInfo>& shaderStages, VkRenderPass& renderPass);
+	void createPipeline(VkPipeline&				pipeline, 
+						VkPipelineLayout&		pipelineLayout, 
+						VkDescriptorSetLayout&	descriptorSetLayout, 
+						const std::vector<VkPipelineShaderStageCreateInfo>& shaderStages, 
+						VkRenderPass&			renderPass);
+
 	/** @brief Create a color renderPass object for the main pass
 	*/
 	void createColorRenderPass();
+
 	/**	@brief Create framebuffers to be used by a pipeline
-		@param The renderpass that will write to the framebuffers
+		@param renderPass The renderpass that will write to the framebuffers
 	*/
 	void createFramebuffers(VkRenderPass renderPass);
+
+
+
+
 
 	//---------------
 	//Descriptors
 	//---------------
+
 	/** @brief Create the DescriptorPool
 		
 		The Descriptor Pool is memory pool for allocating DescriptorSets from.
@@ -300,20 +314,26 @@ private:
 		@param maxImageSamplers		The maximum number of Image/Samplers(i.e. Textures) in the application.
 	*/
 	void createDescriptorPool(uint32_t maxSets, uint32_t maxUniformBuffers, uint32_t maxImageSamplers);
-	/** @brief Create a DescriptorSetLayout for the Shadow pass
-	*/
+
+	/** @brief Create a DescriptorSetLayout for the Shadow pass */
 	void createShadowMapDescriptorSetLayout();
-	/** @brief Create the necessary Descriptor Sets to create a shadow map.
-	*/
+
+	/** @brief Create the necessary Descriptor Sets to create a shadow map. */
 	void createShadowMapDescriptorSets();
+
+
+
 
 	//-----------------
 	//Command Buffers
 	//------------------
-	/* @brief Create the primary command buffers for the main pass */
+
+	/** @brief Create the primary command buffers for the main pass */
 	void createCommandBuffers();
-	/* @brief Create the primary command buffers for the shadow passs */
+
+	/** @brief Create the primary command buffers for the shadow pass */
 	void createShadowCommandBuffers();
+
 	/** @brief Draw a renderable object
 
 		Draw a renderable object. This method should be called during command buffer construction
@@ -324,14 +344,45 @@ private:
 	*/
 	void drawRenderable(VkCommandBuffer commandBuffer, std::shared_ptr<Renderable> model, VkDescriptorSet& descriptorSet);
 
+	/** @brief Create a depth buffer */
 	void createDepthBuffer();
+
+	/** @brief Create objects necessary to syncronize frame drawing 
+		Sync objects ensure that each stage of the drawFrame() method operates in
+		order, as calls to vkQueueSubmit and vkQueuePresentKHR are asynchronous.
+		In addition they ensure that draw commands are not submitted to a frame
+		that is still not done presenting.
+	*/
 	void createSyncObjects();
+
+
+
 
 	//--------------
 	//ShadowMap	
 	//---------------
+
+	/** @brief Create the ShadowMap, which is simply a depth map that can be used in the next render pass as ImageSampler input.
+		The resources created as part of the ShadowMap are as follows:
+			VkImage
+			VkImageView
+			VkSampler
+	*/
 	void createShadowMap();
+
+	/** @brief Create a Pipeline for writing to the ShadowMap 
+		The pipeline created is simple, in that it contains only a single vertex shader
+	*/
 	void createShadowMapPipeline();
+
+	/** @brief Create a RenderPass for writing to the ShadowMap 
+		@param shadowMap The ShadowMap the renderpass will write to when running
+	*/
 	void createShadowRenderPass(const ShadowMap& shadowMap);
+
+	/** @brief Create the FrameBuffers used as the output
+		@param shadowRenderPass The VkRenderPass describing attachments
+		@param shadowImageView  The VkImageView object for the shadow map
+	*/
 	void createShadowFramebuffers(VkRenderPass shadowRenderPass, VkImageView shadowImageView);
 };

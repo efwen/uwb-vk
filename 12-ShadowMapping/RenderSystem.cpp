@@ -132,6 +132,7 @@ void RenderSystem::drawFrame()
 
 	/*
 		Pass 2: Color Pass
+		Depends upon the Shadow Pass to run, so depends on mShadowMapAvailableSemaphores[mCurrentFrame]
 	*/
 	VkSubmitInfo submitInfo = {};
 	submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
@@ -966,16 +967,14 @@ void RenderSystem::createShader(std::shared_ptr<Shader>& shader, const std::stri
 
 void RenderSystem::createDepthBuffer()
 {
-	std::cout << "Creating depth resources" << std::endl;
+	std::cout << "Creating depth buffer" << std::endl;
 
-	std::cout << "Finding a depth image format" << std::endl;
 	mDepthImageFormat = mImageManager->findSupportedFormat(
 						{ VK_FORMAT_D32_SFLOAT, VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D24_UNORM_S8_UINT },
 						VK_IMAGE_TILING_OPTIMAL,
 						VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);
 	
 	//create the depth image
-	std::cout << "creating depth image" << std::endl;
 	mImageManager->createImage(mSwapchain->getExtent().width,
 						mSwapchain->getExtent().height,
 						mDepthImageFormat,
@@ -986,18 +985,13 @@ void RenderSystem::createDepthBuffer()
 						mDepthImageMemory);
 
 	//make an image view so we know how to access the depth image
-	std::cout << "creating depth image view" << std::endl;
 	mDepthImageView = mImageManager->createImageView(mDepthImage, mDepthImageFormat, VK_IMAGE_ASPECT_DEPTH_BIT);
 
 	//transition to a layout suitable for depth attachment use
-	std::cout << "transitioning from undefinied to depth_stencil_attachment_optimal" << std::endl;
 	mImageManager->transitionImageLayout(mDepthImage,
 									mDepthImageFormat,
 									VK_IMAGE_LAYOUT_UNDEFINED,
 									VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
-
-	//make the sampler
-
 }
 
 void RenderSystem::createShadowMap()
