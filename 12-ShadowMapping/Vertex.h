@@ -9,9 +9,9 @@
 
 #include <array>
 
-/** @class Vertex
+/** @struct Vertex
 	
-	@brief A Vertex used in a Mesh
+	@brief Vertex used in a Mesh. Holds positions, colors, normals, tangents and texture coordinates.
 
 	@author Nicholas Carpenetti
 
@@ -104,11 +104,12 @@ inline std::ostream& operator<< (std::ostream& os, const Vertex& v)
 }
 
 namespace std {
-	/** @brief Get a hash value for a vertex 
-		Needs improvement to include more attributes
-	*/
+
 	template<> struct hash<Vertex>
-	{
+	{	
+		/** @brief Get a hash value for a vertex 
+		Needs improvement to include more attributes
+		*/
 		size_t operator()(Vertex const& vertex) const
 		{
 			return ((hash<glm::vec3>()(vertex.pos) ^ 

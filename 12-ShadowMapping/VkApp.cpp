@@ -22,14 +22,14 @@ void VkApp::run()
 		mRenderSystem.updateUniformBuffer<LightUBO>(*mLightUBOBuffer, mLightUBO, 0);
 		
 		//update transform buffers
-		updateMVPBuffer(*mBoxMVPBuffer, *mCube, mCubeXForm, *mCamera);
-		updateMVPBuffer(*mGroundMVPBuffer, *mGround, mGroundXForm, *mCamera);
+		updateMVPBuffer(*mCubeMVPBuffer, mCubeXForm, *mCamera);
+		updateMVPBuffer(*mGroundMVPBuffer, mGroundXForm, *mCamera);
 		
 		//update light indicators
 		for (uint32_t lightIndex = 0; lightIndex < mTotalLights; lightIndex++) {
 			mLightIndicatorXForm[lightIndex].position = mLightUBO.lights[lightIndex].position;
 
-			updateMVPBuffer(*mLightIndicatorMVPBuffer[lightIndex], *mLightIndicators[lightIndex], mLightIndicatorXForm[lightIndex], *mCamera);
+			updateMVPBuffer(*mLightIndicatorMVPBuffer[lightIndex], mLightIndicatorXForm[lightIndex], *mCamera);
 			mRenderSystem.updateUniformBuffer<Light>(*mLightIndicatorLightBuffer[lightIndex], mLightUBO.lights[lightIndex], 0);
 		}
 		
@@ -286,7 +286,7 @@ void VkApp::createCube()
 	mRenderSystem.createShader(boxShaderSet.vertShader, BOX_VERT_SHADER_PATH, VK_SHADER_STAGE_VERTEX_BIT);
 	mRenderSystem.createShader(boxShaderSet.fragShader, BOX_FRAG_SHADER_PATH, VK_SHADER_STAGE_FRAGMENT_BIT);
 	
-	mRenderSystem.createUniformBuffer<MVPMatrices>(mBoxMVPBuffer, 1);
+	mRenderSystem.createUniformBuffer<MVPMatrices>(mCubeMVPBuffer, 1);
 
 	//create a renderable and make the appropriate attachments
 	mRenderSystem.createRenderable(mCube);
@@ -303,7 +303,7 @@ void VkApp::createCube()
 	mCube->setMesh(cubeMesh);
 
 	//bind resources
-	mCube->bindUniformBuffer(mBoxMVPBuffer, 0);
+	mCube->bindUniformBuffer(mCubeMVPBuffer, 0);
 	mCube->bindUniformBuffer(mLightUBOBuffer, 1);
 	mCube->bindTexture(boxDiffuseMap, 2);
 	mCube->bindTexture(boxNormalMap, 3);
@@ -370,8 +370,7 @@ void VkApp::createGround()
 	mRenderSystem.instantiateRenderable(mGround);
 }
 
-void VkApp::updateMVPBuffer(const UBO& mvpBuffer,
-							const Renderable& renderable,    
+void VkApp::updateMVPBuffer(const UBO& mvpBuffer,   
 							const Transform& renderableXForm, 
 							const Camera& camera)
 {
