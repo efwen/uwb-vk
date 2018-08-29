@@ -337,4 +337,4 @@ ASALocalRun/
 *.spv
 
 #documentation
-Documentation/*.*
+Documentation/
