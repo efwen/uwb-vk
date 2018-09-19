@@ -15,8 +15,10 @@
 #include "Shader.h"
 #include "Texture.h"
 
-const int WIDTH = 1920;
-const int HEIGHT = 1080;
+const int WIDTH = 1280;
+const int HEIGHT = 720;
+const bool WINDOWED = true;
+const std::string WINDOW_TITLE = "9-Tessellation";
 
 //texture paths
 const std::string GROUND_TEXTURE_PATH = "Resources/Textures/UrbanTexturePack/Ground_Dirt/Ground_Dirt_1k_d.tga";

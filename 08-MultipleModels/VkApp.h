@@ -13,6 +13,11 @@
 #include "InputSystem.h"
 #include "Model.h"
 
+const int WIDTH = 1280;
+const int HEIGHT = 720;
+const bool WINDOWED = true;
+const std::string WINDOW_TITLE = "8-MultipleModels";
+
 const std::string CHALET_TEXTURE_PATH = "Resources/Textures/chalet.jpg";
 const std::string GROUND_TEXTURE_PATH = "Resources/Textures/UrbanTexturePack/Ground_Dirt/Ground_Dirt_1k_d.tga";
 const std::string CHALET_MODEL_PATH = "Resources/Meshes/chalet.mesh";

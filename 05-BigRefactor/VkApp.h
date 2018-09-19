@@ -9,6 +9,11 @@
 #include "RenderSystem.h"
 #include "InputSystem.h"
 
+const int WIDTH = 1280;
+const int HEIGHT = 720;
+const bool WINDOWED = true;
+const std::string WINDOW_TITLE = "6-BigRefactor";
+
 class VkApp
 {
 private:
